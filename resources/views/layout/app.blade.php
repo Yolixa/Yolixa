@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="{{ asset('assets/images/favicon-32x32.png') }}">
+    <title>Yolixa - Empowering Influencers with Web3 Tipping</title>
+
+    {{-- Tailwind CDN --}}
+    <script src="{{ asset('assets/js/talwind_cdn.js') }}"></script>
+
+    {{-- Tailwind Config --}}
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'yolixa-blue': '#004aad',
+                        'yolixa-purple': '#cb6ce6',
+                        'dark-bg': '#0d0d0d'
+                    }
+                }
+            }
+        }
+    </script>
+
+    {{-- Fonts & CSS --}}
+    <link rel="stylesheet" href="{{ asset('assets/fonts/inter_font_family.css') }}">
+
+    <style>
+        * {
+        font-family: 'Inter', sans-serif;
+        }
+        .gradient-bg {
+        background: linear-gradient(135deg, #004aad 0%, #cb6ce6 100%);
+        }
+        .gradient-text {
+        background: linear-gradient(135deg, #004aad, #cb6ce6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        }
+        .glow-effect {
+        box-shadow: 0 0 30px rgba(203, 108, 230, 0.3);
+        }
+        .card-hover {
+        transition: all 0.3s ease;
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .card-hover:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px rgba(203, 108, 230, 0.2);
+        border-color: rgba(203, 108, 230, 0.3);
+        }
+        .floating {
+        animation: floating 3s ease-in-out infinite;
+        }
+        @keyframes floating {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-20px); }
+        }
+        .pulse-glow {
+        animation: pulse-glow 2s ease-in-out infinite alternate;
+        }
+        @keyframes pulse-glow {
+        from { box-shadow: 0 0 20px rgba(203, 108, 230, 0.4); }
+        to { box-shadow: 0 0 40px rgba(203, 108, 230, 0.8); }
+        }
+        .hero-bg {
+        background: radial-gradient(ellipse at center, rgba(0, 74, 173, 0.1) 0%, transparent 70%),
+        radial-gradient(ellipse at 80% 20%, rgba(203, 108, 230, 0.1) 0%, transparent 50%);
+        }
+        .mobile-menu {
+        transform: translateX(100%);
+        transition: transform 0.3s ease-in-out;
+        }
+        .mobile-menu.open {
+        transform: translateX(0);
+        }
+        .nav-glass {
+        background: rgba(13, 13, 13, 0.8);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-bottom: 1px solid rgba(203, 108, 230, 0.2);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .mobile-glass {
+        background: rgba(13, 13, 13, 0.95);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+        }
+        .logo-glow {
+        box-shadow: 0 0 20px rgba(203, 108, 230, 0.3);
+        }
+        .nav-link {
+        position: relative;
+        overflow: hidden;
+        }
+        .nav-link::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(203, 108, 230, 0.2), transparent);
+        transition: left 0.5s;
+        }
+        .nav-link:hover::before {
+        left: 100%;
+        }
+        .cta-button {
+        position: relative;
+        overflow: hidden;
+        }
+        .cta-button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.6s;
+        }
+        .cta-button:hover::before {
+        left: 100%;
+        }
+        .mobile-nav-link {
+        position: relative;
+        overflow: hidden;
+        }
+        .mobile-nav-link::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 0;
+        height: 2px;
+        background: linear-gradient(90deg, #004aad, #cb6ce6);
+        transition: width 0.3s ease;
+        }
+        .mobile-nav-link:hover::after {
+        width: 100%;
+        }
+        /* Navbar scroll effect */
+        .nav-scrolled {
+        background: rgba(13, 13, 13, 0.95) !important;
+        border-bottom-color: rgba(203, 108, 230, 0.4) !important;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4) !important;
+        }
+    </style>
+
+    @stack('css')
+</head>
+<body class="bg-dark-bg text-white overflow-x-hidden">
+    @include('layout.header')
+
+    @yield('content')
+
+    @include('layout.footer')
+
+    <script>
+        // Mobile menu functionality
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const closeMenuBtn = document.getElementById('close-menu');
+
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.add('open');
+        });
+
+        closeMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.remove('open');
+        });
+
+        // Close mobile menu when clicking on links
+        const mobileLinks = mobileMenu.querySelectorAll('a');
+        mobileLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.remove('open');
+            });
+        });
+
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Add scroll effect to navigation
+        window.addEventListener('scroll', () => {
+            const nav = document.querySelector('nav');
+            if (window.scrollY > 100) {
+                nav.classList.add('nav-scrolled');
+            } else {
+                nav.classList.remove('nav-scrolled');
+            }
+        });
+
+        // Add mobile menu animation
+        const mobileMenuBtnIcon = mobileMenuBtn.querySelector('svg');
+
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.add('open');
+            mobileMenuBtnIcon.style.transform = 'rotate(90deg)';
+        });
+
+        closeMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.remove('open');
+            mobileMenuBtnIcon.style.transform = 'rotate(0deg)';
+        });
+
+        // Update mobile links click handler
+        mobileLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.remove('open');
+                mobileMenuBtnIcon.style.transform = 'rotate(0deg)';
+            });
+        });
+    </script>
+
+
+    <!-- JS -->
+    <script>
+        function openWalletModal() {
+            let modal = document.getElementById('walletModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex'); // center karne ke liye
+        }
+
+        function closeWalletModal() {
+            let modal = document.getElementById('walletModal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+
+        function savePublicKey() {
+            const key = document.getElementById('publicKey').value;
+            if (key.trim() === '') {
+                alert('Please enter a valid Stellar public key.');
+                return;
+            }
+            console.log("User Public Key:", key);
+            alert('Wallet connected with public key:\n' + key);
+            closeWalletModal();
+        }
+
+        function openCreatorModal() {
+            let modal = document.getElementById('creatorModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        async function connectWallet() {
+            const blockchain = document.getElementById("blockchainSelect").value;
+            const wallet = document.getElementById("walletSelect").value;
+
+            if (!blockchain || !wallet) {
+                alert("Please select both blockchain and wallet.");
+                return;
+            }
+
+            if (wallet === "freighter") {
+                if (window.freighterApi) {
+                    try {
+                        const pubKey = await window.freighterApi.getPublicKey();
+                        console.log("Freighter Connected:", pubKey);
+                        alert(`Connected Freighter Wallet:\n${pubKey}`);
+                    } catch (err) {
+                        console.error(err);
+                        alert("Failed to connect Freighter wallet.");
+                    }
+                } else {
+                    alert("Freighter extension not found. Please install it.");
+                }
+            }
+
+            closeWalletModal();
+        }
+
+        function closeCreatorModal() {
+            let modal = document.getElementById('creatorModal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+
+        function saveCreatorDetails() {
+            const name = document.getElementById('creatorName').value.trim();
+            const email = document.getElementById('creatorEmail').value.trim();
+            const publicKey = document.getElementById('creatorPublicKey').value.trim();
+
+            if (!name || !email || !publicKey) {
+                alert("Please fill all fields.");
+                return;
+            }
+
+            console.log("Creator Details:", { name, email, publicKey });
+            alert(`Welcome ${name}! You have successfully joined as a creator.`);
+
+            closeCreatorModal();
+        }
+    </script>
+    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97be0440f7dbc976',t:'MTc1NzMzMDAwOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+
+    @stack('js')
+</body>
+</html>
