@@ -3,11 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="icon" type="image/svg+xml" href="{{ asset('assets/images/favicon-32x32.png') }}">
+
+    {{-- Toaster CDN --}}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+
     <title>Yolixa - Empowering Influencers with Web3 Tipping</title>
 
     {{-- Tailwind CDN --}}
     <script src="{{ asset('assets/js/talwind_cdn.js') }}"></script>
+
+    {{-- Freighter CDN --}}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-freighter-api/3.0.0/index.min.js"></script>
 
     {{-- Tailwind Config --}}
     <script>
@@ -152,6 +160,39 @@
         border-bottom-color: rgba(203, 108, 230, 0.4) !important;
         box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4) !important;
         }
+
+        #toast-container > div {
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            color: #fff;
+        }
+
+        /* ✅ SUCCESS */
+        #toast-container > .toast-success {
+            background-color: #16a34a !important; /* Tailwind Green-600 */
+            border-left: 6px solid #22c55e;
+        }
+
+        /* ⚠️ WARNING */
+        #toast-container > .toast-warning {
+            background-color: #facc15 !important; /* Tailwind Yellow-400 */
+            color: #000;
+            border-left: 6px solid #ca8a04;
+        }
+
+        /* ❌ ERROR */
+        #toast-container > .toast-error {
+            background-color: #dc2626 !important; /* Tailwind Red-600 */
+            border-left: 6px solid #ef4444;
+        }
+
+        /* ℹ️ INFO */
+        #toast-container > .toast-info {
+            background-color: #2563eb !important; /* Tailwind Blue-600 */
+            border-left: 6px solid #3b82f6;
+        }
     </style>
 
     @stack('css')
@@ -162,6 +203,19 @@
     @yield('content')
 
     @include('layout.footer')
+
+    {{-- Toaster CDN --}}
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
+    <script>
+        toastr.options = {
+            "closeButton": true,
+            "progressBar": true,
+            "positionClass": "toast-top-right",
+            "timeOut": "4000"
+        };
+    </script>
 
     <script>
         // Mobile menu functionality
@@ -313,7 +367,6 @@
         }
     </script>
     <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97be0440f7dbc976',t:'MTc1NzMzMDAwOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
-
     @stack('js')
 </body>
 </html>

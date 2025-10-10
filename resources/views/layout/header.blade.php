@@ -35,7 +35,7 @@
                     </a>
                     <div class="ml-4 pl-4 border-l border-gray-700 flex items-center space-x-3">
                         <!-- Connect Wallet / Login -->
-                        <button onclick="openWalletModal()" class="border border-yolixa-purple px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-yolixa-purple/10 transition-all duration-300">
+                        <button id="connectWalletBtn" onclick="openWalletModal()" class="border border-yolixa-purple px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-yolixa-purple/10 transition-all duration-300">
                             Connect Wallet
                         </button>
                     </div>

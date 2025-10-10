@@ -1217,51 +1217,62 @@
             </div>
 
             <!-- Official Channels + Community -->
-            <div class="grid md:grid-cols-2 gap-8 mb-8">
+            <div class="grid md:grid-cols-1 gap-8 mb-8">
                 <!-- Official -->
-                <div class="section-card">
-                    <h4 class="text-2xl font-bold mb-6 text-yolixa-blue">Official Channels</h4>
-                    <div class="space-y-6">
-                        <div class="flex items-center space-x-4">
-                            <div class="w-12 h-12 gradient-bg rounded-lg flex items-center justify-center">
-                                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="font-bold text-slate-800">Website</p>
-                                <p class="text-slate-600">www.yolixa.com</p>
-                            </div>
-                        </div>
+                <div class="bg-white rounded-2xl shadow-lg p-8 border border-slate-100">
+                <h4 class="text-3xl font-extrabold mb-8 text-center text-yolixa-blue">Official Channels</h4>
 
-                        <div class="flex items-center space-x-4">
-                            <div class="w-12 h-12 gradient-bg rounded-lg flex items-center justify-center">
-                                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="font-bold text-slate-800">Email</p>
-                                <p class="text-slate-600">hello@yolixa.com</p>
-                            </div>
+                <div class="space-y-8">
+                    <!-- Website -->
+                    <div class="flex items-center space-x-5 hover:bg-slate-50 transition rounded-xl p-4">
+                        <div class="w-12 h-12 bg-gradient-to-r from-yolixa-blue to-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2">
+                                <path
+                                    d="M12 3C7.03 3 3 7.03 3 12c0 4.97 4.03 9 9 9 4.97 0 9-4.03 9-9 0-4.97-4.03-9-9-9zm0 16c-3.86 0-7-3.14-7-7 0-3.86 3.14-7 7-7 3.86 0 7 3.14 7 7 0 3.86-3.14 7-7 7z" />
+                                <path d="M12 3v18M3 12h18" />
+                            </svg>
                         </div>
-
-                        <div class="flex items-center space-x-4">
-                            <div class="w-12 h-12 gradient-bg rounded-lg flex items-center justify-center">
-                                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="font-bold text-slate-800">Twitter</p>
-                                <p class="text-slate-600">@YolixaOfficial</p>
-                            </div>
+                        <div>
+                            <p class="font-bold text-slate-800">Website</p>
+                            <a href="https://www.yolixa.com" target="_blank" class="text-slate-600 hover:text-yolixa-blue transition">www.yolixa.com</a>
                         </div>
                     </div>
+
+                    <!-- Email -->
+                    <div class="flex items-center space-x-5 hover:bg-slate-50 transition rounded-xl p-4">
+                        <div class="w-12 h-12 bg-gradient-to-r from-yolixa-blue to-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2">
+                                <path
+                                    d="M3 8l9 6 9-6M4 6h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-800">Email</p>
+                            <a href="mailto:info.yolixa@gmail.com" class="text-slate-600 hover:text-yolixa-blue transition">info.yolixa@gmail.com</a>
+                        </div>
+                    </div>
+
+                    <!-- Twitter -->
+                    <div class="flex items-center space-x-5 hover:bg-slate-50 transition rounded-xl p-4">
+                        <div class="w-12 h-12 bg-gradient-to-r from-yolixa-blue to-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M22.46 6c-.77.35-1.6.58-2.46.69a4.26 4.26 0 001.88-2.35 8.35 8.35 0 01-2.68 1.03A4.22 4.22 0 0015.5 4c-2.33 0-4.22 1.89-4.22 4.22 0 .33.04.65.1.96A11.96 11.96 0 013 5.16a4.22 4.22 0 001.31 5.64 4.21 4.21 0 01-1.91-.53v.05a4.23 4.23 0 003.38 4.14 4.24 4.24 0 01-1.9.07 4.23 4.23 0 003.95 2.94A8.48 8.48 0 012 19.54a11.94 11.94 0 006.48 1.9c7.78 0 12.04-6.45 12.04-12.04 0-.18-.01-.35-.02-.52A8.6 8.6 0 0022.46 6z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-800">Twitter</p>
+                            <a href="https://twitter.com/YolixaOfficial" target="_blank" class="text-slate-600 hover:text-yolixa-blue transition">@YolixaOfficial</a>
+                        </div>
+                    </div>
+
                 </div>
+            </div>
 
                 <!-- Community -->
-                <div class="section-card">
+                <!-- <div class="section-card">
                     <h4 class="text-2xl font-bold mb-6 text-yolixa-purple">Community</h4>
                     <div class="space-y-6">
                         <div class="flex items-center space-x-4">
@@ -1300,7 +1311,7 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </div> -->
             </div>
 
             <!-- Call to Action -->

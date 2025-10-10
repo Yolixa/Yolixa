@@ -34,10 +34,10 @@
             <div>
                 <h4 class="font-semibold mb-4">Connect</h4>
                 <ul class="space-y-2 text-gray-300">
-                    <li><a href="#" class="hover:text-yolixa-purple transition-colors">X (Twitter)</a></li>
-                    <li><a href="#" class="hover:text-yolixa-purple transition-colors">Discord</a></li>
-                    <li><a href="#" class="hover:text-yolixa-purple transition-colors">Telegram</a></li>
-                    <li><a href="mailto:contact@yolixa.com" class="hover:text-yolixa-purple transition-colors">Email Us</a></li>
+                    <li><a href="https://x.com/YolixaOfficial" class="hover:text-yolixa-purple transition-colors">X (Twitter)</a></li>
+                    <!-- <li><a href="#" class="hover:text-yolixa-purple transition-colors">Discord</a></li>
+                    <li><a href="#" class="hover:text-yolixa-purple transition-colors">Telegram</a></li> -->
+                    <li><a href="mailto:info.yolixa@gmail.com" class="hover:text-yolixa-purple transition-colors">Email Us</a></li>
                 </ul>
             </div>
         </div>
