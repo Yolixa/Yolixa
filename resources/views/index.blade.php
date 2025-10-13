@@ -66,7 +66,7 @@
             </div>
 
             <!-- Connect Button -->
-            <button id="connectWalletBtn" onclick="connectWallet()"
+            <button id="modalWalletBtn" onclick="connectWallet()"
                 class="w-full gradient-bg px-6 py-3 rounded-lg font-semibold text-lg hover:scale-105 transition-transform">
                 Connect
             </button>
@@ -485,9 +485,6 @@
             return;
         }
 
-        // connectWalletBtn.classList.textContent("")
-
-        // backend se wallet name get karo (agar backend already wallet ka name send karta hai to directly use karo)
         let walletName = walletSelect.options[walletSelect.selectedIndex].text.toLowerCase();
 
         try {
@@ -505,13 +502,18 @@
     }
 
     //Freighter Start
-    async function connectFreighterWallet() {
+    async function connectFreighterWallet() 
+    {
         const walletBtn = document.getElementById("connectWalletBtn");
+        const modalWalletBtn = document.getElementById("modalWalletBtn");
         const walletModal = document.getElementById("walletModal");
         const walletConnect = document.getElementById("walletConnect");
         const walletDisconnect = document.getElementById("walletDisconnect");
 
-        try {
+        try {        
+            modalWalletBtn.disabled = true;
+            modalWalletBtn.innerText = "Connecting...";
+
             if (typeof window.freighterApi === "undefined") {
                 toastr.error("Freighter wallet extension not installed.", "Error");
                 return;
@@ -550,11 +552,15 @@
                 localStorage.setItem("freighter_wallet", publicKey);
                 walletModal.classList.add("hidden");
                 walletBtn.innerText = `${publicKey.slice(0, 5)}...${publicKey.slice(-4)}`;
+                modalWalletBtn.disabled = false;
+                modalWalletBtn.innerText = "Connect";
                 walletConnect.classList.add("hidden");
                 walletDisconnect.classList.remove("hidden");
                 toastr.success(data.message || "Wallet connected successfully!", "Freighter Wallet");
             } else {
                 toastr.error(data.message || "Failed to save wallet.", "Error");
+                modalWalletBtn.disabled = false;
+                modalWalletBtn.innerText = "Connect";
             }
 
         } catch (error) {
@@ -567,12 +573,17 @@
             } else {
                 toastr.error("Failed to connect wallet. Try again.", "Error");
             }
+
+            // Reset button
+            modalWalletBtn.disabled = false;
+            modalWalletBtn.innerText = "Connect";
         }
     }
 
     async function checkStellarAccountStatus(publicKey) {
         try {
             const response = await fetch(`https://horizon.stellar.org/accounts/${publicKey}`);
+            console.log('good')
             if (response.status === 404) {
                 return false; // account not found
             }
@@ -612,28 +623,37 @@
     }
 
     // Wallet Disconnect
-    async function disconnectWallet() {
+    async function disconnectWallet() 
+    {
+        const walletButton = document.getElementById("connectWalletBtn");
+        const walletConnect = document.getElementById("walletConnect");
+        const walletDisconnect = document.getElementById("walletDisconnect");
+        const walletModal = document.getElementById("walletModal");
         try {
-            // Local storage se wallet key delete karo
-            localStorage.removeItem("freighter_wallet");
+            const disconnectBtn = document.getElementById("disconnectWalletBtn");
+            disconnectBtn.disabled = true;
+            disconnectBtn.innerText = "Disconnecting...";
 
-            // UI update karo
-            const walletButton = document.getElementById("connectWalletBtn");
-            const walletConnect = document.getElementById("walletConnect");
-            const walletDisconnect = document.getElementById("walletDisconnect");
-            const walletModal = document.getElementById("walletModal");
+            await new Promise((resolve) => setTimeout(resolve, 800));
+
+            localStorage.removeItem("freighter_wallet");
 
             walletButton.textContent = "Connect Wallet";
             walletConnect.classList.remove("hidden");
             walletDisconnect.classList.add("hidden");
             walletModal.classList.add("hidden");
 
-            // Success message
-            toastr.success("Wallet disconnected successfully.");
+            toastr.success("Wallet disconnected successfully.", "Success");
 
         } catch (error) {
             console.error("Error disconnecting wallet:", error);
             toastr.error("Failed to disconnect wallet. Try again.", "Error");
+        } finally {
+            const disconnectBtn = document.getElementById("disconnectWalletBtn");
+            if (disconnectBtn) {
+                disconnectBtn.disabled = false;
+                disconnectBtn.innerText = "Disconnect Wallet";
+            }
         }
     }
 </script>

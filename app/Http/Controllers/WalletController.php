@@ -19,7 +19,7 @@ class WalletController extends Controller
         if ($existingUser) {
             return response()->json([
                 'success' => true,
-                'message' => 'Wallet already connected.',
+                'message' => 'Welcome back! Your wallet is already connected.',
                 'public_key' => $existingUser->public_key,
             ]);
         }
@@ -31,9 +31,8 @@ class WalletController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Wallet connected successfully.',
+            'message' => 'Your wallet has been connected successfully.',
             'public_key' => $user->public_key,
         ]);
     }
-
 }

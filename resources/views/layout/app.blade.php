@@ -218,28 +218,29 @@
     </script>
 
     <script>
-        // Mobile menu functionality
         const mobileMenuBtn = document.getElementById('mobile-menu-btn');
         const mobileMenu = document.getElementById('mobile-menu');
         const closeMenuBtn = document.getElementById('close-menu');
+        const mobileMenuBtnIcon = mobileMenuBtn.querySelector('svg');
 
         mobileMenuBtn.addEventListener('click', () => {
             mobileMenu.classList.add('open');
+            mobileMenuBtnIcon.style.transform = 'rotate(90deg)';
         });
 
         closeMenuBtn.addEventListener('click', () => {
             mobileMenu.classList.remove('open');
+            mobileMenuBtnIcon.style.transform = 'rotate(0deg)';
         });
 
-        // Close mobile menu when clicking on links
         const mobileLinks = mobileMenu.querySelectorAll('a');
         mobileLinks.forEach(link => {
             link.addEventListener('click', () => {
                 mobileMenu.classList.remove('open');
+                mobileMenuBtnIcon.style.transform = 'rotate(0deg)';
             });
         });
 
-        // Smooth scrolling for navigation links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
                 e.preventDefault();
@@ -253,7 +254,6 @@
             });
         });
 
-        // Add scroll effect to navigation
         window.addEventListener('scroll', () => {
             const nav = document.querySelector('nav');
             if (window.scrollY > 100) {
@@ -263,89 +263,32 @@
             }
         });
 
-        // Add mobile menu animation
-        const mobileMenuBtnIcon = mobileMenuBtn.querySelector('svg');
-
-        mobileMenuBtn.addEventListener('click', () => {
-            mobileMenu.classList.add('open');
-            mobileMenuBtnIcon.style.transform = 'rotate(90deg)';
-        });
-
-        closeMenuBtn.addEventListener('click', () => {
-            mobileMenu.classList.remove('open');
-            mobileMenuBtnIcon.style.transform = 'rotate(0deg)';
-        });
-
-        // Update mobile links click handler
-        mobileLinks.forEach(link => {
-            link.addEventListener('click', () => {
-                mobileMenu.classList.remove('open');
-                mobileMenuBtnIcon.style.transform = 'rotate(0deg)';
-            });
-        });
-    </script>
-
-
-    <!-- JS -->
-    <script>
         function openWalletModal() {
-            let modal = document.getElementById('walletModal');
+            const modal = document.getElementById('walletModal');
             modal.classList.remove('hidden');
-            modal.classList.add('flex'); // center karne ke liye
+            modal.classList.add('flex');
+
+            const blockchainSelect = modal.querySelector('#walletBlockchainSelect');
+            const walletSelect = modal.querySelector('#walletWalletSelect');
+
+            if (blockchainSelect) blockchainSelect.selectedIndex = 0;
+            if (walletSelect) walletSelect.selectedIndex = 0;
         }
 
         function closeWalletModal() {
-            let modal = document.getElementById('walletModal');
+            const modal = document.getElementById('walletModal');
             modal.classList.remove('flex');
             modal.classList.add('hidden');
         }
 
-        function savePublicKey() {
-            const key = document.getElementById('publicKey').value;
-            if (key.trim() === '') {
-                alert('Please enter a valid Stellar public key.');
-                return;
-            }
-            console.log("User Public Key:", key);
-            alert('Wallet connected with public key:\n' + key);
-            closeWalletModal();
-        }
-
         function openCreatorModal() {
-            let modal = document.getElementById('creatorModal');
+            const modal = document.getElementById('creatorModal');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
         }
 
-        async function connectWallet() {
-            const blockchain = document.getElementById("blockchainSelect").value;
-            const wallet = document.getElementById("walletSelect").value;
-
-            if (!blockchain || !wallet) {
-                alert("Please select both blockchain and wallet.");
-                return;
-            }
-
-            if (wallet === "freighter") {
-                if (window.freighterApi) {
-                    try {
-                        const pubKey = await window.freighterApi.getPublicKey();
-                        console.log("Freighter Connected:", pubKey);
-                        alert(`Connected Freighter Wallet:\n${pubKey}`);
-                    } catch (err) {
-                        console.error(err);
-                        alert("Failed to connect Freighter wallet.");
-                    }
-                } else {
-                    alert("Freighter extension not found. Please install it.");
-                }
-            }
-
-            closeWalletModal();
-        }
-
         function closeCreatorModal() {
-            let modal = document.getElementById('creatorModal');
+            const modal = document.getElementById('creatorModal');
             modal.classList.remove('flex');
             modal.classList.add('hidden');
         }
@@ -353,19 +296,21 @@
         function saveCreatorDetails() {
             const name = document.getElementById('creatorName').value.trim();
             const email = document.getElementById('creatorEmail').value.trim();
-            const publicKey = document.getElementById('creatorPublicKey').value.trim();
+            const blockchain = document.getElementById('creatorBlockchainSelect').value.trim();
+            const wallet = document.querySelector('.creatorWalletSelect').value.trim();
 
-            if (!name || !email || !publicKey) {
+            if (!name || !email || !blockchain || !wallet) {
                 alert("Please fill all fields.");
                 return;
             }
 
-            console.log("Creator Details:", { name, email, publicKey });
-            alert(`Welcome ${name}! You have successfully joined as a creator.`);
+            console.log("Creator Details:", { name, email, blockchain, wallet });
+            toastr.success(`Welcome ${name}! You have successfully joined as a creator.`);
 
             closeCreatorModal();
         }
     </script>
+
     <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97be0440f7dbc976',t:'MTc1NzMzMDAwOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
     @stack('js')
 </body>
