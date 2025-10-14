@@ -208,6 +208,11 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 
+    {{-- Wallet Connect --}}
+    <script src="https://unpkg.com/@walletconnect/client/dist/umd/index.min.js"></script>
+    <script src="https://unpkg.com/@walletconnect/qrcode-modal/dist/umd/index.min.js"></script>
+
+
     <script>
         toastr.options = {
             "closeButton": true,

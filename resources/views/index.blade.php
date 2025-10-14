@@ -387,11 +387,23 @@
 @endsection
 @push('js')
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const walletKey = localStorage.getItem("freighter_wallet");
+    // Wallet UI State Initialization
+    document.addEventListener("DOMContentLoaded", function ()
+    {
+        const connectedWallet = localStorage.getItem("connected_wallet");
         const walletButton = document.getElementById("connectWalletBtn");
         const walletConnect = document.getElementById("walletConnect");
         const walletDisconnect = document.getElementById("walletDisconnect");
+        let walletKey = null;
+
+        // Check kis wallet ka key stored hai
+        if (connectedWallet === "freighter") {
+            walletKey = localStorage.getItem("freighter_wallet");
+        } else if (connectedWallet === "walletconnect") {
+            walletKey = localStorage.getItem("walletconnect_wallet");
+        } else if (connectedWallet === "rabet") {
+            walletKey = localStorage.getItem("rabet_wallet");
+        }
 
         if (walletKey) {
             walletButton.textContent = `${walletKey.slice(0, 5)}...${walletKey.slice(-4)}`;
@@ -404,7 +416,9 @@
         }
     });
 
-    document.addEventListener('change', function(e) {
+    // Get Wallet Types
+    document.addEventListener('change', function(e)
+    {
         if (e.target.classList.contains('creatorBlockchainSelect')) {
             let blockchainId = e.target.value;
 
@@ -472,7 +486,9 @@
         }
     });
 
-    async function connectWallet() {
+    // Wallet Connect
+    async function connectWallet()
+    {
         const blockchainSelect = document.querySelector('.walletBlockchainSelect');
         const walletSelect = document.querySelector('.walletWalletSelect');
         const connectWalletBtn = document.getElementById("connectWalletBtn");
@@ -492,6 +508,8 @@
                 await connectFreighterWallet();
             } else if (walletName.includes("rabet")) {
                 await connectRabetWallet();
+            } else if (walletName.includes("walletconnect")) {
+                await connectWalletConnect();
             } else {
                 alert("Wallet not supported yet.");
             }
@@ -501,16 +519,104 @@
         }
     }
 
-    //Freighter Start
-    async function connectFreighterWallet() 
-    {
+    // Connect Wallet
+    async function connectWalletConnect() {
         const walletBtn = document.getElementById("connectWalletBtn");
         const modalWalletBtn = document.getElementById("modalWalletBtn");
         const walletModal = document.getElementById("walletModal");
         const walletConnect = document.getElementById("walletConnect");
         const walletDisconnect = document.getElementById("walletDisconnect");
 
-        try {        
+        try {
+            modalWalletBtn.disabled = true;
+            modalWalletBtn.innerText = "Connecting...";
+
+            const connector = new WalletConnect.default({
+                bridge: "https://bridge.walletconnect.org",
+                qrcodeModal: QRCodeModal.default,
+            });
+
+            // If not already connected, create a new session
+            if (!connector.connected) {
+                await connector.createSession();
+            }
+
+            // On connect
+            connector.on("connect", async (error, payload) => {
+                if (error) throw error;
+
+                const { accounts } = payload.params[0];
+                const publicKey = accounts[0];
+                console.log("WalletConnect Connected:", publicKey);
+
+                // Save wallet to backend
+                const res = await fetch("/save-wallet", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": document.querySelector('meta[name=\"csrf-token\"]').content,
+                    },
+                    body: JSON.stringify({
+                        address: publicKey,
+                        status: 1,
+                    }),
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    // Save wallet info
+                    localStorage.setItem("walletconnect_wallet", publicKey);
+                    localStorage.setItem("connected_wallet", "walletconnect");
+
+                    walletModal.classList.add("hidden");
+                    walletBtn.innerText = `${publicKey.slice(0, 5)}...${publicKey.slice(-4)}`;
+                    walletConnect.classList.add("hidden");
+                    walletDisconnect.classList.remove("hidden");
+
+                    toastr.success("WalletConnect connected successfully!", "WalletConnect");
+                } else {
+                    toastr.error("Failed to save wallet.", "Error");
+                }
+
+                modalWalletBtn.disabled = false;
+                modalWalletBtn.innerText = "Connect";
+            });
+
+            // On disconnect
+            connector.on("disconnect", (error) => {
+                if (error) throw error;
+
+                localStorage.removeItem("walletconnect_wallet");
+                localStorage.removeItem("connected_wallet");
+
+                walletBtn.innerText = "Connect Wallet";
+                walletConnect.classList.remove("hidden");
+                walletDisconnect.classList.add("hidden");
+
+                toastr.info("Wallet disconnected.", "WalletConnect");
+            });
+
+        } catch (error) {
+            console.error("WalletConnect error:", error);
+            toastr.error("Failed to connect using WalletConnect.", "Error");
+        } finally {
+            modalWalletBtn.disabled = false;
+            modalWalletBtn.innerText = "Connect";
+        }
+    }
+
+    //Freighter Wallet
+    async function connectFreighterWallet() {
+        const walletBtn = document.getElementById("connectWalletBtn");
+        const modalWalletBtn = document.getElementById("modalWalletBtn");
+        const walletModal = document.getElementById("walletModal");
+        const walletConnect = document.getElementById("walletConnect");
+        const walletDisconnect = document.getElementById("walletDisconnect");
+        const blockchainSelect = document.querySelector('.walletBlockchainSelect');
+        const walletSelect = document.querySelector('.walletWalletSelect');
+
+        try {
             modalWalletBtn.disabled = true;
             modalWalletBtn.innerText = "Connecting...";
 
@@ -532,35 +638,37 @@
             }
 
             const publicKey = result.address;
-            const isActive = await checkStellarAccountStatus(publicKey);
 
+            // Save wallet info to backend
             const res = await fetch("/save-wallet", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
+                    "X-CSRF-TOKEN": document.querySelector('meta[name=\"csrf-token\"]').content,
                 },
                 body: JSON.stringify({
                     address: publicKey,
-                    status: isActive ? 1 : 0,
+                    blockchainId: blockchainSelect.value,
+                    walletId: walletSelect.value,
+                    status: 1,
                 }),
             });
 
             const data = await res.json();
 
             if (data.success) {
+                // Save both Freighter key & connected wallet type
                 localStorage.setItem("freighter_wallet", publicKey);
+                localStorage.setItem("connected_wallet", "freighter");
+
                 walletModal.classList.add("hidden");
                 walletBtn.innerText = `${publicKey.slice(0, 5)}...${publicKey.slice(-4)}`;
-                modalWalletBtn.disabled = false;
-                modalWalletBtn.innerText = "Connect";
                 walletConnect.classList.add("hidden");
                 walletDisconnect.classList.remove("hidden");
+
                 toastr.success(data.message || "Wallet connected successfully!", "Freighter Wallet");
             } else {
                 toastr.error(data.message || "Failed to save wallet.", "Error");
-                modalWalletBtn.disabled = false;
-                modalWalletBtn.innerText = "Connect";
             }
 
         } catch (error) {
@@ -573,32 +681,15 @@
             } else {
                 toastr.error("Failed to connect wallet. Try again.", "Error");
             }
-
-            // Reset button
+        } finally {
             modalWalletBtn.disabled = false;
             modalWalletBtn.innerText = "Connect";
         }
     }
 
-    async function checkStellarAccountStatus(publicKey) {
-        try {
-            const response = await fetch(`https://horizon.stellar.org/accounts/${publicKey}`);
-            console.log('good')
-            if (response.status === 404) {
-                return false; // account not found
-            }
-            const data = await response.json();
-            return data?.balances?.length > 0; // account exists
-        } catch (error) {
-            console.error("Error checking account status:", error);
-            toastr.error("Unable to verify account status. Check internet connection.", "Network Error");
-            return false;
-        }
-    }
-    //Freighter End
-
-    // ✅ Rabet
-    async function connectRabetWallet() {
+    // Rabet Wallet
+    async function connectRabetWallet()
+    {
         const rabet = window.rabet || window.Rabet;
         if (!rabet) {
             alert("Rabet not installed.");
@@ -618,26 +709,90 @@
             return;
         }
 
-        console.log("✅ Rabet Connected:", publicKey);
+        console.log("Rabet Connected:", publicKey);
         alert("Rabet Connected: " + publicKey);
     }
 
     // Wallet Disconnect
-    async function disconnectWallet() 
-    {
+    async function disconnectWallet() {
         const walletButton = document.getElementById("connectWalletBtn");
         const walletConnect = document.getElementById("walletConnect");
         const walletDisconnect = document.getElementById("walletDisconnect");
         const walletModal = document.getElementById("walletModal");
+        const disconnectBtn = document.getElementById("disconnectWalletBtn");
+
         try {
-            const disconnectBtn = document.getElementById("disconnectWalletBtn");
             disconnectBtn.disabled = true;
             disconnectBtn.innerText = "Disconnecting...";
 
             await new Promise((resolve) => setTimeout(resolve, 800));
 
-            localStorage.removeItem("freighter_wallet");
+            const connectedWallet = localStorage.getItem("connected_wallet");
+            if (!connectedWallet) {
+                toastr.warning("No wallet is currently connected.", "Warning");
+                return;
+            }
 
+            let publicKey = null;
+
+            // Freighter
+            if (connectedWallet === "freighter") {
+                publicKey = localStorage.getItem("freighter_wallet");
+                localStorage.removeItem("freighter_wallet");
+            }
+
+            // Rabet
+            else if (connectedWallet === "rabet") {
+                publicKey = localStorage.getItem("rabet_wallet");
+                localStorage.removeItem("rabet_wallet");
+            }
+
+            // WalletConnect
+            else if (connectedWallet === "walletconnect") {
+                publicKey = localStorage.getItem("walletconnect_wallet");
+                try {
+                    if (window.WalletConnect && window.QRCodeModal) {
+                        const connector = new WalletConnect.default({
+                            bridge: "https://bridge.walletconnect.org",
+                            qrcodeModal: QRCodeModal.default,
+                        });
+                        if (connector.connected) {
+                            await connector.killSession();
+                        }
+                    }
+                } catch (wcError) {
+                    console.warn("WalletConnect session close error:", wcError);
+                }
+                localStorage.removeItem("walletconnect_wallet");
+            }
+
+            // Clear main wallet indicator
+            localStorage.removeItem("connected_wallet");
+
+            // Backend: Update user status
+            if (publicKey) {
+                try {
+                    const response = await fetch("/disconnect-wallet", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
+                        },
+                        body: JSON.stringify({ address: publicKey }),
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok || !data.success) {
+                        toastr.error(data.message || "Failed to update wallet status on server.", "Error");
+                    }
+                } catch (apiError) {
+                    console.error("Error updating wallet status:", apiError);
+                    toastr.error("Server error while disconnecting wallet.", "Error");
+                }
+            }
+
+            // Reset UI
             walletButton.textContent = "Connect Wallet";
             walletConnect.classList.remove("hidden");
             walletDisconnect.classList.add("hidden");
@@ -649,12 +804,11 @@
             console.error("Error disconnecting wallet:", error);
             toastr.error("Failed to disconnect wallet. Try again.", "Error");
         } finally {
-            const disconnectBtn = document.getElementById("disconnectWalletBtn");
-            if (disconnectBtn) {
-                disconnectBtn.disabled = false;
-                disconnectBtn.innerText = "Disconnect Wallet";
-            }
+            disconnectBtn.disabled = false;
+            disconnectBtn.innerText = "Disconnect Wallet";
         }
     }
+
+
 </script>
 @endpush
