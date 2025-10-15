@@ -531,14 +531,18 @@
             modalWalletBtn.disabled = true;
             modalWalletBtn.innerText = "Connecting...";
 
-            const connector = new WalletConnect.default({
+            const connector = new window.WalletConnect.default({
                 bridge: "https://bridge.walletconnect.org",
-                qrcodeModal: QRCodeModal.default,
+                qrcodeModal: window.WalletConnectQRCodeModal.default,
             });
 
             // If not already connected, create a new session
             if (!connector.connected) {
                 await connector.createSession();
+            } else {
+                const accounts = connector.accounts;
+                const publicKey = accounts[0];
+                updateUI(publicKey);
             }
 
             // On connect
@@ -549,7 +553,28 @@
                 const publicKey = accounts[0];
                 console.log("WalletConnect Connected:", publicKey);
 
-                // Save wallet to backend
+                await saveWalletToBackend(publicKey);
+                updateUI(publicKey);
+
+                toastr.success("WalletConnect connected successfully!", "WalletConnect");
+            });
+
+            // On disconnect
+            connector.on("disconnect", (error) => {
+                if (error) throw error;
+
+                localStorage.removeItem("walletconnect_wallet");
+                localStorage.removeItem("connected_wallet");
+
+                walletBtn.innerText = "Connect Wallet";
+                walletDisconnect.classList.add("hidden");
+
+                toastr.info("Wallet disconnected.", "WalletConnect");
+            });
+
+            // save Wallet To Backend
+            async function saveWalletToBackend(publicKey)
+            {
                 const res = await fetch("/save-wallet", {
                     method: "POST",
                     headers: {
@@ -563,39 +588,21 @@
                 });
 
                 const data = await res.json();
-
                 if (data.success) {
-                    // Save wallet info
                     localStorage.setItem("walletconnect_wallet", publicKey);
                     localStorage.setItem("connected_wallet", "walletconnect");
-
-                    walletModal.classList.add("hidden");
-                    walletBtn.innerText = `${publicKey.slice(0, 5)}...${publicKey.slice(-4)}`;
-                    walletConnect.classList.add("hidden");
-                    walletDisconnect.classList.remove("hidden");
-
-                    toastr.success("WalletConnect connected successfully!", "WalletConnect");
                 } else {
                     toastr.error("Failed to save wallet.", "Error");
                 }
+            }
 
-                modalWalletBtn.disabled = false;
-                modalWalletBtn.innerText = "Connect";
-            });
-
-            // On disconnect
-            connector.on("disconnect", (error) => {
-                if (error) throw error;
-
-                localStorage.removeItem("walletconnect_wallet");
-                localStorage.removeItem("connected_wallet");
-
-                walletBtn.innerText = "Connect Wallet";
-                walletConnect.classList.remove("hidden");
-                walletDisconnect.classList.add("hidden");
-
-                toastr.info("Wallet disconnected.", "WalletConnect");
-            });
+            // update UI
+            function updateUI(publicKey)
+            {
+                walletModal.classList.add("hidden");
+                walletBtn.innerText = `${publicKey.slice(0, 5)}...${publicKey.slice(-4)}`;
+                walletDisconnect.classList.remove("hidden");
+            }
 
         } catch (error) {
             console.error("WalletConnect error:", error);
@@ -808,7 +815,5 @@
             disconnectBtn.innerText = "Disconnect Wallet";
         }
     }
-
-
 </script>
 @endpush
