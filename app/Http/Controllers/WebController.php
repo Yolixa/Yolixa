@@ -21,7 +21,7 @@ class WebController extends Controller
 
     public function getWallets($id)
     {
-        $wallets = WalletType::where('blockchain_id', $id)
+        $wallets = WalletType::where('blockchain_id', $id)->where('name', '!=', 'WalletConnect')
                     ->select('id', 'name')
                     ->get();
 

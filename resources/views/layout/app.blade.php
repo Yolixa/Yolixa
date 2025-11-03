@@ -213,13 +213,6 @@
     <script src="https://unpkg.com/@walletconnect/qrcode-modal/dist/umd/index.min.js"></script>
     <script src="https://unpkg.com/@web3modal/wagmi@3.5.3/dist/index.js"></script>
 
-
-
-    <!-- <script src="https://cdn.jsdelivr.net/npm/@walletconnect/client@1.7.8/dist/umd/index.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@walletconnect/qrcode-modal@1.7.8/dist/umd/index.min.js"></script> -->
-
-
-
     <script>
         toastr.options = {
             "closeButton": true,

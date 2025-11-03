@@ -638,7 +638,6 @@
             }
 
             const result = await window.freighterApi.requestAccess();
-
             if (!result || !result.address) {
                 toastr.warning("User cancelled wallet connection.", "Freighter Wallet");
                 return;
@@ -695,29 +694,88 @@
     }
 
     // Rabet Wallet
-    async function connectRabetWallet()
-    {
-        const rabet = window.rabet || window.Rabet;
-        if (!rabet) {
-            alert("Rabet not installed.");
-            return;
-        }
+    async function connectRabetWallet() {
+        const walletBtn = document.getElementById("connectWalletBtn");
+        const modalWalletBtn = document.getElementById("modalWalletBtn");
+        const walletModal = document.getElementById("walletModal");
+        const walletConnect = document.getElementById("walletConnect");
+        const walletDisconnect = document.getElementById("walletDisconnect");
+        const blockchainSelect = document.querySelector('.walletBlockchainSelect');
+        const walletSelect = document.querySelector('.walletWalletSelect');
 
-        let result;
-        if (typeof rabet.connect === "function") {
-            result = await rabet.connect();
-        } else if (typeof rabet.requestAccount === "function") {
-            result = await rabet.requestAccount();
-        }
+        try {
+            modalWalletBtn.disabled = true;
+            modalWalletBtn.innerText = "Connecting...";
 
-        const publicKey = result?.publicKey || result;
-        if (!publicKey) {
-            alert("Could not get public key from Rabet.");
-            return;
-        }
+            const rabet = window.rabet || window.Rabet;
+            if (!rabet) {
+                toastr.error("Rabet Wallet not detected. Please install it from https://rabet.io/", "Error");
+                return;
+            }
 
-        console.log("Rabet Connected:", publicKey);
-        alert("Rabet Connected: " + publicKey);
+            // Attempt to connect wallet
+            let result;
+            if (typeof rabet.connect === "function") {
+                result = await rabet.connect();
+            } else if (typeof rabet.requestAccount === "function") {
+                result = await rabet.requestAccount();
+            } else {
+                toastr.warning("Rabet API not supported by this version.", "Warning");
+                return;
+            }
+
+            // Extract public key
+            const publicKey = result?.publicKey || result;
+            if (!publicKey) {
+                toastr.error("Failed to retrieve public key from Rabet Wallet.", "Error");
+                return;
+            }
+
+            // Save wallet info to backend
+            const res = await fetch("/save-wallet", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": document.querySelector('meta[name=\"csrf-token\"]').content,
+                },
+                body: JSON.stringify({
+                    address: publicKey,
+                    blockchainId: blockchainSelect.value,
+                    walletId: walletSelect.value,
+                    status: 1,
+                }),
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                // Save wallet info to local storage
+                localStorage.setItem("rabet_wallet", publicKey);
+                localStorage.setItem("connected_wallet", "rabet");
+
+                // Update UI
+                walletModal.classList.add("hidden");
+                walletBtn.innerText = `${publicKey.slice(0, 5)}...${publicKey.slice(-4)}`;
+                walletConnect.classList.add("hidden");
+                walletDisconnect.classList.remove("hidden");
+
+                toastr.success(data.message || "Rabet Wallet connected successfully!", "Rabet Wallet");
+            } else {
+                toastr.error(data.message || "Failed to save wallet.", "Error");
+            }
+
+        } catch (error) {
+            console.error("Rabet Wallet connection error:", error);
+
+            if (error.message?.includes("User rejected")) {
+                toastr.warning("User cancelled wallet connection.", "Rabet Wallet");
+            } else {
+                toastr.error("Failed to connect Rabet Wallet. Try again.", "Error");
+            }
+        } finally {
+            modalWalletBtn.disabled = false;
+            modalWalletBtn.innerText = "Connect";
+        }
     }
 
     // Wallet Disconnect

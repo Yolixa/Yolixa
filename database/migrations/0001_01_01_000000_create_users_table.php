@@ -17,8 +17,9 @@ return new class extends Migration
             $table->string('email', 150)->unique()->nullable();
             $table->string('username', 50)->unique()->nullable();
             $table->string('public_key', 100)->unique();
+            $table->string('referral_key', 100)->unique();
             $table->enum('role', ['creator', 'fan', 'admin'])->default('fan');
-            $table->boolean('status')->default(false);
+            $table->boolean('status')->default(false)->comment('0 => inactive', '1 => active');
             $table->text('bio')->nullable();
             $table->boolean('verified')->default(false);
             $table->timestamps();

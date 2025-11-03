@@ -54,7 +54,7 @@
     </div>
 
     <!-- Mobile Menu -->
-    <div id="mobile-menu" class="mobile-menu fixed top-0 right-0 h-full w-80 bg-dark-bg/95 backdrop-blur-xl border-l border-yolixa-purple/30 md:hidden mobile-glass">
+    <div id="mobile-menu" class="mobile-menu fixed top-0 right-0 h-full w-80 bg-[#0a0a0a]/95 backdrop-blur-lg border-l border-yolixa-purple/30 shadow-2xl shadow-yolixa-purple/10 md:hidden transition-all duration-300 z-50"">
         <div class="p-8">
             <div class="flex justify-between items-center mb-8">
                 <div class="flex items-center space-x-3">
@@ -74,27 +74,27 @@
 
             <!-- Mobile Nav Links -->
             <div class="space-y-2">
-                <a href="#features" class="mobile-nav-link block px-4 py-3 rounded-lg font-medium hover:bg-yolixa-purple/10 hover:text-yolixa-purple hover:translate-x-2">
+                <a href="#features" class="mobile-nav-link block px-4 py-3 rounded-lg font-medium hover:bg-yolixa-purple/10 hover:text-yolixa-purple hover:translate-x-2 transition-all duration-300">
                     Features
                 </a>
-                <a href="#how-it-works" class="mobile-nav-link block px-4 py-3 rounded-lg font-medium hover:bg-yolixa-purple/10 hover:text-yolixa-purple hover:translate-x-2">
+                <a href="#how-it-works" class="mobile-nav-link block px-4 py-3 rounded-lg font-medium hover:bg-yolixa-purple/10 hover:text-yolixa-purple hover:translate-x-2 transition-all duration-300">
                     How It Works
                 </a>
-                <a href="#roadmap" class="mobile-nav-link block px-4 py-3 rounded-lg font-medium hover:bg-yolixa-purple/10 hover:text-yolixa-purple hover:translate-x-2">
+                <a href="#roadmap" class="mobile-nav-link block px-4 py-3 rounded-lg font-medium hover:bg-yolixa-purple/10 hover:text-yolixa-purple hover:translate-x-2 transition-all duration-300">
                     Roadmap
                 </a>
-                <a href="{{route('whitepaper')}}" target="_blank" class="mobile-nav-link block px-4 py-3 rounded-lg font-medium hover:bg-yolixa-purple/10 hover:text-yolixa-purple hover:translate-x-2">
+                <a href="{{route('whitepaper')}}" target="_blank" class="mobile-nav-link block px-4 py-3 rounded-lg font-medium hover:bg-yolixa-purple/10 hover:text-yolixa-purple hover:translate-x-2 transition-all duration-300">
                     Whitepaper
                 </a>
-                <a href="#contact" class="mobile-nav-link block px-4 py-3 rounded-lg font-medium hover:bg-yolixa-purple/10 hover:text-yolixa-purple hover:translate-x-2">
+                <a href="#contact" class="mobile-nav-link block px-4 py-3 rounded-lg font-medium hover:bg-yolixa-purple/10 hover:text-yolixa-purple hover:translate-x-2 transition-all duration-300">
                     Contact
                 </a>
             </div>
 
             <!-- CTA -->
             <div class="mt-8 pt-6 border-t border-gray-700">
-                <button class="w-full gradient-bg px-6 py-3 rounded-lg font-semibold hover:scale-105 transition-all duration-300 shadow-lg">
-                    Get Started Free
+                <button id="connectWalletBtn" onclick="openWalletModal()" class="w-full gradient-bg px-6 py-3 rounded-lg ont-semibold hover:opacity-90 hover:scale-[1.02] transition-all duration-300 shadow-lg shadow-yolixa-purple/30">
+                    Connect Wallet
                 </button>
             </div>
         </div>
