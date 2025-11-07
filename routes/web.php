@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\WebController;
 use App\Http\Controllers\WalletController;
 use Soneso\StellarSDK\StellarSDK;
+use Soneso\StellarSDK\Asset;
+use Soneso\StellarSDK\Crypto\KeyPair;
 
 Route::get('/', [WebController::class, 'index'])->name('index');
 Route::get('/whitepaper', [WebController::class, 'whitepaper'])->name('whitepaper');
@@ -18,12 +20,12 @@ Route::get('/stellar-test', function () {
         $sdk = StellarSDK::getTestNetInstance();
 
         // Replace this with any valid TESTNET public key
-        $accountId = 'GBTOBXOTQJFNAYHBO7WQ7H2XFYU3BW46JX5ISCFLP7JDTSX5MN42TEXS';
+        $accountId = 'GBJK3TMW6YSNYYVJGERXAQINEKY6AWPDRF3IMY4QY6AAZNGBUYT5PRG5';
 
          // Fetch account
         $account = $sdk->requestAccount($accountId);
 
-        // 🚩 Balances: ArrayIterator / Traversable — iterate directly
+        // Balances: ArrayIterator / Traversable — iterate directly
         $balances = [];
         foreach ($account->getBalances() as $balance) {
             $balances[] = [
@@ -44,3 +46,20 @@ Route::get('/stellar-test', function () {
         return response()->json(['error' => $e->getMessage()], 500);
     }
 });
+
+Route::get('/get-ylx', function () {
+    $sdk = StellarSDK::getTestNetInstance();
+    $issuerSecret = env('ISSUER_SECRET_KEY');
+    $issuerKeypair = KeyPair::fromSeed($issuerSecret);
+    $issuerAccount = $sdk->requestAccount($issuerKeypair->getAccountId());
+
+    $assetCode = 'YLX';
+    $asset = Asset::createNonNativeAsset($assetCode, $issuerKeypair->getAccountId());
+
+    return response()->json([
+        'asset_code' => $asset->getCode(),
+        'issuer' => $issuerKeypair->getAccountId(),
+        'network' => 'testnet',
+    ]);
+});
+

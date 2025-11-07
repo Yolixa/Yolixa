@@ -22,7 +22,7 @@ class WalletController extends Controller
         if ($existingUser) {
             $existingUser->status = 1;
             $existingUser->update();
-            
+
             $existingWallet = Wallet::where('public_key', $request->address)->first();
 
             if (!$existingWallet) {
