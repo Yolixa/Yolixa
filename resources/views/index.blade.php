@@ -83,62 +83,81 @@
 
 <!-- Creator Join Modal -->
 <div id="creatorModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50">
-    <div class="bg-gray-900 rounded-2xl shadow-xl max-w-md w-full p-6 relative">
+    <div class="bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6 relative border border-yolixa-purple/20">
 
         <!-- Close Button -->
-        <button onclick="closeCreatorModal()"
-            class="absolute top-4 right-4 text-gray-400 hover:text-white">
+        <button onclick="closeCreatorModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white">
             ✕
         </button>
 
-        <!-- Modal Header -->
-        <h2 class="text-2xl font-bold mb-4 gradient-text text-center">Join as Creator</h2>
-        <p class="text-gray-400 text-center mb-6">
-            Fill the details below to register as a creator.
-        </p>
-
-        <!-- Name Input -->
-        <div class="mb-4">
-            <label for="creatorName" class="block text-gray-300 mb-2">Full Name</label>
-            <input type="text" id="creatorName" placeholder="John Doe"
-                class="w-full px-4 py-3 rounded-lg bg-gray-800 text-white border border-gray-700 focus:border-yolixa-purple focus:ring focus:ring-yolixa-purple/30 outline-none" />
+        <!-- Header -->
+        <div class="text-center mb-6">
+            <h2 class="text-3xl font-bold gradient-text mb-2">Join as Creator</h2>
+            <p class="text-gray-400 text-sm">Register now and start receiving Web3 tips instantly.</p>
         </div>
 
-        <!-- Email Input -->
-        <div class="mb-4">
-            <label for="creatorEmail" class="block text-gray-300 mb-2">Email</label>
-            <input type="email" id="creatorEmail" placeholder="example@email.com"
-                class="w-full px-4 py-3 rounded-lg bg-gray-800 text-white border border-gray-700 focus:border-yolixa-purple focus:ring focus:ring-yolixa-purple/30 outline-none" />
+        <!-- Form -->
+        <div class="space-y-4">
+            <!-- Name -->
+            <div>
+                <label for="creatorName" class="block text-gray-300 mb-2 text-sm">Full Name</label>
+                <input type="text" id="creatorName" placeholder="John Doe"
+                       class="w-full px-4 py-3 rounded-lg bg-gray-800 text-white border border-gray-700 focus:border-yolixa-purple focus:ring focus:ring-yolixa-purple/30 outline-none">
+            </div>
+
+            <!-- Email -->
+            <div>
+                <label for="creatorEmail" class="block text-gray-300 mb-2 text-sm">Email</label>
+                <input type="email" id="creatorEmail" placeholder="example@email.com"
+                       class="w-full px-4 py-3 rounded-lg bg-gray-800 text-white border border-gray-700 focus:border-yolixa-purple focus:ring focus:ring-yolixa-purple/30 outline-none">
+            </div>
+
+            <!-- Blockchain -->
+            <div>
+                <label for="creatorBlockchainSelect" class="block text-gray-300 mb-2 text-sm">Select Blockchain</label>
+                <select id="creatorBlockchainSelect"
+                        class="creatorBlockchainSelect w-full px-4 py-3 rounded-lg bg-gray-800 text-white border border-gray-700 focus:border-yolixa-purple focus:ring focus:ring-yolixa-purple/30 outline-none">
+                    <option value="">-- Choose Blockchain --</option>
+                    @foreach($blockchains as $blockchain)
+                        <option value="{{ $blockchain->id }}">
+                            {{ $blockchain->name }} ({{ $blockchain->symbol }})
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <!-- Wallet -->
+            <div>
+                <label for="creatorWalletSelect" class="block text-gray-300 mb-2 text-sm">Select Wallet</label>
+                <select class="creatorWalletSelect w-full px-4 py-3 rounded-lg bg-gray-800 text-white border border-gray-700 focus:border-yolixa-purple focus:ring focus:ring-yolixa-purple/30 outline-none">
+                    <option value="">-- Select Wallet --</option>
+                </select>
+            </div>
         </div>
 
-        <!-- Select Blockchain -->
-        <div class="mb-4">
-            <label for="creatorBlockchainSelect" class="block text-gray-300 mb-2">Select Blockchain</label>
-            <select id="creatorBlockchainSelect"
-                class="w-full px-4 py-3 rounded-lg bg-gray-800 text-white border border-gray-700 focus:border-yolixa-purple focus:ring focus:ring-yolixa-purple/30 outline-none creatorBlockchainSelect">
-                <option value="">-- Choose Blockchain --</option>
-                @foreach($blockchains as $blockchain)
-                <option value="{{ $blockchain->id }}">
-                    {{ $blockchain->name }} ({{ $blockchain->symbol }})
-                </option>
-                @endforeach
-            </select>
-        </div>
-
-
-        <!-- Select Wallet -->
-        <div class="mb-4">
-            <label for="creatorWalletSelect" class="block text-gray-300 mb-2">Select Wallet</label>
-            <select class="creatorWalletSelect w-full mt-4 px-4 py-3 rounded-lg bg-gray-800 text-white border border-gray-700">
-                <option value="">-- Select Wallet --</option>
-            </select>
-        </div>
+        <!-- Status -->
+        <div id="creatorStatus" class="text-center text-sm text-gray-400 mt-4"></div>
 
         <!-- Join Button -->
         <button onclick="saveCreatorDetails()"
-            class="w-full gradient-bg px-6 py-3 rounded-lg font-semibold text-lg hover:scale-105 transition-transform">
+                class="w-full gradient-bg mt-6 py-3 rounded-lg font-semibold text-lg hover:scale-105 transition-transform pulse-glow">
             Join as Creator
         </button>
+    </div>
+</div>
+
+<!-- Disconnect Wallet Modal -->
+<div id="disconnectModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50">
+    <div class="bg-gray-900 rounded-2xl shadow-xl max-w-sm w-full p-6 relative">
+        <button onclick="closeDisconnectModal()" class="absolute top-3 right-4 text-gray-400 hover:text-white">✕</button>
+
+        <h2 class="text-xl font-bold mb-4 gradient-text text-center">Disconnect Wallet</h2>
+        <p class="text-gray-400 text-center mb-6">Are you sure you want to disconnect your wallet?</p>
+
+        <div class="flex gap-4 justify-center">
+            <button onclick="disconnectWallet()" class="gradient-bg px-6 py-2 rounded-lg font-semibold hover:scale-105 transition">Yes, Disconnect</button>
+            <button onclick="closeDisconnectModal()" class="border border-gray-600 px-6 py-2 rounded-lg font-semibold hover:bg-gray-700 transition">Cancel</button>
+        </div>
     </div>
 </div>
 
@@ -387,6 +406,76 @@
 @endsection
 @push('js')
 <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const connectedWallet = localStorage.getItem("connected_wallet");
+        const walletButton = document.getElementById("connectWalletBtn");
+
+        if (connectedWallet) {
+            let walletKey =
+                localStorage.getItem(`${connectedWallet}_wallet`) || "Connected";
+            walletButton.textContent = `${walletKey.slice(0, 5)}...${walletKey.slice(-4)}`;
+        } else {
+            walletButton.textContent = "Connect Wallet";
+        }
+    });
+
+    // Open Disconnect Modal
+    function openDisconnectModal () {
+        document.getElementById("disconnectModal").classList.remove("hidden");
+        document.getElementById("disconnectModal").classList.add("flex");
+    };
+
+    // Close Disconnect Modal
+    function closeDisconnectModal () {
+        document.getElementById("disconnectModal").classList.add("hidden");
+    };
+
+    // Modal control functions
+    function openWalletModal() {
+        const modal = document.getElementById('walletModal');
+        const blockchainSelect = modal.querySelector('.walletBlockchainSelect');
+        const walletSelect = modal.querySelector('.walletWalletSelect');
+
+        // Reset Blockchain Dropdown
+        if (blockchainSelect) {
+            blockchainSelect.selectedIndex = 0;
+        }
+
+        // Reset Wallet Dropdown
+        if (walletSelect) {
+            walletSelect.innerHTML = '<option value="">-- Select Wallet --</option>';
+        }
+
+        // Open Modal
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+
+    function closeWalletModal() {
+        const modal = document.getElementById('walletModal');
+        modal.classList.add('hidden');
+    }
+
+    function openCreatorModal() {
+        const modal = document.getElementById('creatorModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        // Reset dropdowns
+        const blockchainSelect = modal.querySelector('#creatorBlockchainSelect');
+        const walletSelect = modal.querySelector('.creatorWalletSelect');
+        if (blockchainSelect) blockchainSelect.selectedIndex = 0;
+        if (walletSelect) walletSelect.selectedIndex = 0;
+    }
+
+    function closeCreatorModal() {
+        const modal = document.getElementById('creatorModal');
+        modal.classList.add('hidden');
+    }
+</script>
+
+<!-- <script>
     // Wallet UI State Initialization
     document.addEventListener("DOMContentLoaded", function ()
     {
@@ -394,7 +483,7 @@
         const walletButton = document.getElementById("connectWalletBtn");
         const walletConnect = document.getElementById("walletConnect");
         const walletDisconnect = document.getElementById("walletDisconnect");
-        let walletKey = null;
+        let walletKey = n   ull;
 
         // Check kis wallet ka key stored hai
         if (connectedWallet === "freighter") {
@@ -873,5 +962,5 @@
             disconnectBtn.innerText = "Disconnect Wallet";
         }
     }
-</script>
+</script> -->
 @endpush

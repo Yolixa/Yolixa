@@ -6,12 +6,9 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="icon" type="image/svg+xml" href="{{ asset('assets/images/favicon-32x32.png') }}">
 
-    {{-- Toaster CDN --}}
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
-
     <title>Yolixa - Empowering Influencers with Web3 Tipping</title>
 
-    {{-- Tailwind CDN --}}
+    {{-- Tailwind CSS --}}
     <script src="{{ asset('assets/js/talwind_cdn.js') }}"></script>
 
     {{-- Freighter CDN --}}
@@ -33,6 +30,7 @@
     </script>
 
     {{-- Fonts & CSS --}}
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
     <link rel="stylesheet" href="{{ asset('assets/fonts/inter_font_family.css') }}">
 
     <style>
@@ -204,14 +202,16 @@
 
     @include('layout.footer')
 
-    {{-- Toaster CDN --}}
+    {{-- Libraries --}}
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 
-    {{-- Wallet Connect --}}
-    <script src="https://unpkg.com/@walletconnect/client/dist/umd/index.min.js"></script>
-    <script src="https://unpkg.com/@walletconnect/qrcode-modal/dist/umd/index.min.js"></script>
-    <script src="https://unpkg.com/@web3modal/wagmi@3.5.3/dist/index.js"></script>
+    
+     {{-- Wallet SDKs --}}
+    <script src="https://unpkg.com/stellar-sdk/dist/stellar-sdk.min.js"></script>
+    <script src="https://unpkg.com/@stellar/freighter-api/dist/index.umd.js"></script>
+    <script src="https://unpkg.com/@rabet/extension/dist/rabet.umd.min.js"></script>
+
 
     <script>
         toastr.options = {
@@ -221,6 +221,18 @@
             "timeOut": "4000"
         };
     </script>
+    
+    {{-- Core JS --}}
+    <script>
+        window.config = {
+        STELLAR_HORIZON: "{{ env('STELLAR_HORIZON') }}",
+        STELLAR_PASSPHRASE: "{{ env('STELLAR_PASSPHRASE') }}",
+        YLX_ASSET_CODE: "{{ env('YLX_ASSET_CODE', 'YLX') }}",
+        YLX_ISSUER_PUBLIC: "{{ env('YLX_ISSUER_PUBLIC') }}"
+        };
+    </script>
+    <script src="{{ asset('assets/js/wallets.js') }}"></script>
+    <script src="{{ asset('assets/js/creator.js') }}"></script>
 
     <script>
         const mobileMenuBtn = document.getElementById('mobile-menu-btn');
@@ -268,55 +280,55 @@
             }
         });
 
-        function openWalletModal() {
-            const modal = document.getElementById('walletModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+        // function openWalletModal() {
+        //     const modal = document.getElementById('walletModal');
+        //     modal.classList.remove('hidden');
+        //     modal.classList.add('flex');
 
-            const blockchainSelect = modal.querySelector('#walletBlockchainSelect');
-            const walletSelect = modal.querySelector('#walletWalletSelect');
+        //     const blockchainSelect = modal.querySelector('#walletBlockchainSelect');
+        //     const walletSelect = modal.querySelector('#walletWalletSelect');
 
-            if (blockchainSelect) blockchainSelect.selectedIndex = 0;
-            if (walletSelect) walletSelect.selectedIndex = 0;
-        }
+        //     if (blockchainSelect) blockchainSelect.selectedIndex = 0;
+        //     if (walletSelect) walletSelect.selectedIndex = 0;
+        // }
 
-        function closeWalletModal() {
-            const modal = document.getElementById('walletModal');
-            modal.classList.remove('flex');
-            modal.classList.add('hidden');
-        }
+        // function closeWalletModal() {
+        //     const modal = document.getElementById('walletModal');
+        //     modal.classList.remove('flex');
+        //     modal.classList.add('hidden');
+        // }
 
-        function openCreatorModal() {
-            const modal = document.getElementById('creatorModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
+        // function openCreatorModal() {
+        //     const modal = document.getElementById('creatorModal');
+        //     modal.classList.remove('hidden');
+        //     modal.classList.add('flex');
+        // }
 
-        function closeCreatorModal() {
-            const modal = document.getElementById('creatorModal');
-            modal.classList.remove('flex');
-            modal.classList.add('hidden');
-        }
+        // function closeCreatorModal() {
+        //     const modal = document.getElementById('creatorModal');
+        //     modal.classList.remove('flex');
+        //     modal.classList.add('hidden');
+        // }
 
-        function saveCreatorDetails() {
-            const name = document.getElementById('creatorName').value.trim();
-            const email = document.getElementById('creatorEmail').value.trim();
-            const blockchain = document.getElementById('creatorBlockchainSelect').value.trim();
-            const wallet = document.querySelector('.creatorWalletSelect').value.trim();
+        // function saveCreatorDetails() {
+        //     const name = document.getElementById('creatorName').value.trim();
+        //     const email = document.getElementById('creatorEmail').value.trim();
+        //     const blockchain = document.getElementById('creatorBlockchainSelect').value.trim();
+        //     const wallet = document.querySelector('.creatorWalletSelect').value.trim();
 
-            if (!name || !email || !blockchain || !wallet) {
-                alert("Please fill all fields.");
-                return;
-            }
+        //     if (!name || !email || !blockchain || !wallet) {
+        //         alert("Please fill all fields.");
+        //         return;
+        //     }
 
-            console.log("Creator Details:", { name, email, blockchain, wallet });
-            toastr.success(`Welcome ${name}! You have successfully joined as a creator.`);
+        //     console.log("Creator Details:", { name, email, blockchain, wallet });
+        //     toastr.success(`Welcome ${name}! You have successfully joined as a creator.`);
 
-            closeCreatorModal();
-        }
+        //     closeCreatorModal();
+        // }
     </script>
 
-    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97be0440f7dbc976',t:'MTc1NzMzMDAwOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+    <!-- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97be0440f7dbc976',t:'MTc1NzMzMDAwOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script> -->
     @stack('js')
 </body>
 </html>
