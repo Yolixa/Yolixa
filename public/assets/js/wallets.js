@@ -3,8 +3,13 @@
 // const STELLAR_PASSPHRASE = "{{ env('STELLAR_PASSPHRASE') }}";
 // const YLX_ASSET_CODE = "{{ env('YLX_ASSET_CODE', 'YLX') }}";
 // const YLX_ISSUER_PUBLIC = "{{ env('YLX_ISSUER_PUBLIC') }}";
+// ✅ get values from window.config
 const { STELLAR_HORIZON, STELLAR_PASSPHRASE, YLX_ASSET_CODE, YLX_ISSUER_PUBLIC } = window.config;
-const server = new StellarSdk.Server(STELLAR_HORIZON);
+
+// ✅ connect to Stellar
+const server = new window.StellarSdk.Server(STELLAR_HORIZON);
+
+console.log("✅ SDK connected:", window.StellarSdk, server);
 
 document.addEventListener("DOMContentLoaded", function ()
 {
@@ -192,13 +197,23 @@ async function connectRabet() {
 
 async function createTrustline(publicKey) {
     try {
+        const passphrase = window.config.STELLAR_PASSPHRASE?.replace(/"/g, "");
+        const server = new StellarSdk.Server(window.config.STELLAR_HORIZON);
+        const asset = new StellarSdk.Asset(window.config.YLX_ASSET_CODE, window.config.YLX_ISSUER_PUBLIC);
+
         const account = await server.loadAccount(publicKey);
+        
+        // 🔹 Check if trustline already exists
+        if (account.balances.some(b => b.asset_code === asset.code && b.asset_issuer === asset.issuer)) {
+            toastr.info("YLX trustline already exists!");
+            return null;
+        }
+
         const fee = await server.fetchBaseFee();
-        const asset = new StellarSdk.Asset(YLX_ASSET_CODE, YLX_ISSUER_PUBLIC);
 
         const tx = new StellarSdk.TransactionBuilder(account, {
             fee: fee.toString(),
-            networkPassphrase: STELLAR_PASSPHRASE,
+            networkPassphrase: passphrase,
         })
             .addOperation(StellarSdk.Operation.changeTrust({ asset }))
             .setTimeout(180)
@@ -208,20 +223,21 @@ async function createTrustline(publicKey) {
 
         let signed;
         if (typeof window.freighterApi !== "undefined") {
-            signed = await window.freighterApi.signTransaction(xdr, { networkPassphrase: STELLAR_PASSPHRASE });
+            signed = await window.freighterApi.signTransaction(xdr, { networkPassphrase: passphrase });
         } else if (typeof window.rabet !== "undefined") {
-            signed = await window.rabet.sign(xdr);
+            signed = await window.rabet.sign(xdr, { network: "TESTNET" });
         } else {
             throw new Error("No compatible wallet detected!");
         }
 
-        const signedTx = StellarSdk.TransactionBuilder.fromXDR(signed, STELLAR_PASSPHRASE);
+        const signedTx = StellarSdk.TransactionBuilder.fromXDR(signed, passphrase);
         const result = await server.submitTransaction(signedTx);
+
         toastr.success("YLX Trustline created!");
         return result.hash;
     } catch (err) {
         console.error(err);
-        toastr.error("Trustline creation failed!");
+        toastr.error("Trustline creation failed! Check console for details.");
         return null;
     }
 }

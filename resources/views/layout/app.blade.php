@@ -206,9 +206,11 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 
-    
+     <!-- ✅ Correct browser version -->
+    <script src="https://cdn.jsdelivr.net/npm/stellar-sdk@12.0.0/dist/stellar-sdk.min.js"></script>
+
      {{-- Wallet SDKs --}}
-    <script src="https://unpkg.com/stellar-sdk/dist/stellar-sdk.min.js"></script>
+    <!-- <script src="https://unpkg.com/stellar-sdk/dist/stellar-sdk.min.js"></script> -->
     <script src="https://unpkg.com/@stellar/freighter-api/dist/index.umd.js"></script>
     <script src="https://unpkg.com/@rabet/extension/dist/rabet.umd.min.js"></script>
 
@@ -231,6 +233,9 @@
         YLX_ISSUER_PUBLIC: "{{ env('YLX_ISSUER_PUBLIC') }}"
         };
     </script>
+
+   
+
     <script src="{{ asset('assets/js/wallets.js') }}"></script>
     <script src="{{ asset('assets/js/creator.js') }}"></script>
 
