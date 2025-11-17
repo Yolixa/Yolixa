@@ -27,7 +27,8 @@ async function saveCreatorDetails() {
     if (!publicKey) return;
     
     statusBox.text("Creating trustline...");
-    const trustHash = await createTrustline(publicKey);
+    const trustHash = await createTrustline(publicKey, walletType);
+    console.log(trustHash, 'trustHash')
     if (!trustHash) return toastr.error("Trustline failed!");
 
     statusBox.text("Saving creator...");

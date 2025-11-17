@@ -1,15 +1,12 @@
-// public/js/wallets.js
-// const STELLAR_HORIZON = "{{ env('STELLAR_HORIZON') }}";
-// const STELLAR_PASSPHRASE = "{{ env('STELLAR_PASSPHRASE') }}";
-// const YLX_ASSET_CODE = "{{ env('YLX_ASSET_CODE', 'YLX') }}";
-// const YLX_ISSUER_PUBLIC = "{{ env('YLX_ISSUER_PUBLIC') }}";
-// ✅ get values from window.config
-const { STELLAR_HORIZON, STELLAR_PASSPHRASE, YLX_ASSET_CODE, YLX_ISSUER_PUBLIC } = window.config;
+const STELLAR_HORIZON = window.config.STELLAR_HORIZON;
+const STELLAR_PASSPHRASE = window.config.STELLAR_PASSPHRASE;
+const YLX_ASSET_CODE = window.config.YLX_ASSET_CODE;
+const YLX_ISSUER_PUBLIC = window.config.YLX_ISSUER_PUBLIC;
 
-// ✅ connect to Stellar
-const server = new window.StellarSdk.Server(STELLAR_HORIZON);
+// Connect to Stellar
+const server = new StellarSdk.Server(STELLAR_HORIZON);
 
-console.log("✅ SDK connected:", window.StellarSdk, server);
+console.log("✔ Horizon Loaded:", STELLAR_HORIZON, 'Stellar Server', server);
 
 document.addEventListener("DOMContentLoaded", function ()
 {
@@ -195,51 +192,131 @@ async function connectRabet() {
     }
 }
 
-async function createTrustline(publicKey) {
+async function createTrustline(publicKey, walletType) {
     try {
-        const passphrase = window.config.STELLAR_PASSPHRASE?.replace(/"/g, "");
         const server = new StellarSdk.Server(window.config.STELLAR_HORIZON);
-        const asset = new StellarSdk.Asset(window.config.YLX_ASSET_CODE, window.config.YLX_ISSUER_PUBLIC);
+        const asset = new StellarSdk.Asset(
+            window.config.YLX_ASSET_CODE,
+            window.config.YLX_ISSUER_PUBLIC
+        );
 
+        console.log("Loading Account:", publicKey);
         const account = await server.loadAccount(publicKey);
-        
-        // 🔹 Check if trustline already exists
-        if (account.balances.some(b => b.asset_code === asset.code && b.asset_issuer === asset.issuer)) {
-            toastr.info("YLX trustline already exists!");
-            return null;
+
+        // CHECK TRUSTLINE BASED ON WALLET TYPE
+        const exists = account.balances.some(
+            b => b.asset_code === asset.code && b.asset_issuer === asset.issuer
+        );
+
+        if (exists) {
+            toastr.info(`YLX trustline already exists for ${walletType == 1 ? 'Freighter' : 'Rabet'} wallet`);
+            const oldHash = await getExistingTrustlineHash(
+                publicKey,
+                asset.code,
+                asset.issuer
+            );
+            return oldHash || "exists";
         }
 
+        // BUILD TRUSTLINE TX
         const fee = await server.fetchBaseFee();
 
         const tx = new StellarSdk.TransactionBuilder(account, {
             fee: fee.toString(),
-            networkPassphrase: passphrase,
+            networkPassphrase: StellarSdk.Networks.TESTNET,
         })
-            .addOperation(StellarSdk.Operation.changeTrust({ asset }))
-            .setTimeout(180)
-            .build();
+        .addOperation(StellarSdk.Operation.changeTrust({ asset }))
+        .setTimeout(180)
+        .build();
 
         const xdr = tx.toXDR();
+        let signedXDR = null;
 
-        let signed;
-        if (typeof window.freighterApi !== "undefined") {
-            signed = await window.freighterApi.signTransaction(xdr, { networkPassphrase: passphrase });
-        } else if (typeof window.rabet !== "undefined") {
-            signed = await window.rabet.sign(xdr, { network: "TESTNET" });
-        } else {
-            throw new Error("No compatible wallet detected!");
+        // For FREIGHTER
+        if (walletType == 1) {
+            console.log("🔵 Signing trustline with FREIGHTER...");
+
+            if (!window.freighterApi) {
+                toastr.error("Freighter wallet not detected!");
+                return null;
+            }
+    
+            const resp = await window.freighterApi.signTransaction(xdr, {
+                networkPassphrase: StellarSdk.Networks.TESTNET
+            });
+
+            console.log("FREIGHTER SIGN RAW RESPONSE =>", resp);
+
+            signedXDR =
+                resp?.signedTxXdr || 
+                resp?.signedTx || 
+                resp?.signed_transaction ||
+                resp?.xdr ||
+                resp?.transaction ||
+                resp?.data?.signed_envelope_xdr ||
+                resp?.data?.xdr ||
+                (typeof resp === "string" ? resp : null);
+
+            if (!signedXDR || typeof signedXDR !== "string") {
+                toastr.error("Freighter returned invalid XDR format!");
+                return null;
+            }
         }
 
-        const signedTx = StellarSdk.TransactionBuilder.fromXDR(signed, passphrase);
-        const result = await server.submitTransaction(signedTx);
+        // For RABET
+        else if (walletType == 2) {
+            console.log("🔵 Signing trustline with RABET...");
 
-        toastr.success("YLX Trustline created!");
+            const response = await window.rabet.sign(xdr, "TESTNET");
+
+            signedXDR =
+                response?.xdr ||
+                response?.signed_tx ||
+                response?.signed_envelope_xdr ||
+                response?.data?.signed_envelope_xdr;
+
+            if (!signedXDR) {
+                toastr.error("Rabet failed to sign!");
+                return null;
+            }
+        }
+
+        else {
+            toastr.error("Unknown wallet type!");
+            return null;
+        }
+
+        const signedTx = StellarSdk.TransactionBuilder.fromXDR(
+            signedXDR,
+            StellarSdk.Networks.TESTNET
+        );
+
+        const result = await server.submitTransaction(signedTx);
+        toastr.success("YLX Trustline successfully created!");
         return result.hash;
     } catch (err) {
-        console.error(err);
-        toastr.error("Trustline creation failed! Check console for details.");
+        console.error("Trustline Error =>", err);
+        toastr.error("Trustline failed!");
         return null;
     }
+}
+
+async function getExistingTrustlineHash(publicKey, assetCode, issuer) {
+    const url = `${window.config.STELLAR_HORIZON}/accounts/${publicKey}/operations?order=desc&limit=200`;
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (!data._embedded || !data._embedded.records) return null;
+
+    // Find latest change_trust operation for OUR asset
+    const record = data._embedded.records.find(op =>
+        op.type === "change_trust" &&
+        op.asset_code === assetCode &&
+        op.asset_issuer === issuer
+    );
+
+    return record ? record.transaction_hash : null;
 }
 
 async function disconnectWallet() {
