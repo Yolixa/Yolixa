@@ -206,12 +206,10 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 
-
      {{-- Wallet SDKs --}}
-    <script src="https://unpkg.com/stellar-sdk/dist/stellar-sdk.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-sdk/10.4.0/stellar-sdk.min.js"></script>
     <script src="https://unpkg.com/@stellar/freighter-api/dist/index.umd.js"></script>
     <script src="https://unpkg.com/@rabet/extension/dist/rabet.umd.min.js"></script>
-
 
     <script>
         toastr.options = {
@@ -225,12 +223,13 @@
     {{-- Core JS --}}
     <script>
         window.config = {
-        STELLAR_HORIZON: "{{ env('STELLAR_HORIZON') }}",
-        STELLAR_PASSPHRASE: "{{ env('STELLAR_PASSPHRASE') }}",
-        YLX_ASSET_CODE: "{{ env('YLX_ASSET_CODE', 'YLX') }}",
-        YLX_ISSUER_PUBLIC: "{{ env('YLX_ISSUER_PUBLIC') }}"
+            STELLAR_HORIZON: "{{ env('STELLAR_HORIZON') }}",
+            STELLAR_PASSPHRASE: "{{ env('STELLAR_PASSPHRASE') }}",
+            YLX_ASSET_CODE: "{{ env('YLX_ASSET_CODE') }}",
+            YLX_ISSUER_PUBLIC: "{{ env('YLX_ISSUER_PUBLIC') }}"
         };
     </script>
+
     <script src="{{ asset('assets/js/wallets.js') }}"></script>
     <script src="{{ asset('assets/js/creator.js') }}"></script>
 

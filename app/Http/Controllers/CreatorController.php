@@ -11,6 +11,7 @@ class CreatorController extends Controller
 {
     public function store(Request $request)
     {
+        return $request;
         $data = $request->validate([
             'name'          => ['required','string','max:100'],
             'email'         => ['required','email','max:150','unique:users,email'],
