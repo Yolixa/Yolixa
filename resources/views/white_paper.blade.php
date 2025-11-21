@@ -226,19 +226,19 @@
                         <ul class="space-y-3 text-slate-700">
                             <li class="flex items-start">
                                 <div class="w-2 h-2 bg-yolixa-blue rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                                <span>A decentralized tipping platform powered by the Stellar blockchain</span>
+                                <span>A decentralized tipping platform powered by the Stellar blockchain.</span>
                             </li>
                             <li class="flex items-start">
                                 <div class="w-2 h-2 bg-yolixa-blue rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                                <span>Influencers register and receive unique referral links</span>
+                                <span>Influencers register and receive unique referral links.</span>
                             </li>
                             <li class="flex items-start">
                                 <div class="w-2 h-2 bg-yolixa-blue rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                                <span>Fans can connect wallets and tip instantly in XLM/USDC</span>
+                                <span>Fans can connect wallets and tip instantly in XLM/USDC.</span>
                             </li>
                             <li class="flex items-start">
                                 <div class="w-2 h-2 bg-yolixa-blue rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                                <span>A small fee supports ecosystem growth and long-term stability</span>
+                                <span>A small platform fee supports ecosystem growth and long-term stability while keeping creators first.</span>
                             </li>
                         </ul>
                     </div>
@@ -249,23 +249,23 @@
                         <ul class="space-y-3 text-slate-700">
                             <li class="flex items-start">
                                 <div class="w-2 h-2 bg-yolixa-purple rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                                <span>Direct, borderless tipping without intermediaries</span>
+                                <span>Direct, borderless tipping without intermediaries.</span>
                             </li>
                             <li class="flex items-start">
                                 <div class="w-2 h-2 bg-yolixa-purple rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                                <span>Ultra-low transaction costs on Stellar (under $0.01)</span>
+                                <span>Ultra-low transaction costs on Stellar (under $0.01).</span>
                             </li>
                             <li class="flex items-start">
                                 <div class="w-2 h-2 bg-yolixa-purple rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                                <span>Creators earn extra YLX token rewards with every tip</span>
+                                <span>Creators earn extra YLX token rewards with every tip.</span>
                             </li>
                             <li class="flex items-start">
                                 <div class="w-2 h-2 bg-yolixa-purple rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                                <span>Transparent, secure, and instant settlements</span>
+                                <span>Transparent, secure, and instant settlements directly to non-custodial wallets.</span>
                             </li>
                             <li class="flex items-start">
                                 <div class="w-2 h-2 bg-yolixa-purple rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                                <span>Fans are also rewarded—driving engagement and loyalty</span>
+                                <span>Fans are also rewarded—driving engagement and long-term loyalty.</span>
                             </li>
                         </ul>
                     </div>
@@ -449,7 +449,7 @@
                             <div>
                                 <h4 class="text-xl font-bold mb-2 text-green-600">YLX Token Utility</h4>
                                 <p class="text-slate-700">
-                                    YLX tokens reward users while enabling staking and premium features for growth.
+                                    YLX tokens reward users while enabling staking, premium features, and long-term participation in the ecosystem.
                                 </p>
                             </div>
                         </div>
@@ -496,9 +496,30 @@
                     </div>
                 </div>
                 <p class="text-sm text-slate-500 mt-6 text-center">
-                    Yolixa is designed with a compliance-ready approach, ensuring transparency, security, and scalability
-                    for future regulations in the digital economy.
+                    Yolixa is designed with a compliance-ready, non-custodial architecture, ensuring transparency,
+                    security, and scalability for future regulations in the digital economy.
+                    The platform is aligned with Stellar ecosystem standards (e.g. trustlines, asset flags, and
+                    SEP-based integrations) to remain interoperable and regulation-friendly.
                 </p>
+            </div>
+
+            <!-- Compliance & Governance Section -->
+            <div class="section-card bg-blue-50 border-blue-200">
+                <h3 class="text-2xl font-bold mb-4 text-blue-700">Compliance & Governance</h3>
+                <p class="text-slate-700 mb-4">
+                    Yolixa is built with a long-term, compliance-aware mindset. While the early phase focuses on
+                    product-market fit, the technical and economic design already follows best practices from
+                    the Stellar ecosystem and Web3 industry.
+                </p>
+                <ul class="space-y-2 text-slate-700">
+                    <li>• Non-custodial model: user funds settle directly into user-controlled Stellar wallets.</li>
+                    <li>• Trustline-based asset access, enabling granular control for users and partners.</li>
+                    <li>• Compatibility with Stellar’s SEP standards (e.g., SEP-0001, SEP-0005, SEP-0010) for
+                        future integrations and compliance tooling.</li>
+                    <li>• Transparent on-chain activity with verifiable token supply, rewards, and burns.</li>
+                    <li>• Governance vision: over time, community feedback and YLX holders will help guide
+                        key ecosystem decisions.</li>
+                </ul>
             </div>
         </div>
     </div>
@@ -529,7 +550,8 @@
                             </div>
                         </div>
                         <p class="text-slate-700 ml-22">
-                            Creators sign up, connect their Stellar wallet, set up a trustline, and receive a unique referral link to share with fans.
+                            Creators sign up, connect their Stellar wallet, set up a trustline to YLX, and receive a unique referral link
+                            to share with fans. Creators keep ~98–99% of each tip, with instant settlement to their own non-custodial wallet.
                         </p>
                     </div>
 
@@ -543,7 +565,9 @@
                             </div>
                         </div>
                         <p class="text-slate-700 ml-22">
-                            Fans open the referral link connect's the wallet and trustline need to be created so receive YLX bonus in their wallet and tip directly in XLM or USDT — no signup required.
+                            Fans open the creator’s referral link, connect their Stellar wallet, create a trustline to YLX to receive bonus rewards,
+                            and tip directly in XLM or USDC — no traditional account signup required. The experience is fast, transparent,
+                            and borderless.
                         </p>
                     </div>
 
@@ -557,7 +581,9 @@
                             </div>
                         </div>
                         <p class="text-slate-700 ml-22">
-                            Every tip is instantly converted into YLX. Creators receive the tip amount in YLX plus a bonus, while fans also earn rewards for supporting.
+                            Every tip is instantly recorded on-chain. Creators receive the majority of the tip amount plus a YLX bonus,
+                            while fans also earn YLX rewards for supporting. Reward mechanics are designed to grow the ecosystem
+                            without creating unsustainable sell pressure.
                         </p>
                     </div>
                 </div>
@@ -569,19 +595,19 @@
                     <div>
                         <h4 class="font-bold text-blue-600 mb-3">For Creators</h4>
                         <ul class="space-y-2 text-slate-700">
-                            <li>• Instant Stellar settlement</li>
-                            <li>• Global access without banking limits</li>
-                            <li>• Bonus YLX on every tip</li>
-                            <li>• Easy referral-based onboarding</li>
+                            <li>• Instant Stellar settlement.</li>
+                            <li>• Global access without banking limits.</li>
+                            <li>• Bonus YLX on every tip and engagement.</li>
+                            <li>• Easy referral-based onboarding.</li>
                         </ul>
                     </div>
                     <div>
                         <h4 class="font-bold text-blue-600 mb-3">For Supporters</h4>
                         <ul class="space-y-2 text-slate-700">
-                            <li>• No account signup</li>
-                            <li>• Tip directly in XLM/USDC</li>
-                            <li>• Earn YLX rewards</li>
-                            <li>• Fast, transparent blockchain transfers</li>
+                            <li>• No centralized account signup.</li>
+                            <li>• Tip directly in XLM/USDC.</li>
+                            <li>• Earn YLX rewards for participation.</li>
+                            <li>• Fast, transparent blockchain transfers.</li>
                         </ul>
                     </div>
                 </div>
@@ -622,7 +648,7 @@
                             </div>
                             <div>
                                 <h4 class="text-xl font-bold mb-2 text-yolixa-blue">Tipping Currency</h4>
-                                <p class="text-slate-700">Fans can tip directly in YLX or get extra rewards when tipping in XLM/USDC that auto-converts to YLX.</p>
+                                <p class="text-slate-700">Fans can tip directly in YLX or get extra rewards when tipping in XLM/USDC that auto-converts to YLX in the reward logic.</p>
                             </div>
                         </div>
 
@@ -671,7 +697,7 @@
                         <div class="flex items-start space-x-4">
                             <div class="icon-circle gradient-bg" style="width: 115px; height: 58px;">
                                 <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+                                    <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2z" />
                                 </svg>
                             </div>
                             <div>
@@ -684,7 +710,7 @@
                         <div class="flex items-start space-x-4">
                             <div class="icon-circle gradient-bg" style="width: 100px; height: 60px;">
                                 <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.1a7.5 7.5 0 0115 0A18 18 0 0112 21.75c-2.7 0-5.2-.6-7.5-1.65z" />
+                                    <path d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20a7.5 7.5 0 0115 0c-2.5 1-5 1.75-7.5 1.75S7 21 4.5 20z" />
                                 </svg>
                             </div>
                             <div>
@@ -702,15 +728,22 @@
                 <div class="grid md:grid-cols-3 gap-6">
                     <div class="text-center">
                         <div class="text-3xl font-black text-purple-600 mb-2">Deflationary</div>
-                        <p class="text-purple-700">Regular token burns reduce supply, increasing scarcity.</p>
+                        <p class="text-purple-700">
+                            A portion of platform revenue (e.g., 1% of fees) is periodically used to buy back and burn YLX,
+                            reducing circulating supply and increasing scarcity over time.
+                        </p>
                     </div>
                     <div class="text-center">
                         <div class="text-3xl font-black text-purple-600 mb-2">Utility-Driven</div>
-                        <p class="text-purple-700">Real-world tipping and rewards create sustainable demand.</p>
+                        <p class="text-purple-700">
+                            Real-world tipping, staking, and reward use cases create organic, sustainable demand for YLX.
+                        </p>
                     </div>
                     <div class="text-center">
                         <div class="text-3xl font-black text-purple-600 mb-2">Community-Led</div>
-                        <p class="text-purple-700">Decisions and platform growth are driven by the YLX community.</p>
+                        <p class="text-purple-700">
+                            Over time, YLX holders and creators will help shape key parameters, rewards, and ecosystem expansions.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -778,7 +811,7 @@
                             <div class="w-4 h-4 bg-yolixa-blue rounded-full mr-3"></div>
                             <div>
                                 <span class="font-bold">Rewards Pool (40%)</span>
-                                <p class="text-sm text-slate-600">Incentives for creators and supporters</p>
+                                <p class="text-sm text-slate-600">Incentives for creators, supporters, referrals, and ecosystem activity.</p>
                             </div>
                         </div>
                         <span class="font-bold text-yolixa-blue">400M YLX</span>
@@ -789,7 +822,7 @@
                             <div class="w-4 h-4 bg-green-500 rounded-full mr-3"></div>
                             <div>
                                 <span class="font-bold">Team & Development (10%)</span>
-                                <p class="text-sm text-slate-600">Core team allocation with vesting</p>
+                                <p class="text-sm text-slate-600">Core team allocation with a long-term vesting schedule.</p>
                             </div>
                         </div>
                         <span class="font-bold text-green-600">100M YLX</span>
@@ -799,8 +832,10 @@
                         <div class="flex items-center">
                             <div class="w-4 h-4 bg-yellow-500 rounded-full mr-3"></div>
                             <div>
-                                <span class="font-bold">Marketing & Partnerships (45%)</span>
-                                <p class="text-sm text-slate-600">Ecosystem growth & collaborations</p>
+                                <span class="font-bold">Marketing, Partnerships & Ecosystem (45%)</span>
+                                <p class="text-sm text-slate-600">
+                                    Growth, collaborations, creator onboarding campaigns, exchange listings, and ecosystem grants.
+                                </p>
                             </div>
                         </div>
                         <span class="font-bold text-yellow-600">450M YLX</span>
@@ -811,7 +846,7 @@
                             <div class="w-4 h-4 bg-red-500 rounded-full mr-3"></div>
                             <div>
                                 <span class="font-bold">Reserve Fund (5%)</span>
-                                <p class="text-sm text-slate-600">Emergency & future development</p>
+                                <p class="text-sm text-slate-600">Emergency reserves and future strategic initiatives.</p>
                             </div>
                         </div>
                         <span class="font-bold text-red-600">50M YLX</span>
@@ -821,27 +856,56 @@
 
             <!-- Vesting Schedule -->
             <div class="section-card bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
-                <h3 class="text-2xl font-bold mb-6 gradient-text">Vesting Schedule</h3>
+                <h3 class="text-2xl font-bold mb-6 gradient-text">Vesting & Emission Schedule</h3>
                 <div class="grid md:grid-cols-2 gap-8">
                     <div>
                         <h4 class="font-bold text-slate-800 mb-4">Team Tokens</h4>
                         <ul class="space-y-2 text-slate-700">
-                            <li>• 12-month cliff</li>
-                            <li>• 36-month linear vesting</li>
-                            <li>• No immediate liquidity</li>
-                            <li>• Linked to performance milestones</li>
+                            <li>• 12-month cliff.</li>
+                            <li>• 36-month linear vesting after the cliff.</li>
+                            <li>• No immediate liquidity for core team allocation.</li>
+                            <li>• Linked to product and ecosystem milestones.</li>
                         </ul>
                     </div>
                     <div>
                         <h4 class="font-bold text-slate-800 mb-4">Rewards Distribution</h4>
                         <ul class="space-y-2 text-slate-700">
-                            <li>• Daily reward emissions</li>
-                            <li>• Gradually decreasing over time</li>
-                            <li>• Activity-driven allocation</li>
-                            <li>• Anti-abuse mechanisms</li>
+                            <li>• Daily reward emissions governed by activity.</li>
+                            <li>• Gradually decreasing over time to avoid inflation.</li>
+                            <li>• Anti-abuse mechanisms and caps per wallet.</li>
+                            <li>• Short-term vesting/linear unlock for selected rewards to reduce immediate sell pressure.</li>
                         </ul>
                     </div>
                 </div>
+            </div>
+
+            <!-- Supply & Burn Mechanics -->
+            <div class="section-card bg-purple-50 border-purple-200">
+                <h3 class="text-2xl font-bold mb-4 text-purple-700">Supply & Burn Mechanics</h3>
+                <p class="text-slate-700 mb-4">
+                    YLX follows a transparent and predictable supply model. While the total supply is fixed at 1B YLX, the
+                    effective circulating supply can decrease over time through planned burns.
+                </p>
+                <ul class="space-y-2 text-slate-700">
+                    <li>• A small portion of platform fees may be allocated to periodic buyback-and-burn events.</li>
+                    <li>• Burn events are announced publicly, with on-chain proof for full transparency.</li>
+                    <li>• The burn policy focuses on long-term sustainability, not short-term pump-and-dump behavior.</li>
+                </ul>
+            </div>
+
+            <!-- Security & Audits -->
+            <div class="section-card bg-slate-50 border-slate-200">
+                <h3 class="text-2xl font-bold mb-4 text-slate-800">Security & Audits</h3>
+                <p class="text-slate-700 mb-4">
+                    Security is a core pillar of Yolixa’s design. The platform operates on a non-custodial model where users
+                    maintain control over their wallets and assets.
+                </p>
+                <ul class="space-y-2 text-slate-700">
+                    <li>• Smart contract and integration logic are built with minimal attack surface and clear separation of concerns.</li>
+                    <li>• Internal reviews and code audits happen before any major feature or tokenomics update.</li>
+                    <li>• The long-term roadmap includes partnering with reputable third-party Web3 security firms for external audits.</li>
+                    <li>• Transparent communication with the community around any security updates or changes.</li>
+                </ul>
             </div>
         </div>
     </div>
@@ -865,7 +929,8 @@
             <div class="section-card">
                 <h3 class="text-2xl font-bold mb-6 text-slate-800">Sustainable Revenue Streams</h3>
                 <p class="text-lg text-slate-700 mb-8">
-                    Yolixa ensures sustainability through a diversified revenue model with minimal fees, premium services, and long-term expansion opportunities.
+                    Yolixa ensures sustainability through a diversified revenue model with minimal fees, premium services,
+                    and long-term expansion opportunities—all while prioritizing creators and supporters.
                 </p>
 
                 <div class="grid md:grid-cols-2 gap-6">
@@ -882,16 +947,34 @@
                         </div>
                         <h4 class="text-xl font-bold mb-3 text-yolixa-blue">Small Tipping Fees</h4>
                         <p class="text-slate-700 mb-4">
-                            Platform sustains itself by charging a minimal <strong>1–2% fee</strong> on every tip — keeping creators first.
+                            The platform sustains itself by charging a minimal <strong>1–2% fee</strong> on every tip — keeping creators first
+                            while funding operations, development, and ecosystem expansion.
                         </p>
                         <div class="text-sm text-slate-600">
-                            <strong>Revenue Split:</strong> 98–99% creators, 1–2% platform
+                            <strong>Revenue Split:</strong> ~98–99% to creators, ~1–2% to the platform.
                         </div>
                     </div>
 
+                    <!-- Premium Tools & Staking -->
+                    <div class="bg-purple-50 border border-purple-200 rounded-xl p-6">
+                        <div class="icon-circle gradient-bg mb-4" style="width:65px">
+                            <!-- Star / tools icon -->
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2l2.09 6.26L20 9.27l-5 3.64L16.18 20 12 16.9 7.82 20 9 12.91 4 9.27l5.91-.99L12 2z" />
+                            </svg>
+                        </div>
+                        <h4 class="text-xl font-bold mb-3 text-yolixa-purple">Premium Tools & Staking</h4>
+                        <p class="text-slate-700 mb-4">
+                            Additional revenue comes from optional premium features for creators (advanced analytics, branding tools,
+                            automation) and staking-related services for YLX holders.
+                        </p>
+                        <div class="text-sm text-slate-600">
+                            <strong>Goal:</strong> Align platform revenue with real usage and long-term value creation.
+                        </div>
+                    </div>
 
                     <!-- Future Expansion -->
-                    <div class="bg-green-50 border border-green-200 rounded-xl p-6">
+                    <div class="bg-green-50 border border-green-200 rounded-xl p-6 md:col-span-2">
                         <div class="icon-circle gradient-bg mb-4" style="width:65px">
                             <!-- Rocket Icon -->
                             <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -900,10 +983,11 @@
                         </div>
                         <h4 class="text-xl font-bold mb-3 text-green-600">Future Expansion</h4>
                         <p class="text-slate-700 mb-4">
-                            Expansion roadmap includes <strong>merchandise integration</strong> and <strong>creator collaboration tools</strong> to enhance platform growth.
+                            The expansion roadmap includes integrations with merchandise and creator collaboration tools, sponsorship marketplaces, and more advanced revenue-sharing models
+                            between creators, brands, and fans.
                         </p>
                         <div class="text-sm text-slate-600">
-                            <strong>Timeline:</strong> Phase 3 (2025–2026)
+                            <strong>Timeline:</strong> Phase 3 (2025–2026) and beyond, aligned with adoption milestones.
                         </div>
                     </div>
                 </div>
@@ -916,19 +1000,19 @@
                     <div>
                         <h4 class="font-bold text-slate-800 mb-4">Growth Drivers</h4>
                         <ul class="space-y-2 text-slate-700">
-                            <li>• Network effects via creator adoption</li>
-                            <li>• Viral sharing of tipping links</li>
-                            <li>• Cross-platform integrations</li>
-                            <li>• Community-driven expansion</li>
+                            <li>• Network effects via creator adoption.</li>
+                            <li>• Viral sharing of tipping links and content.</li>
+                            <li>• Cross-platform and cross-chain integrations.</li>
+                            <li>• Creator and community-driven expansion loops.</li>
                         </ul>
                     </div>
                     <div>
                         <h4 class="font-bold text-slate-800 mb-4">Cost Optimization</h4>
                         <ul class="space-y-2 text-slate-700">
-                            <li>• Stellar’s low transaction costs</li>
-                            <li>• Automated smart contract flows</li>
-                            <li>• Efficient tokenomics</li>
-                            <li>• Community-Driven Model</li>
+                            <li>• Stellar’s low transaction costs and high efficiency.</li>
+                            <li>• Automated flows minimizing operational overhead.</li>
+                            <li>• Efficient tokenomics and transparent emissions.</li>
+                            <li>• Community-driven model, reducing centralized marketing costs.</li>
                         </ul>
                     </div>
                 </div>
@@ -969,16 +1053,16 @@
                                 </p>
                                 <div class="grid md:grid-cols-2 gap-4">
                                     <ul class="space-y-2 text-slate-700">
-                                        <li>✓ Stellar blockchain integration</li>
-                                        <li>✓ Basic tipping functionality</li>
-                                        <li>✓ YLX token deployment</li>
-                                        <li>✓ Wallet connection for creators</li>
+                                        <li>✓ Stellar blockchain integration.</li>
+                                        <li>✓ Basic tipping functionality.</li>
+                                        <li>✓ YLX token deployment.</li>
+                                        <li>✓ Wallet connection for creators.</li>
                                     </ul>
                                     <ul class="space-y-2 text-slate-700">
-                                        <li>✓ Referral link system</li>
-                                        <li>✓ Initial analytics dashboard</li>
-                                        <li>✓ Community building</li>
-                                        <li>✓ Web application launch</li>
+                                        <li>✓ Referral link system.</li>
+                                        <li>✓ Initial analytics dashboard.</li>
+                                        <li>✓ Community building.</li>
+                                        <li>✓ Web application launch.</li>
                                     </ul>
                                 </div>
                             </div>
@@ -1001,15 +1085,15 @@
                                 </p>
                                 <div class="grid md:grid-cols-2 gap-4">
                                     <ul class="space-y-2 text-slate-700">
-                                        <li>• Premium subscription tiers</li>
-                                        <li>• Advanced creator tools</li>
-                                        <li>• Social media integrations</li>
-                                        <li>• YLX staking & rewards</li>
+                                        <li>• Premium subscription tiers.</li>
+                                        <li>• Advanced creator tools.</li>
+                                        <li>• Social media integrations.</li>
+                                        <li>• YLX staking & rewards.</li>
                                     </ul>
                                     <ul class="space-y-2 text-slate-700">
-                                        <li>• Referral & loyalty program</li>
-                                        <li>• Third-party API integrations</li>
-                                        <li>• Enhanced security protocols</li>
+                                        <li>• Referral & loyalty program.</li>
+                                        <li>• Third-party API integrations.</li>
+                                        <li>• Enhanced security protocols & monitoring.</li>
                                     </ul>
                                 </div>
                             </div>
@@ -1032,14 +1116,14 @@
                                 </p>
                                 <div class="grid md:grid-cols-2 gap-4">
                                     <ul class="space-y-2 text-slate-700">
-                                        <li>• Merchandise & e-commerce features</li>
-                                        <li>• Cross-chain support</li>
-                                        <li>• Enterprise partnerships</li>
+                                        <li>• Merchandise & e-commerce features.</li>
+                                        <li>• Cross-chain support.</li>
+                                        <li>• Enterprise partnerships.</li>
                                     </ul>
                                     <ul class="space-y-2 text-slate-700">
-                                        <li>• AI-driven personalization</li>
-                                        <li>• Global strategic alliances</li>
-                                        <li>• DeFi-based features</li>
+                                        <li>• AI-driven personalization.</li>
+                                        <li>• Global strategic alliances.</li>
+                                        <li>• DeFi-based features & liquidity programs.</li>
                                     </ul>
                                 </div>
                             </div>
@@ -1131,8 +1215,8 @@
                         <div>
                             <h4 class="text-xl font-bold mb-3 text-slate-800">Market Leadership</h4>
                             <p class="text-slate-700">
-                                Establish Yolixa as the top decentralized tipping platform with 100k+ active creators
-                                and $25M+ monthly tip volume.
+                                Establish Yolixa as a leading decentralized tipping platform with tens of thousands of active creators
+                                and strong monthly tipping volume.
                             </p>
                         </div>
                     </div>
@@ -1157,8 +1241,8 @@
                         <div>
                             <h4 class="text-xl font-bold mb-3 text-slate-800">Global Standard</h4>
                             <p class="text-slate-700">
-                                Become the universal standard for creator monetization with adoption across
-                                major social platforms worldwide.
+                                Become a universal standard for creator monetization, integrated with major social platforms
+                                and used by creators worldwide.
                             </p>
                         </div>
                     </div>
@@ -1220,98 +1304,56 @@
             <div class="grid md:grid-cols-1 gap-8 mb-8">
                 <!-- Official -->
                 <div class="bg-white rounded-2xl shadow-lg p-8 border border-slate-100">
-                <h4 class="text-3xl font-extrabold mb-8 text-center text-yolixa-blue">Official Channels</h4>
+                    <h4 class="text-3xl font-extrabold mb-8 text-center text-yolixa-blue">Official Channels</h4>
 
-                <div class="space-y-8">
-                    <!-- Website -->
-                    <div class="flex items-center space-x-5 hover:bg-slate-50 transition rounded-xl p-4">
-                        <div class="w-12 h-12 bg-gradient-to-r from-yolixa-blue to-blue-600 rounded-xl flex items-center justify-center shadow-md">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor" stroke-width="2">
-                                <path
-                                    d="M12 3C7.03 3 3 7.03 3 12c0 4.97 4.03 9 9 9 4.97 0 9-4.03 9-9 0-4.97-4.03-9-9-9zm0 16c-3.86 0-7-3.14-7-7 0-3.86 3.14-7 7-7 3.86 0 7 3.14 7 7 0 3.86-3.14 7-7 7z" />
-                                <path d="M12 3v18M3 12h18" />
-                            </svg>
+                    <div class="space-y-8">
+                        <!-- Website -->
+                        <div class="flex items-center space-x-5 hover:bg-slate-50 transition rounded-xl p-4">
+                            <div class="w-12 h-12 bg-gradient-to-r from-yolixa-blue to-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor" stroke-width="2">
+                                    <path
+                                        d="M12 3C7.03 3 3 7.03 3 12c0 4.97 4.03 9 9 9 4.97 0 9-4.03 9-9 0-4.97-4.03-9-9-9zm0 16c-3.86 0-7-3.14-7-7 0-3.86 3.14-7 7-7 3.86 0 7 3.14 7 7 0 3.86-3.14 7-7 7z" />
+                                    <path d="M12 3v18M3 12h18" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="font-bold text-slate-800">Website</p>
+                                <a href="https://www.yolixa.com" target="_blank" class="text-slate-600 hover:text-yolixa-blue transition">www.yolixa.com</a>
+                            </div>
                         </div>
-                        <div>
-                            <p class="font-bold text-slate-800">Website</p>
-                            <a href="https://www.yolixa.com" target="_blank" class="text-slate-600 hover:text-yolixa-blue transition">www.yolixa.com</a>
+
+                        <!-- Email -->
+                        <div class="flex items-center space-x-5 hover:bg-slate-50 transition rounded-xl p-4">
+                            <div class="w-12 h-12 bg-gradient-to-r from-yolixa-blue to-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor" stroke-width="2">
+                                    <path
+                                        d="M3 8l9 6 9-6M4 6h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="font-bold text-slate-800">Email</p>
+                                <a href="mailto:info.yolixa@gmail.com" class="text-slate-600 hover:text-yolixa-blue transition">yolixaofficial@gmail.com</a>
+                            </div>
                         </div>
+
+                        <!-- Twitter -->
+                        <div class="flex items-center space-x-5 hover:bg-slate-50 transition rounded-xl p-4">
+                            <div class="w-12 h-12 bg-gradient-to-r from-yolixa-blue to-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                                    <path
+                                        d="M22.46 6c-.77.35-1.6.58-2.46.69a4.26 4.26 0 001.88-2.35 8.35 8.35 0 01-2.68 1.03A4.22 4.22 0 0015.5 4c-2.33 0-4.22 1.89-4.22 4.22 0 .33.04.65.1.96A11.96 11.96 0 013 5.16a4.22 4.22 0 001.31 5.64 4.21 4.21 0 01-1.91-.53v.05a4.23 4.23 0 003.38 4.14 4.24 4.24 0 01-1.9.07 4.23 4.23 0 003.95 2.94A8.48 8.48 0 012 19.54a11.94 11.94 0 006.48 1.9c7.78 0 12.04-6.45 12.04-12.04 0-.18-.01-.35-.02-.52A8.6 8.6 0 0022.46 6z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="font-bold text-slate-800">Twitter</p>
+                                <a href="https://twitter.com/YolixaOfficial" target="_blank" class="text-slate-600 hover:text-yolixa-blue transition">@YolixaOfficial</a>
+                            </div>
+                        </div>
+
                     </div>
-
-                    <!-- Email -->
-                    <div class="flex items-center space-x-5 hover:bg-slate-50 transition rounded-xl p-4">
-                        <div class="w-12 h-12 bg-gradient-to-r from-yolixa-blue to-blue-600 rounded-xl flex items-center justify-center shadow-md">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor" stroke-width="2">
-                                <path
-                                    d="M3 8l9 6 9-6M4 6h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <p class="font-bold text-slate-800">Email</p>
-                            <a href="mailto:info.yolixa@gmail.com" class="text-slate-600 hover:text-yolixa-blue transition">info.yolixa@gmail.com</a>
-                        </div>
-                    </div>
-
-                    <!-- Twitter -->
-                    <div class="flex items-center space-x-5 hover:bg-slate-50 transition rounded-xl p-4">
-                        <div class="w-12 h-12 bg-gradient-to-r from-yolixa-blue to-blue-600 rounded-xl flex items-center justify-center shadow-md">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
-                                <path
-                                    d="M22.46 6c-.77.35-1.6.58-2.46.69a4.26 4.26 0 001.88-2.35 8.35 8.35 0 01-2.68 1.03A4.22 4.22 0 0015.5 4c-2.33 0-4.22 1.89-4.22 4.22 0 .33.04.65.1.96A11.96 11.96 0 013 5.16a4.22 4.22 0 001.31 5.64 4.21 4.21 0 01-1.91-.53v.05a4.23 4.23 0 003.38 4.14 4.24 4.24 0 01-1.9.07 4.23 4.23 0 003.95 2.94A8.48 8.48 0 012 19.54a11.94 11.94 0 006.48 1.9c7.78 0 12.04-6.45 12.04-12.04 0-.18-.01-.35-.02-.52A8.6 8.6 0 0022.46 6z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <p class="font-bold text-slate-800">Twitter</p>
-                            <a href="https://twitter.com/YolixaOfficial" target="_blank" class="text-slate-600 hover:text-yolixa-blue transition">@YolixaOfficial</a>
-                        </div>
-                    </div>
-
                 </div>
-            </div>
-
-                <!-- Community -->
-                <!-- <div class="section-card">
-                    <h4 class="text-2xl font-bold mb-6 text-yolixa-purple">Community</h4>
-                    <div class="space-y-6">
-                        <div class="flex items-center space-x-4">
-                            <div class="w-12 h-12 gradient-bg rounded-lg flex items-center justify-center">
-                                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25A19.736 19.736 0 0 0 3.677 4.37C.533 9.046-.32 13.58.099 18.057a19.9 19.9 0 0 0 5.993 3.03 14.09 14.09 0 0 0 1.226-1.994 13.107 13.107 0 0 1-1.872-.892c.12-.098.246-.198.373-.292 3.928 1.793 8.18 1.793 12.062 0 .12.098.246.198.373.292a12.299 12.299 0 0 1-1.873.892c.36.698.772 1.362 1.225 1.993a19.839 19.839 0 0 0 6.002-3.03c.5-5.177-.838-9.674-3.549-13.66z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="font-bold text-slate-800">Discord</p>
-                                <p class="text-slate-600">discord.gg/yolixa</p>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center space-x-4">
-                            <div class="w-12 h-12 gradient-bg rounded-lg flex items-center justify-center">
-                                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm4.962 7.224c.1-.002.321.023.465.14.171.325.187.432.191.472-.18 1.898-.962 6.502-.962 6.502-.378 1.73-.891 2.058-1.434 2.058-.546 0-.866-.308-.866-.308l-3.94-2.923-1.72-.636c-.84-.31-1.504-.68-1.504-.68s-.18-.14-.123-.31c.058-.17.23-.24.23-.24s4.568-3.06 6.28-4.105c.712-.434.48-.687.48-.687-.043-.298-.291-.058-.291-.058L8.28 11.15l-3.697-1.18s-.414-.23-.453-.358c-.04-.127.466-.402.466-.402l15.118-5.852s1.23-.438 1.23.257z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="font-bold text-slate-800">Telegram</p>
-                                <p class="text-slate-600">t.me/yolixaofficial</p>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center space-x-4">
-                            <div class="w-12 h-12 gradient-bg rounded-lg flex items-center justify-center">
-                                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.174-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.663.967-2.911 2.168-2.911 1.024 0 1.518.769 1.518 1.688 0 1.029-.653 2.567-.992 3.992-.285 1.193.6 2.165 1.775 2.165 2.128 0 3.768-2.245 3.768-5.487 0-2.861-2.063-4.869-5.008-4.869-3.41 0-5.409 2.562-5.409 5.199 0 1.033.394 2.143.889 2.741-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.402.165-1.495-.69-2.433-2.878-2.433-4.646 0-3.776 2.748-7.252 7.92-7.252 4.158 0 7.392 2.967 7.392 6.923 0 4.135-2.607 7.462-6.233 7.462-1.214 0-2.357-.629-2.748-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146 1.193.197 2.386.394 3.64.394 6.624 0 11.99-5.367 11.99-11.988A12 12 0 0 0 12.017 0z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="font-bold text-slate-800">Medium</p>
-                                <p class="text-slate-600">medium.com/@yolixa</p>
-                            </div>
-                        </div>
-                    </div>
-                </div> -->
             </div>
 
             <!-- Call to Action -->

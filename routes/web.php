@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\WebController;
 use App\Http\Controllers\WalletController;
+use App\Http\Controllers\CreatorController;
 use Soneso\StellarSDK\StellarSDK;
 use Soneso\StellarSDK\Asset;
 use Soneso\StellarSDK\Crypto\KeyPair;

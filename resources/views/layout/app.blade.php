@@ -206,7 +206,7 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 
-    
+
      {{-- Wallet SDKs --}}
     <script src="https://unpkg.com/stellar-sdk/dist/stellar-sdk.min.js"></script>
     <script src="https://unpkg.com/@stellar/freighter-api/dist/index.umd.js"></script>
@@ -221,7 +221,7 @@
             "timeOut": "4000"
         };
     </script>
-    
+
     {{-- Core JS --}}
     <script>
         window.config = {
