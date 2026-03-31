@@ -19,6 +19,7 @@
       <div class="flex items-center">
         <!-- Desktop Menu -->
         <div class="hidden md:flex items-center space-x-1">
+          @if (!request()->routeIs('creator.dashboard'))
           <a href="#features" class="nav-link px-4 py-2 rounded-lg font-medium transition-all duration-300 hover:bg-yolixa-purple/10 hover:text-yolixa-purple">
             Features
           </a>
@@ -28,11 +29,17 @@
           <a href="#roadmap" class="nav-link px-4 py-2 rounded-lg font-medium transition-all duration-300 hover:bg-yolixa-purple/10 hover:text-yolixa-purple">
             Roadmap
           </a>
+          @endif
           <a href="{{ route('whitepaper') }}" target="_blank" class="nav-link px-4 py-2 rounded-lg font-medium transition-all duration-300 hover:bg-yolixa-purple/10 hover:text-yolixa-purple">
             Whitepaper
           </a>
+          @if (!request()->routeIs('creator.dashboard'))
           <a href="#contact" class="nav-link px-4 py-2 rounded-lg font-medium transition-all duration-300 hover:bg-yolixa-purple/10 hover:text-yolixa-purple">
             Contact
+          </a>
+          @endif
+          <a id="dashboardNavLink" href="#" class="hidden nav-link px-4 py-2 rounded-lg font-medium transition-all duration-300 bg-yolixa-purple/10 text-yolixa-purple border border-yolixa-purple/20">
+            Dashboard
           </a>
         </div>
 
@@ -77,11 +84,15 @@
 
       <!-- Mobile Links -->
       <div class="space-y-2">
+        @if (!request()->routeIs('creator.dashboard'))
         <a href="#features" class="mobile-nav-link block px-4 py-3 rounded-lg font-medium hover:bg-yolixa-purple/10 hover:text-yolixa-purple hover:translate-x-2 transition-all duration-300">Features</a>
         <a href="#how-it-works" class="mobile-nav-link block px-4 py-3 rounded-lg font-medium hover:bg-yolixa-purple/10 hover:text-yolixa-purple hover:translate-x-2 transition-all duration-300">How It Works</a>
         <a href="#roadmap" class="mobile-nav-link block px-4 py-3 rounded-lg font-medium hover:bg-yolixa-purple/10 hover:text-yolixa-purple hover:translate-x-2 transition-all duration-300">Roadmap</a>
+        @endif
         <a href="{{ route('whitepaper') }}" target="_blank" class="mobile-nav-link block px-4 py-3 rounded-lg font-medium hover:bg-yolixa-purple/10 hover:text-yolixa-purple hover:translate-x-2 transition-all duration-300">Whitepaper</a>
+        @if (!request()->routeIs('creator.dashboard'))
         <a href="#contact" class="mobile-nav-link block px-4 py-3 rounded-lg font-medium hover:bg-yolixa-purple/10 hover:text-yolixa-purple hover:translate-x-2 transition-all duration-300">Contact</a>
+        @endif
       </div>
     </div>
   </div>

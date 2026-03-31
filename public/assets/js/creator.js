@@ -10,22 +10,23 @@ async function saveCreatorDetails() {
         toastr.warning("Please fill all required fields.");
         return;
     }
-    
+
     let publicKey = null;
    if (parseInt(walletType) === 1) {
         // ID 1 = Freighter
         publicKey = await connectFreighter();
-    } 
+    }
     else if (parseInt(walletType) === 2) {
         // ID 2 = Rabet
         publicKey = await connectRabet();
-    } 
+    }
     else {
         return toastr.error("Unsupported wallet type selected.");
     }
-    
+
     if (!publicKey) return;
-    
+    console.log(publicKey, walletType, 'dfd')
+
     statusBox.text("Creating trustline...");
     const trustHash = await createTrustline(publicKey, walletType);
     console.log(trustHash, 'trustHash')

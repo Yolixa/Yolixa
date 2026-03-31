@@ -207,7 +207,7 @@ async function createTrustline(publicKey, walletType) {
         const exists = account.balances.some(
             b => b.asset_code === asset.code && b.asset_issuer === asset.issuer
         );
-
+        
         if (exists) {
             toastr.info(`YLX trustline already exists for ${walletType == 1 ? 'Freighter' : 'Rabet'} wallet`);
             const oldHash = await getExistingTrustlineHash(
@@ -240,7 +240,7 @@ async function createTrustline(publicKey, walletType) {
                 toastr.error("Freighter wallet not detected!");
                 return null;
             }
-    
+
             const resp = await window.freighterApi.signTransaction(xdr, {
                 networkPassphrase: StellarSdk.Networks.TESTNET
             });
@@ -248,8 +248,8 @@ async function createTrustline(publicKey, walletType) {
             console.log("FREIGHTER SIGN RAW RESPONSE =>", resp);
 
             signedXDR =
-                resp?.signedTxXdr || 
-                resp?.signedTx || 
+                resp?.signedTxXdr ||
+                resp?.signedTx ||
                 resp?.signed_transaction ||
                 resp?.xdr ||
                 resp?.transaction ||

@@ -38,16 +38,18 @@ class WalletController extends Controller
                 'success' => true,
                 'message' => 'Welcome back! Your wallet is connected.',
                 'public_key' => $existingUser->public_key,
+                'role' => $existingUser->role,
             ]);
         }
 
         $user = new User();
         $user->public_key = $request->address;
         $user->status = $request->status;
+        $user->role = 'fan'; // Default new users to fan
         $user->save();
 
         $wallet = new Wallet();
-        $wallet->user_id = $user->id;
+        $wallet->user_id = $user->id;   
         $wallet->blockchain_id = $request->blockchainId;
         $wallet->wallet_type_id = $request->walletId;
         $wallet->public_key = $request->address;
@@ -57,6 +59,7 @@ class WalletController extends Controller
             'success' => true,
             'message' => 'Your wallet has been connected successfully.',
             'public_key' => $user->public_key,
+            'role' => $user->role,
         ]);
     }
 
