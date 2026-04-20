@@ -36,8 +36,14 @@
             </div>
 
             <div class="card-hover rounded-2xl p-8 border border-gray-800 flex flex-col justify-center">
-                <p class="text-gray-500 font-bold mb-2 uppercase text-xs">Total Tips count</p>
-                <h3 class="text-4xl font-black text-white">{{ $tips->count() }}</h3>
+                <p class="text-gray-500 font-bold mb-2 uppercase text-xs">Claimable YLX Bonus</p>
+                <div class="flex items-end justify-between">
+                    <h3 class="text-4xl font-black text-white">{{ number_format($creator->ylx_claimable_balance, 0) }} <span class="text-lg text-gray-500">YLX</span></h3>
+                    @if($creator->ylx_claimable_balance >= 1)
+                        <button onclick="claimRewards()" class="bg-yolixa-purple hover:bg-yolixa-purple/80 text-white font-bold py-2 px-4 rounded-xl text-sm transition-colors">Claim</button>
+                    @endif
+                </div>
+                <p class="text-xs text-gray-400 mt-2">Total Claimed: {{ number_format($creator->ylx_claimed_total, 0) }} YLX</p>
             </div>
         </div>
 
@@ -99,6 +105,34 @@
     function copyToClipboard(text) {
         navigator.clipboard.writeText(text);
         toastr.success('Referral link copied!');
+    }
+
+    async function claimRewards() {
+        if(!confirm('Are you sure you want to claim your YLX rewards?')) return;
+        
+        try {
+            const formData = new FormData();
+            formData.append('amount', '{{ $creator->ylx_claimable_balance }}');
+            
+            const req = await fetch('{{ route('creator.claim_rewards') }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            });
+            const res = await req.json();
+            
+            if(res.success) {
+                toastr.success(res.message);
+                setTimeout(() => window.location.reload(), 2000);
+            } else {
+                toastr.error(res.message);
+            }
+        } catch(e) {
+            toastr.error('Error submitting claim.');
+        }
     }
 </script>
 @endpush

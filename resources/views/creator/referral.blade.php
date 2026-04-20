@@ -27,7 +27,7 @@
 
                     <div>
                         <label class="block text-gray-300 mb-2 text-sm">Select Asset</label>
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
                             <button onclick="selectAsset('XLM')" id="assetXLM" class="asset-btn active-asset flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-gray-700 bg-gray-800 text-white hover:border-yolixa-purple transition-all">
                                 <img src="{{ asset('assets/images/stellar-xlm-logo.png') }}" class="w-6 h-6" alt="XLM">
                                 <span>XLM</span>
@@ -35,6 +35,15 @@
                             <button onclick="selectAsset('USDC')" id="assetUSDC" class="asset-btn flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-gray-700 bg-gray-800 text-white hover:border-yolixa-purple transition-all">
                                 <img src="{{ asset('assets/images/usd-coin-usdc-logo.png') }}" class="w-6 h-6" alt="USDC">
                                 <span>USDC</span>
+                            </button>
+                            <button onclick="selectAsset('YLX')" id="assetYLX" class="relative asset-btn flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-gray-700 bg-gray-800 text-white hover:border-yolixa-purple transition-all">
+                                <span class="absolute -top-3 -right-2 bg-gradient-to-r from-yolixa-purple to-yolixa-blue text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg pulse-glow">0% Fee!</span>
+                                <div class="w-6 h-6 rounded-full flex items-center justify-center shadow-glow text-[10px] font-bold text-white">
+                                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                                    </svg>
+                                </div>
+                                <span>YOLIXA</span>
                             </button>
                         </div>
                     </div>
@@ -53,9 +62,16 @@
                         Send Tip Now
                     </button>
 
-                    <p class="text-center text-xs text-gray-500 mt-4">
+                    <p class="text-center text-xs text-gray-500 mt-4 leading-relaxed" id="feeDisclaimer">
                         * A small platform fee of 1.5% applies to support the Yolixa ecosystem.
                     </p>
+
+                    <div id="trustlineAlert" class="hidden mt-4 bg-gray-800/80 border border-yolixa-purple/30 rounded-xl p-4 text-center">
+                        <p class="text-sm text-gray-300 mb-3">Don't have the YLX token in your wallet yet?</p>
+                        <button onclick="createTrustline()" id="trustlineBtn" class="text-xs bg-yolixa-purple/20 hover:bg-yolixa-purple/40 text-yolixa-purple border border-yolixa-purple/50 px-4 py-2 rounded-lg transition-colors font-bold">
+                            Initialize YLX Trustline
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Info Card -->
@@ -133,6 +149,14 @@
         document.querySelectorAll('.asset-btn').forEach(btn => btn.classList.remove('active-asset'));
         document.getElementById('asset' + asset).classList.add('active-asset');
         document.getElementById('assetLabel').innerText = asset;
+
+        if (asset === 'YLX') {
+            document.getElementById('feeDisclaimer').innerHTML = '<span class="text-yolixa-purple font-bold">0% Platform Fee!</span> You keep 100% of the value.';
+            document.getElementById('trustlineAlert').classList.remove('hidden');
+        } else {
+            document.getElementById('feeDisclaimer').innerText = '* A small platform fee of 1.5% applies to support the Yolixa ecosystem.';
+            document.getElementById('trustlineAlert').classList.add('hidden');
+        }
     }
 
     function copyToClipboard(text) {
@@ -155,6 +179,12 @@
         if (!connectedWallet) {
             toastr.info('Please connect your wallet first.');
             openWalletModal();
+            return;
+        }
+
+        const senderKey = localStorage.getItem(connectedWallet + '_wallet');
+        if (receiver === senderKey) {
+            toastr.warning('You cannot tip yourself.');
             return;
         }
 
@@ -207,11 +237,30 @@
             })
         });
 
+        if (!response.ok) {
+            const errorText = await response.text();
+            let errorMessage = 'Server error occurred.';
+            try { errorMessage = JSON.parse(errorText).message; } catch (e) {}
+            throw new Error(errorMessage);
+        }
+
         const data = await response.json();
         if (!data.success) throw new Error(data.message);
 
-        // Sign with Freighter (Requires 'TESTNET' inside an object for proper testnet signing)
-        const signedTx = await window.freighterApi.signTransaction(data.xdr, { network: "TESTNET" });
+        // Ensure active address matches local storage to avoid tx_bad_auth
+        if (window.freighterApi && typeof window.freighterApi.getPublicKey === 'function') {
+            const activeKey = await window.freighterApi.getPublicKey();
+            if (activeKey !== localStorage.getItem('freighter_wallet')) {
+                localStorage.setItem('freighter_wallet', activeKey);
+                throw new Error("Connected Freighter account changed. Please try sending the tip again.");
+            }
+        }
+
+        // Sign with Freighter (Requires explicit TESTNET options to avoid tx_bad_auth)
+        const signedTx = await window.freighterApi.signTransaction(data.xdr, { 
+            network: "TESTNET", 
+            networkPassphrase: "Test SDF Network ; September 2015" 
+        });
 
         // Submit to Horizon
         const submitRes = await fetch('/api/tip/submit', {
@@ -222,6 +271,13 @@
             },
             body: JSON.stringify({ signedXdr: signedTx })
         });
+
+        if (!submitRes.ok) {
+            const errorText = await submitRes.text();
+            let errorMessage = 'Transaction submission failed.';
+            try { errorMessage = JSON.parse(errorText).message; } catch (e) {}
+            throw new Error(errorMessage);
+        }
 
         const subData = await submitRes.json();
         if (!subData.success) throw new Error(subData.message);
@@ -248,6 +304,13 @@
             })
         });
 
+        if (!response.ok) {
+            const errorText = await response.text();
+            let errorMessage = 'Server error occurred.';
+            try { errorMessage = JSON.parse(errorText).message; } catch (e) {}
+            throw new Error(errorMessage);
+        }
+
         const data = await response.json();
         if (!data.success) throw new Error(data.message);
 
@@ -273,6 +336,13 @@
             body: JSON.stringify({ signedXdr: signedTx })
         });
 
+        if (!submitRes.ok) {
+            const errorText = await submitRes.text();
+            let errorMessage = 'Transaction submission failed.';
+            try { errorMessage = JSON.parse(errorText).message; } catch (e) {}
+            throw new Error(errorMessage);
+        }
+
         const subData = await submitRes.json();
         if (!subData.success) throw new Error(subData.message);
 
@@ -294,6 +364,87 @@
                 sender_key: localStorage.getItem(localStorage.getItem('connected_wallet') + '_wallet')
             })
         });
+    }
+
+    async function createTrustline() {
+        const btn = document.getElementById('trustlineBtn');
+        const connectedWallet = localStorage.getItem("connected_wallet");
+        if (!connectedWallet) {
+            toastr.info('Please connect your wallet first.');
+            return;
+        }
+
+        const senderKey = localStorage.getItem(connectedWallet + '_wallet');
+        
+        btn.disabled = true;
+        btn.innerText = 'Building...';
+
+        try {
+            const response = await fetch('/api/tip/build-trustline', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ sender: senderKey })
+            });
+
+            if (!response.ok) {
+                const errText = await response.text();
+                let errMsg = 'Server error configuring trustline.';
+                try { errMsg = JSON.parse(errText).message; } catch(e) {}
+                throw new Error(errMsg);
+            }
+
+            const data = await response.json();
+            if (!data.success) throw new Error(data.message);
+
+            btn.innerText = 'Signing...';
+            
+            let signedTx;
+            if (connectedWallet === 'freighter') {
+                signedTx = await window.freighterApi.signTransaction(data.xdr, { 
+                    network: "TESTNET", 
+                    networkPassphrase: "Test SDF Network ; September 2015" 
+                });
+            } else if (connectedWallet === 'rabet') {
+                const res = await window.rabet.sign(data.xdr, 'testnet');
+                signedTx = res.xdr;
+            } else {
+                throw new Error('Wallet not supported.');
+            }
+
+            btn.innerText = 'Submitting...';
+
+            const submitRes = await fetch('/api/tip/submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ signedXdr: signedTx })
+            });
+
+            if (!submitRes.ok) {
+                const errorText = await submitRes.text();
+                let errorMessage = 'Transaction submission failed.';
+                try { errorMessage = JSON.parse(errorText).message; } catch (e) {}
+                throw new Error(errorMessage);
+            }
+
+            const subData = await submitRes.json();
+            if (!subData.success) throw new Error(subData.message);
+
+            toastr.success('Success! YLX trustline initialized.');
+            document.getElementById('trustlineAlert').classList.add('hidden');
+
+        } catch (err) {
+            console.error(err);
+            toastr.error(err.message || 'Failed to create trustline. Try again.');
+        } finally {
+            btn.disabled = false;
+            btn.innerText = 'Initialize YLX Trustline';
+        }
     }
 </script>
 @endpush

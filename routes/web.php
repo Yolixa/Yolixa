@@ -17,11 +17,21 @@ Route::post('/save-wallet', [WalletController::class, 'userWalletConnect'])->nam
 Route::post('/disconnect-wallet', [WalletController::class, 'disconnectWallet']);
 Route::post('/creator/register', [CreatorController::class, 'store'])->name('creator.store');
 Route::get('/r/{code}', [CreatorController::class, 'referralLanding'])->name('creator.referral');
-Route::get('/dashboard/{publicKey}', [CreatorController::class, 'dashboard'])->name('creator.dashboard');
-
+Route::middleware('auth')->group(function () {
+    Route::get('/dashboard/{publicKey}', [CreatorController::class, 'dashboard'])->name('creator.dashboard');
+    Route::post('/creator/update-profile', [CreatorController::class, 'updateProfile'])->name('creator.update_profile');
+    Route::post('/creator/claim-rewards', [CreatorController::class, 'claimRewards'])->name('creator.claim_rewards');
+    
+    // Admin Routes
+    Route::prefix('admin')->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\AdminController::class, 'dashboard'])->name('admin.dashboard');
+        Route::post('/creators/{id}/manage', [\App\Http\Controllers\AdminController::class, 'manageCreator'])->name('admin.manage_creator');
+    });
+});
 // Tip & Reward API routes
 Route::prefix('api/tip')->group(function() {
     Route::post('/build-xdr', [TipController::class, 'buildXdr']);
+    Route::post('/build-trustline', [TipController::class, 'buildTrustlineXdr']);
     Route::post('/submit', [TipController::class, 'submitTransaction']);
     Route::post('/record', [TipController::class, 'recordTip']);
 });

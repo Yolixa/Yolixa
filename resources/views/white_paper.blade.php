@@ -1,1447 +1,782 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/svg+xml" href="{{ asset('assets/images/favicon-32x32.png') }}">
     <title>Yolixa Whitepaper - Decentralized Tipping Platform</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        outfit: ['Outfit', 'sans-serif'],
+                    },
                     colors: {
-                        'yolixa-blue': '#3b82f6',
-                        'yolixa-purple': '#8b5cf6',
-                        'dark-bg': '#0f172a'
+                        brand: {
+                            blue: '#3b82f6',
+                            purple: '#8b5cf6',
+                            dark: '#0B0F19',
+                            darker: '#06090F',
+                            card: '#131A2A',
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                     }
                 }
             }
         }
     </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-
-        * {
+        body {
+            background-color: #0B0F19;
+            color: #E2E8F0;
+            overflow-x: hidden;
             font-family: 'Inter', sans-serif;
         }
-
-        .gradient-bg {
-            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Outfit', sans-serif;
         }
 
-        .gradient-text {
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        .glass-panel {
+            background: rgba(19, 26, 42, 0.3);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 1.5rem;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .glass-panel:hover {
+            border-color: rgba(139, 92, 246, 0.2);
+            background: rgba(19, 26, 42, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .text-gradient {
+            background: linear-gradient(135deg, #60A5FA 0%, #A78BFA 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
 
-        .page {
-            min-height: 100vh;
-            page-break-after: always;
-            padding: 2rem;
-            background: white;
-            color: #1e293b;
+        .bg-gradient-brand {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
         }
 
-        .page:last-child {
-            page-break-after: avoid;
-        }
-
-        .section-card {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 16px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        .icon-circle {
-            width: 90px;
-            height: 60px;
-            border-radius: 50%;
-            display: flex;
+        /* Status Badges */
+        .status-badge {
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
-            margin: 0 auto 1rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .status-live {
+            background: rgba(16, 185, 129, 0.1);
+            color: #34D399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        
+        .status-progress {
+            background: rgba(245, 158, 11, 0.1);
+            color: #FBBF24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+        
+        .status-planned {
+            background: rgba(59, 130, 246, 0.1);
+            color: #60A5FA;
+            border: 1px solid rgba(59, 130, 246, 0.3);
         }
 
-        .tokenomics-chart {
-            width: 200px;
-            height: 200px;
+        /* Ambient Glows */
+        .glow-circle-1 {
+            position: absolute;
+            top: -10%;
+            left: -10%;
+            width: 50vw;
+            height: 50vw;
+            background: radial-gradient(circle, rgba(139,92,246,0.12) 0%, rgba(0,0,0,0) 65%);
+            z-index: -1;
             border-radius: 50%;
-            background: conic-gradient(from 0deg,
-                    #3b82f6 0deg 144deg,
-                    #8b5cf6 144deg 234deg,
-                    #10b981 234deg 306deg,
-                    #f59e0b 306deg 342deg,
-                    #ef4444 342deg 360deg);
-            margin: 0 auto;
-            position: relative;
         }
 
-        .tokenomics-chart::after {
+        .glow-circle-2 {
+            position: absolute;
+            bottom: -20%;
+            right: -10%;
+            width: 60vw;
+            height: 60vw;
+            background: radial-gradient(circle, rgba(59,130,246,0.08) 0%, rgba(0,0,0,0) 65%);
+            z-index: -1;
+            border-radius: 50%;
+        }
+
+        /* Content Nav */
+        .toc-link {
+            position: relative;
+            color: #64748B;
+            transition: all 0.3s ease;
+            display: block;
+            padding: 0.5rem 0;
+            padding-left: 1rem;
+            border-left: 2px solid rgba(255,255,255,0.05);
+            font-size: 0.875rem;
+        }
+        .toc-link:hover {
+            color: #E2E8F0;
+            border-left-color: rgba(255,255,255,0.2);
+        }
+        .toc-link.active {
+            color: #A78BFA;
+            font-weight: 600;
+            border-left-color: #8B5CF6;
+            background: linear-gradient(90deg, rgba(139, 92, 246, 0.05) 0%, transparent 100%);
+        }
+
+        /* Top Nav active state */
+        .top-nav-link {
+            position: relative;
+            color: #94A3B8;
+            transition: color 0.3s ease;
+            padding-bottom: 0.5rem;
+        }
+        .top-nav-link:hover {
+            color: #FFFFFF;
+        }
+        .top-nav-link.active {
+            color: #A78BFA;
+            font-weight: 600;
+        }
+        .top-nav-link::after {
             content: '';
             position: absolute;
-            top: 50%;
+            bottom: 0;
             left: 50%;
-            transform: translate(-50%, -50%);
-            width: 100px;
-            height: 100px;
-            background: white;
-            border-radius: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 2px;
+            background: #8B5CF6;
+            transition: width 0.3s ease;
         }
-
-        .timeline-item {
-            position: relative;
-            padding-left: 3rem;
-            margin-bottom: 2rem;
-        }
-
-        .timeline-item::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
+        .top-nav-link.active::after {
             width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
         }
 
-        .timeline-item::after {
-            content: '';
-            position: absolute;
-            left: 9px;
-            top: 20px;
-            width: 2px;
-            height: calc(100% + 1rem);
-            background: linear-gradient(to bottom, #3b82f6, #8b5cf6);
+        /* Grid Background pattern */
+        .grid-pattern {
+            background-image: linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: center center;
         }
 
-        .timeline-item:last-child::after {
+        /* Nav Scroll State */
+        .nav-scrolled {
+            background: rgba(6, 9, 15, 0.9);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Mobile Overlay */
+        #mobile-menu {
+            transform: translateX(100%);
+            transition: transform 0.3s ease-in-out;
+        }
+        #mobile-menu.open {
+            transform: translateX(0);
+        }
+        .overlay {
             display: none;
-        }
-
-        @media print {
-            .page {
-                page-break-after: always;
-                margin: 0;
-                padding: 1rem;
-            }
-
-            body {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
-        }
-
-        .workflow-step {
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-            border: 2px solid transparent;
-            background-clip: padding-box;
-            position: relative;
-        }
-
-        .workflow-step::before {
-            content: '';
-            position: absolute;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            position: fixed;
             inset: 0;
-            padding: 2px;
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-            border-radius: inherit;
-            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            mask-composite: exclude;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            z-index: 55;
+        }
+        .overlay.show {
+            display: block;
+            opacity: 1;
         }
     </style>
 </head>
+<body class="relative min-h-screen selection:bg-purple-500/30">
 
-<body class="bg-white text-slate-800">
-    <!-- Cover Page -->
-    <div class="page flex flex-col justify-center items-center text-center relative overflow-hidden">
-        <!-- Background Elements -->
-        <div class="absolute top-20 left-20 w-32 h-32 gradient-bg rounded-full opacity-10 blur-xl"></div>
-        <div class="absolute bottom-20 right-20 w-40 h-40 gradient-bg rounded-full opacity-10 blur-xl"></div>
+    <!-- Ambient Background -->
+    <div class="fixed inset-0 grid-pattern z-[-2]"></div>
+    <div class="fixed top-0 left-0 w-full h-full overflow-hidden z-[-1] pointer-events-none">
+        <div class="glow-circle-1 animate-pulse-slow"></div>
+        <div class="glow-circle-2" style="animation: pulse 5s cubic-bezier(0.4, 0, 0.6, 1) infinite reverse;"></div>
+    </div>
 
-        <!-- Logo Placeholder -->
-        <div class="mb-12">
-            <div class="w-32 h-32 gradient-bg rounded-3xl flex items-center justify-center shadow-2xl">
-                <svg class="w-16 h-16 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+    <!-- Navigation -->
+    <nav id="mainNav" class="fixed top-0 w-full z-50 transition-all duration-300 px-6 py-4 border-b border-transparent">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            
+            <!-- Logo -->
+            <a href="#" class="flex items-center gap-3 group">
+                <div class="relative">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-brand flex items-center justify-center shadow-lg shadow-purple-500/20 transition-transform duration-300 group-hover:scale-105 relative z-10">
+                        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                        </svg>
+                    </div>
+                </div>
+                <span class="text-2xl font-outfit font-bold text-white tracking-wide">Yolixa</span>
+            </a>
+
+            <!-- Desktop Links -->
+            <div class="hidden md:flex items-center gap-8 text-sm font-medium">
+                <a href="#overview" class="top-nav-link">Overview</a>
+                <a href="#how-it-works" class="top-nav-link">How it Works</a>
+                <a href="#stellar-integration" class="top-nav-link">Architecture</a>
+                <a href="#fees-rewards" class="top-nav-link">Tokenomics</a>
+                <a href="#roadmap" class="top-nav-link">Roadmap</a>
+            </div>
+
+            <!-- CTA / Mobile Toggle -->
+            <div class="flex items-center gap-4">
+                <a href="{{ url('/') }}" class="hidden sm:inline-flex px-5 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold text-sm transition-all duration-300 shadow-sm hover:shadow-purple-500/10">
+                    Back to App
+                </a>
+                
+                <!-- Hamburger -->
+                <button id="mobileMenuBtn" class="md:hidden p-2 text-slate-300 hover:text-white focus:outline-none">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Drawer Overlay -->
+    <div id="mobileOverlay" class="overlay md:hidden"></div>
+
+    <!-- Mobile Drawer -->
+    <div id="mobile-menu" class="fixed inset-y-0 right-0 w-64 bg-[#06090F] border-l border-white/10 z-[60] p-6 shadow-2xl flex flex-col md:hidden">
+        <div class="flex justify-between items-center mb-10">
+            <span class="text-xl font-outfit font-bold text-white">Menu</span>
+            <button id="closeMobileBtn" class="text-slate-400 hover:text-white p-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
-            </div>
+            </button>
         </div>
-
-        <!-- Title -->
-        <h1 class="text-7xl font-black mb-6 gradient-text leading-tight">
-            Yolixa
-        </h1>
-
-        <!-- Tagline -->
-        <h2 class="text-3xl font-bold mb-12 text-slate-600">
-            Decentralized Tipping. Empowering Creators Globally.
-        </h2>
-
-        <!-- Subtitle -->
-        <div class="section-card max-w-2xl">
-            <p class="text-xl font-medium text-slate-700">
-                A Revolutionary Blockchain Platform Built on Stellar Network
-            </p>
+        <div class="flex flex-col gap-2 text-sm">
+            <a href="#overview" class="mobile-nav-link p-3 rounded-lg text-slate-300 hover:bg-white/5 hover:text-purple-400 font-medium transition-colors">1. Project Overview</a>
+            <a href="#how-it-works" class="mobile-nav-link p-3 rounded-lg text-slate-300 hover:bg-white/5 hover:text-purple-400 font-medium transition-colors">2. How it Works</a>
+            <a href="#stellar-integration" class="mobile-nav-link p-3 rounded-lg text-slate-300 hover:bg-white/5 hover:text-purple-400 font-medium transition-colors">3. Architecture</a>
+            <a href="#fees-rewards" class="mobile-nav-link p-3 rounded-lg text-slate-300 hover:bg-white/5 hover:text-purple-400 font-medium transition-colors">4. Fees & Rewards</a>
+            <a href="#roadmap" class="mobile-nav-link p-3 rounded-lg text-slate-300 hover:bg-white/5 hover:text-purple-400 font-medium transition-colors">5. Roadmap & Vision</a>
         </div>
-
-        <!-- Version & Date -->
-        <div class="absolute bottom-8 text-slate-500">
-            <p class="text-lg font-medium">Whitepaper v1.0 | 2025</p>
+        <div class="mt-auto pt-6 border-t border-white/10">
+            <a href="{{ url('/') }}" class="flex justify-center w-full px-5 py-3 rounded-lg bg-purple-600/20 border border-purple-500/30 text-white font-medium transition-colors hover:bg-purple-600/40">
+                Back to App
+            </a>
         </div>
     </div>
 
-    <!-- Introduction Page -->
-    <div class="page">
-        <div class="max-w-4xl mx-auto">
-            <!-- Heading -->
-            <div class="flex items-center mb-8">
-                <div class="w-12 h-12 gradient-bg rounded-xl flex items-center justify-center mr-4">
-                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+    <!-- Main Content Layout -->
+    <div class="max-w-7xl mx-auto px-6 pt-36 pb-24 flex flex-col lg:flex-row gap-12 relative">
+        
+        <!-- Table of Contents Sidebar -->
+        <aside class="hidden lg:block w-64 shrink-0">
+            <div class="sticky top-32 glass-panel p-6">
+                <h3 class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-4">Contents</h3>
+                <nav class="flex flex-col text-sm font-medium">
+                    <a href="#overview" class="toc-link">1. Project Overview</a>
+                    <a href="#problem-solution" class="toc-link">2. Problem & Solution</a>
+                    <a href="#how-it-works" class="toc-link">3. How Yolixa Works</a>
+                    <a href="#stellar-integration" class="toc-link">4. Stellar Integration</a>
+                    <a href="#fees-rewards" class="toc-link">5. Fees & Token Rewards</a>
+                    <a href="#security" class="toc-link">6. Security & Operations</a>
+                    <a href="#roadmap" class="toc-link">7. Future Roadmap</a>
+                </nav>
+
+                <div class="mt-8 pt-6 border-t border-white/10">
+                    <h4 class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-4">Implementation Status</h4>
+                    <div class="flex flex-col gap-3">
+                        <div class="flex items-center gap-3"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]"></span> <span class="text-xs text-slate-300 font-medium">Fully Implemented</span></div>
+                        <div class="flex items-center gap-3"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]"></span> <span class="text-xs text-slate-300 font-medium">In Progress</span></div>
+                        <div class="flex items-center gap-3"><span class="w-2.5 h-2.5 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.5)]"></span> <span class="text-xs text-slate-300 font-medium">Planned Scope</span></div>
+                    </div>
                 </div>
-                <h2 class="text-5xl font-black gradient-text">Introduction</h2>
             </div>
+        </aside>
 
-            <!-- Welcome Section -->
-            <div class="section-card">
-                <h3 class="text-2xl font-bold mb-6 text-slate-800">Welcome to the Future of the Creator Economy</h3>
-                <p class="text-lg leading-relaxed text-slate-700 mb-6">
-                    Yolixa is a decentralized tipping platform built on the Stellar blockchain.
-                    Our mission is to empower creators and influencers by enabling direct, borderless,
-                    and transparent tips from their audience—without traditional payment intermediaries.
+        <!-- Whitepaper Document -->
+        <main class="flex-1 space-y-24 min-w-0">
+            
+            <!-- Cover/Hero -->
+            <section class="text-center md:text-left pt-6 pb-12 border-b border-white/10 relative">
+                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 font-semibold text-xs mb-6 animate__animated animate__fadeInDown">
+                    <span class="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span> Official Documentation v2.0
+                </div>
+                <h1 class="text-5xl md:text-7xl font-black text-white leading-[1.1] mb-6 tracking-tight animate__animated animate__fadeInUp">
+                    The Decentralized <br>
+                    <span class="text-gradient">Tipping Economy.</span>
+                </h1>
+                <p class="text-lg md:text-xl text-slate-400 max-w-2xl leading-relaxed mb-10 animate__animated animate__fadeInUp" style="animation-delay: 0.1s;">
+                    A comprehensive technical overview detailing Yolixa's current codebase implementation, blockchain architecture, and roadmap on the Stellar network.
                 </p>
+                <div class="flex flex-wrap items-center gap-3 animate__animated animate__fadeInUp" style="animation-delay: 0.2s;">
+                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
+                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        <span class="text-xs font-medium text-slate-300">Project Started: 2025</span>
+                    </div>
+                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
+                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        <span class="text-xs font-medium text-slate-300">Last Updated: April 2026</span>
+                    </div>
+                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
+                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        <span class="text-xs font-medium text-slate-300">Network: Stellar Public</span>
+                    </div>
+                </div>
+            </section>
 
-                <div class="grid md:grid-cols-2 gap-8 mt-8">
-                    <!-- What is Yolixa -->
-                    <div>
-                        <h4 class="text-xl font-bold mb-4 text-yolixa-blue">What is Yolixa?</h4>
-                        <ul class="space-y-3 text-slate-700">
-                            <li class="flex items-start">
-                                <div class="w-2 h-2 bg-yolixa-blue rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                                <span>A decentralized tipping platform powered by the Stellar blockchain.</span>
+            <!-- 1. Overview -->
+            <section id="overview" class="scroll-mt-32">
+                <div class="flex items-center gap-4 mb-8">
+                    <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center font-black text-lg border border-blue-500/20">1</div>
+                    <h2 class="text-3xl font-bold text-white">Project Overview</h2>
+                </div>
+                <div class="glass-panel p-8 md:p-10">
+                    <p class="text-slate-300 leading-relaxed mb-8 text-lg">
+                        Yolixa is a highly scalable, decentralized tipping platform built natively on the <strong>Stellar network</strong>. Our primary objective is to empower content creators by facilitating borderless, ultra-low-fee microtransactions between them and their audience, fully abstracting complex blockchain concepts into a modern web experience.
+                    </p>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="p-6 rounded-2xl bg-white/[0.02] border border-white/5 relative overflow-hidden transition-all duration-300 hover:border-purple-500/30">
+                            <h4 class="text-white font-bold mb-3 font-outfit text-xl">Core Philosophy</h4>
+                            <p class="text-sm text-slate-400 leading-relaxed">Creators should keep the value they generate. We aim to replace the traditional 5-15% legacy Web2 platform fee overhead with decentralized smart mechanics and minimal native network costs.</p>
+                        </div>
+                        <div class="p-6 rounded-2xl bg-white/[0.02] border border-white/5 relative overflow-hidden transition-all duration-300 hover:border-emerald-500/30">
+                            <h4 class="text-white font-bold mb-3 font-outfit text-xl flex flex-wrap items-center gap-3">
+                                Current Status 
+                                <span class="status-badge status-live">Live</span>
+                            </h4>
+                            <p class="text-sm text-slate-400 leading-relaxed">The core application plumbing—including non-custodial wallet integrations, fast tipping workflows, secure admin dashboards, and blockchain state monitoring—is deployed and functionally robust.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. Problem/Solution -->
+            <section id="problem-solution" class="scroll-mt-32">
+                <div class="flex flex-col md:flex-row gap-8">
+                    <div class="flex-1 glass-panel p-8 text-center md:text-left border-t-4 border-t-red-500/40 relative">
+                        <div class="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center mb-6 mx-auto md:mx-0 shadow-lg shadow-red-500/10">
+                            <svg class="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        </div>
+                        <h3 class="text-2xl font-bold text-white mb-6">The Legacy Problem</h3>
+                        <ul class="space-y-5 text-left inline-block">
+                            <li class="flex gap-4">
+                                <span class="w-1.5 h-1.5 rounded-full bg-red-400 mt-2 shrink-0 shadow-[0_0_8px_rgba(248,113,113,0.8)]"></span>
+                                <p class="text-sm text-slate-300 leading-relaxed"><strong class="text-white">High Platform Rent:</strong> Traditional platforms extract unsustainable percentages (5-20%) from every financial interaction.</p>
                             </li>
-                            <li class="flex items-start">
-                                <div class="w-2 h-2 bg-yolixa-blue rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                                <span>Influencers register and receive unique referral links.</span>
+                            <li class="flex gap-4">
+                                <span class="w-1.5 h-1.5 rounded-full bg-red-400 mt-2 shrink-0 shadow-[0_0_8px_rgba(248,113,113,0.8)]"></span>
+                                <p class="text-sm text-slate-300 leading-relaxed"><strong class="text-white">Delayed Settlements:</strong> Creators are forced to wait days or weeks for manual fiat payout batches.</p>
                             </li>
-                            <li class="flex items-start">
-                                <div class="w-2 h-2 bg-yolixa-blue rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                                <span>Fans can connect wallets and tip instantly in XLM/USDC.</span>
-                            </li>
-                            <li class="flex items-start">
-                                <div class="w-2 h-2 bg-yolixa-blue rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                                <span>A small platform fee supports ecosystem growth and long-term stability while keeping creators first.</span>
+                            <li class="flex gap-4">
+                                <span class="w-1.5 h-1.5 rounded-full bg-red-400 mt-2 shrink-0 shadow-[0_0_8px_rgba(248,113,113,0.8)]"></span>
+                                <p class="text-sm text-slate-300 leading-relaxed"><strong class="text-white">Geographical Borders:</strong> Global fans are locked out by regional payment processing limits and KYC walls.</p>
                             </li>
                         </ul>
                     </div>
-
-                    <!-- Key Benefits -->
-                    <div>
-                        <h4 class="text-xl font-bold mb-4 text-yolixa-purple">Key Benefits</h4>
-                        <ul class="space-y-3 text-slate-700">
-                            <li class="flex items-start">
-                                <div class="w-2 h-2 bg-yolixa-purple rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                                <span>Direct, borderless tipping without intermediaries.</span>
-                            </li>
-                            <li class="flex items-start">
-                                <div class="w-2 h-2 bg-yolixa-purple rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                                <span>Ultra-low transaction costs on Stellar (under $0.01).</span>
-                            </li>
-                            <li class="flex items-start">
-                                <div class="w-2 h-2 bg-yolixa-purple rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                                <span>Creators earn extra YLX token rewards with every tip.</span>
-                            </li>
-                            <li class="flex items-start">
-                                <div class="w-2 h-2 bg-yolixa-purple rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                                <span>Transparent, secure, and instant settlements directly to non-custodial wallets.</span>
-                            </li>
-                            <li class="flex items-start">
-                                <div class="w-2 h-2 bg-yolixa-purple rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                                <span>Fans are also rewarded—driving engagement and long-term loyalty.</span>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Market Opportunity -->
-            <div class="section-card">
-                <h3 class="text-2xl font-bold mb-6 text-slate-800">Market Opportunity</h3>
-                <div class="grid md:grid-cols-3 gap-6">
-                    <div class="text-center">
-                        <div class="text-4xl font-black gradient-text mb-2">$104B</div>
-                        <p class="text-slate-600">Global Creator Economy</p>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-4xl font-black gradient-text mb-2">50M+</div>
-                        <p class="text-slate-600">Content Creators Worldwide</p>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-4xl font-black gradient-text mb-2">$15B</div>
-                        <p class="text-slate-600">Annual Tipping Market</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Problem Page -->
-    <div class="page">
-        <div class="max-w-4xl mx-auto">
-            <!-- Heading -->
-            <div class="flex items-center mb-8">
-                <div class="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center mr-4">
-                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                    </svg>
-                </div>
-                <h2 class="text-5xl font-black text-red-500">Problem</h2>
-            </div>
-
-            <!-- Challenges -->
-            <div class="section-card">
-                <h3 class="text-2xl font-bold mb-6 text-slate-800">Current Challenges in Digital Tipping</h3>
-                <p class="text-lg text-slate-700 mb-8">
-                    Although the creator economy is booming, current tipping platforms remain inefficient, costly, and geographically restrictive—leaving creators underpaid, audiences disengaged, and millions excluded.
-                </p>
-
-                <div class="grid md:grid-cols-2 gap-8">
-                    <div class="space-y-6">
-                        <!-- High Fees -->
-                        <div class="flex items-start space-x-4">
-                            <div class="icon-circle bg-red-100" style="width: 95px;">
-                                <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M3 6a2.25 2.25 0 012.25-2.25h15A2.25 2.25 0 0121.75 6v12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18V6z" />
-                                </svg>
+                    <div class="flex-1 glass-panel p-8 text-center md:text-left border-t-4 border-t-emerald-500/40 relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent"></div>
+                        <div class="relative z-10">
+                            <div class="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-6 mx-auto md:mx-0 shadow-lg shadow-emerald-500/10">
+                                <svg class="w-6 h-6 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                             </div>
-                            <div>
-                                <h4 class="text-xl font-bold mb-2 text-red-600">High Platform Fees</h4>
-                                <p class="text-slate-700">Tipping platforms cut 3–8% in fees, reducing creator earnings.</p>
-                            </div>
+                            <h3 class="text-2xl font-bold text-white mb-6">The Yolixa Solution</h3>
+                            <ul class="space-y-5 text-left inline-block">
+                                <li class="flex gap-4">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-2 shrink-0 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
+                                    <p class="text-sm text-slate-300 leading-relaxed"><strong class="text-white">Micro-fees:</strong> Stellar's network ensures transaction fees strictly remain under fractions of a penny.</p>
+                                </li>
+                                <li class="flex gap-4">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-2 shrink-0 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
+                                    <p class="text-sm text-slate-300 leading-relaxed"><strong class="text-white">Instant Settlement:</strong> Tipped assets arrive in the creator's self-custodial wallet within 3 to 5 seconds.</p>
+                                </li>
+                                <li class="flex gap-4">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-2 shrink-0 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
+                                    <p class="text-sm text-slate-300 leading-relaxed"><strong class="text-white">True Global Reach:</strong> Anyone with a decentralized Web3 wallet can frictionlessly tip without restrictive barriers.</p>
+                                </li>
+                            </ul>
                         </div>
+                    </div>
+                </div>
+            </section>
 
-                        <!-- Delayed Payments -->
-                        <div class="flex items-start space-x-4">
-                            <div class="icon-circle bg-red-100" style="width: 130px;">
-                                <svg class="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
+            <!-- 3. How Works -->
+            <section id="how-it-works" class="scroll-mt-32">
+                <div class="flex items-center gap-4 mb-8">
+                    <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center font-black text-lg border border-blue-500/20">3</div>
+                    <h2 class="text-3xl font-bold text-white">How Yolixa Works</h2>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- Creator Flow -->
+                    <div class="glass-panel p-6 md:p-8 flex flex-col md:flex-row gap-8 items-start md:items-center relative border-transparent hover:border-blue-500/30">
+                        <div class="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gradient-brand flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20">
+                            <svg class="w-8 h-8 md:w-10 md:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex flex-wrap items-center gap-3 mb-3">
+                                <h3 class="text-xl font-bold text-white">Creator Flow</h3>
+                                <span class="status-badge status-live">Live</span>
                             </div>
-                            <div>
-                                <h4 class="text-xl font-bold mb-2 text-red-600">Delayed Payouts</h4>
-                                <p class="text-slate-700">Creators typically wait 7–30 days to receive funds, creating unnecessary cash flow challenges.</p>
+                            <p class="text-slate-400 text-sm leading-relaxed mb-5">Content creators onboard securely using a standard Stellar wallet (e.g., Freighter). The seamless frontend yields a personalized public referral tipping URL. Through a convenient 1-click UI module, the creator dynamically configures trustlines, preparing their wallet to receive natively routed XLM, USDC, and YLX parameters.</p>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="px-3 py-1 bg-white/[0.04] border border-white/10 rounded-md text-[0.7rem] uppercase tracking-wider font-bold text-slate-300">Wallet Connect Auth</span>
+                                <span class="px-3 py-1 bg-white/[0.04] border border-white/10 rounded-md text-[0.7rem] uppercase tracking-wider font-bold text-slate-300">Dashboard Control</span>
+                                <span class="px-3 py-1 bg-white/[0.04] border border-white/10 rounded-md text-[0.7rem] uppercase tracking-wider font-bold text-slate-300">Fast Trustline Setup</span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="space-y-6">
-                        <!-- Limited Reach -->
-                        <div class="flex items-start space-x-4">
-                            <div class="icon-circle bg-red-100" style="width: 110px;">
-                                <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c4.97 0 9 4.03 9 9s-4.03 9-9 9-9-4.03-9-9 4.03-9 9-9z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12h19.5M12 2.25v19.5" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h4 class="text-xl font-bold mb-2 text-red-600">Limited Global Access</h4>
-                                <p class="text-slate-700">Banking limits keep millions of creators in developing regions from earning.</p>
-                            </div>
+                    <!-- Supporter Flow -->
+                    <div class="glass-panel p-6 md:p-8 flex flex-col md:flex-row gap-8 items-start md:items-center relative border-transparent hover:border-purple-500/30">
+                        <div class="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0 shadow-lg shadow-purple-500/20">
+                            <svg class="w-8 h-8 md:w-10 md:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
                         </div>
-
-                        <!-- Low Engagement -->
-                        <div class="flex items-start space-x-4">
-                            <div class="icon-circle bg-red-100" style="width: 130px;">
-                                <svg class="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
-                                </svg>
+                        <div class="flex-1">
+                            <div class="flex flex-wrap items-center gap-3 mb-3">
+                                <h3 class="text-xl font-bold text-white">Fan / Supporter Flow</h3>
+                                <span class="status-badge status-live">Live</span>
                             </div>
-                            <div>
-                                <h4 class="text-xl font-bold mb-2 text-red-600">Low Audience Engagement</h4>
-                                <p class="text-slate-700">Current platforms lack incentives for repeat tipping, leading to weak creator–fan relationships.</p>
+                            <p class="text-slate-400 text-sm leading-relaxed mb-5">When a supporter engages via the provided creator URL, they select their preferred tipping asset. The application securely packages a unique XDR envelope, requests a web-client signature, and accurately delegates the transaction to the public Stellar Horizon API. The transfer process is entirely non-custodial and P2P.</p>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="px-3 py-1 bg-white/[0.04] border border-white/10 rounded-md text-[0.7rem] uppercase tracking-wider font-bold text-slate-300">Dynamic UI Input</span>
+                                <span class="px-3 py-1 bg-white/[0.04] border border-white/10 rounded-md text-[0.7rem] uppercase tracking-wider font-bold text-slate-300">Pre-Fund Network Checks</span>
+                                <span class="px-3 py-1 bg-white/[0.04] border border-white/10 rounded-md text-[0.7rem] uppercase tracking-wider font-bold text-slate-300">Direct XDR Signing</span>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <!-- Cost of Inefficiency -->
-            <div class="section-card bg-red-50 border-red-200">
-                <h3 class="text-2xl font-bold mb-4 text-red-700">The Cost of Inefficiency</h3>
-                <div class="grid md:grid-cols-3 gap-6 text-center">
-                    <div>
-                        <div class="text-3xl font-black text-red-600 mb-2">Billions Lost</div>
-                        <p class="text-red-700">Creators collectively lose billions to platform fees every year.</p>
-                    </div>
-                    <div>
-                        <div class="text-3xl font-black text-red-600 mb-2">60%+</div>
-                        <p class="text-red-700">Creators earn significantly less than their true potential income.</p>
-                    </div>
-                    <div>
-                        <div class="text-3xl font-black text-red-600 mb-2">2B+</div>
-                        <p class="text-red-700">People remain excluded from the global digital economy.</p>
+            <!-- 4. Tech / Stellar -->
+            <section id="stellar-integration" class="scroll-mt-32">
+                <div class="flex items-center gap-4 mb-8">
+                    <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center font-black text-lg border border-blue-500/20">4</div>
+                    <h2 class="text-3xl font-bold text-white">Stellar Network Architecture</h2>
+                </div>
+                
+                <div class="glass-panel p-8 md:p-10">
+                    <p class="text-slate-300 mb-8 leading-relaxed text-lg">Yolixa heavily leverages Stellar for its remarkable throughput and native smart asset protocols. The internal service handlers are inherently defensive against common Web3 failure vectors.</p>
+                    
+                    <div class="grid lg:grid-cols-2 gap-8 relative">
+                        <div class="bg-white/[0.02] border border-white/5 p-6 rounded-2xl relative z-10 transition-colors hover:bg-white/[0.04]">
+                            <h4 class="text-lg font-bold text-white mb-4 flex flex-wrap items-center gap-3 justify-between">
+                                Trustline Automation
+                                <span class="status-badge status-live">Live</span>
+                            </h4>
+                            <p class="text-sm text-slate-400 leading-relaxed mb-4">A custom backend abstraction—specifically through our <code class="text-blue-400 font-medium font-mono text-[0.7rem] tracking-tight bg-blue-500/10 px-1.5 py-0.5 rounded">buildTrustlineXdr</code> logic—authorizes creators to trust incoming external assets (e.g. USDC, YLX) with a heavily simplified, 1-click frontend request.</p>
+                        </div>
+                        <div class="bg-white/[0.02] border border-white/5 p-6 rounded-2xl relative z-10 transition-colors hover:bg-white/[0.04]">
+                            <h4 class="text-lg font-bold text-white mb-4 flex flex-wrap items-center gap-3 justify-between">
+                                Pre-Funding Fail-Safes
+                                <span class="status-badge status-live">Live</span>
+                            </h4>
+                            <p class="text-sm text-slate-400 leading-relaxed mb-4">Stellar transactions universally block unsupported drops (the <code>op_no_destination</code> error). Yolixa's TipService utilizes aggressive pre-transaction polling on the backend and frontend to ensure receiver accounts are primed, effectively blocking failed broadcast attempts.</p>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
+            </section>
 
-    <!-- Solution Page -->
-    <div class="page">
-        <div class="max-w-4xl mx-auto">
-            <div class="flex items-center mb-8">
-                <div class="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center mr-4">
-                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                    </svg>
+            <!-- 5. Fees & Tokenomics -->
+            <section id="fees-rewards" class="scroll-mt-32">
+                <div class="flex items-center gap-4 mb-8">
+                    <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center font-black text-lg border border-blue-500/20">5</div>
+                    <h2 class="text-3xl font-bold text-white">Platform Fees & Token Rewards</h2>
                 </div>
-                <h2 class="text-5xl font-black text-green-500">Solution</h2>
-            </div>
-
-            <div class="section-card">
-                <h3 class="text-2xl font-bold mb-6 gradient-text">Yolixa: The Future of Borderless Tipping</h3>
-                <p class="text-lg text-slate-700 mb-8">
-                    Yolixa is creating the first truly global, blockchain-powered tipping ecosystem for the creator economy. Built on Stellar and fueled by the YLX token, it delivers instant, low-cost, and transparent payments—while unlocking sustainable rewards and stronger engagement for creators and supporters alike.
-                </p>
-
-                <div class="grid md:grid-cols-2 gap-8">
-                    <div class="space-y-6">
-                        <div class="flex items-start space-x-4">
-                            <div class="icon-circle gradient-bg" style="width:125px;">
-                                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h4 class="text-xl font-bold mb-2 text-green-600">Instant Settlements</h4>
-                                <p class="text-slate-700">Transactions confirm within <span class="font-semibold">3–5 seconds</span> via Stellar’s high-speed consensus protocol.</p>
-                            </div>
+                
+                <div class="grid lg:grid-cols-2 gap-8 relative">
+                    <div class="glass-panel p-8 border-t-2 border-emerald-500/50">
+                        <div class="w-12 h-12 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/10">
+                            <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         </div>
-
-                        <div class="flex items-start space-x-4">
-                            <div class="icon-circle gradient-bg" style="width:120px;">
-                                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M12 1C5.925 1 1 5.925 1 12s4.925 11 11 11 11-4.925 11-11S18.075 1 12 1zm0 18a7 7 0 110-14 7 7 0 010 14zm.75-10h-1.5v2.25H9.75v1.5h1.5V15h1.5v-2.25h1.5v-1.5h-1.5V9z" />
-                                </svg>
+                        <div class="flex flex-wrap items-center gap-3 mb-4">
+                            <h4 class="text-2xl font-bold text-white">Adaptive Fee Module</h4>
+                            <span class="status-badge status-live">Live</span>
+                        </div>
+                        <p class="text-sm text-slate-400 mb-6 leading-relaxed">Yolixa utilizes a granular fee logic structured to incentivize native ecosystem growth while remaining highly competitive against legacy platforms.</p>
+                        <div class="text-sm text-slate-300 bg-[#06090F] border border-white/5 p-5 rounded-xl font-mono shadow-inner">
+                            <div class="flex justify-between items-center border-b border-white/5 pb-3 mb-3">
+                                <span class="font-medium">Asset: YLX</span> 
+                                <span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded-md font-bold text-xs tracking-wide">0.00% Fee</span>
                             </div>
-                            <div>
-                                <h4 class="text-xl font-bold mb-2 text-green-600">Minimal Fees</h4>
-                                <p class="text-slate-700">Average transaction costs are less than <span class="font-semibold">$0.01</span>, making micro-tipping scalable worldwide.</p>
+                            <div class="flex justify-between items-center border-b border-white/5 pb-3 mb-3">
+                                <span class="font-medium">Asset: XLM</span> 
+                                <span class="px-2 py-1 bg-blue-500/20 text-blue-400 rounded-md font-bold text-xs tracking-wide">1.50% Fee</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="font-medium">Asset: USDC</span> 
+                                <span class="px-2 py-1 bg-blue-500/20 text-blue-400 rounded-md font-bold text-xs tracking-wide">1.50% Fee</span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="space-y-6">
-                        <div class="flex items-start space-x-4">
-                            <div class="icon-circle gradient-bg" style="width:135px;">
-                                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h4 class="text-xl font-bold mb-2 text-green-600">YLX Token Utility</h4>
-                                <p class="text-slate-700">
-                                    YLX tokens reward users while enabling staking, premium features, and long-term participation in the ecosystem.
-                                </p>
-                            </div>
+                    <div class="glass-panel p-8 border border-amber-500/20 border-t-2 border-t-amber-500/50 relative overflow-hidden flex flex-col">
+                        <div class="absolute top-0 right-0 p-6 opacity-[0.03] pointer-events-none">
+                            <svg class="w-32 h-32 text-amber-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
                         </div>
-
-                        <div class="flex items-start space-x-4">
-                            <div class="icon-circle gradient-bg" style="width:120px;">
-                                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10
-                                    10-4.486 10-10S17.514 2 12 2zm0 18c-1.654 0-3-3.582-3-8s1.346-8 3-8
-                                    3 3.582 3 8-1.346 8-3 8zm-7-8c0-1.542.29-2.979.793-4.243l2.53 1.461
-                                    A17.104 17.104 0 007 12c0 1.355.216 2.633.578 3.782l-2.53 1.461
-                                    A9.958 9.958 0 015 12zm14 0c0 1.542-.29 2.979-.793 4.243l-2.53-1.461
-                                    c.362-1.149.578-2.427.578-3.782s-.216-2.633-.578-3.782l2.53-1.461
-                                    A9.958 9.958 0 0119 12z" />
-                                </svg>
+                        <div class="relative z-10 flex-1">
+                            <div class="flex flex-wrap items-center gap-3 mb-4">
+                                <h4 class="text-2xl font-bold text-white">YLX Rewards Engine</h4>
+                                <span class="status-badge status-progress">Partially Implemented</span>
                             </div>
-                            <div>
-                                <h4 class="text-xl font-bold mb-2 text-green-600">Global Accessibility</h4>
-                                <p class="text-slate-700">Anyone with internet can send or receive tips—no banks, no borders, no exclusions.</p>
+                            <p class="text-sm text-slate-400 mb-6 leading-relaxed">The YLX token system is being intentionally designed to reward active participants. Foundational portions of the reward logic exist in the backend architecture.</p>
+                            
+                            <div class="bg-amber-500/5 border border-amber-500/20 p-5 rounded-xl mb-4 transition-colors hover:bg-amber-500/10">
+                                <div class="flex flex-wrap justify-between items-center mb-2 gap-2">
+                                    <h5 class="text-white text-sm font-bold">Profile Accumulation</h5>
+                                    <span class="text-[0.6rem] uppercase tracking-wider font-bold text-amber-500 px-2 py-1 bg-amber-500/10 rounded">In Progress</span>
+                                </div>
+                                <p class="text-xs text-slate-400 leading-relaxed">System architecture contains scalable logic for crediting YLX proportional to tip volume natively.</p>
+                            </div>
+                            <div class="bg-blue-500/5 border border-blue-500/20 p-5 rounded-xl transition-colors hover:bg-blue-500/10">
+                                <div class="flex flex-wrap justify-between items-center mb-2 gap-2">
+                                    <h5 class="text-white text-sm font-bold">Supporter Incentives</h5>
+                                    <span class="text-[0.6rem] uppercase tracking-wider font-bold text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Planned</span>
+                                </div>
+                                <p class="text-xs text-slate-400 leading-relaxed">Future updates will safely establish an algorithmic protocol to automatically reward ecosystem fans.</p>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <div class="section-card bg-green-50 border-green-200">
-                <h3 class="text-2xl font-bold mb-6 text-green-700">Why Stellar Blockchain?</h3>
-                <div class="grid md:grid-cols-4 gap-6">
-                    <div class="text-center">
-                        <div class="text-3xl font-black text-green-600 mb-2">3–5s</div>
-                        <p class="text-green-700">Transaction Speed</p>
+            <!-- 6. Security -->
+            <section id="security" class="scroll-mt-32">
+                <div class="flex items-center gap-4 mb-8">
+                    <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center font-black text-lg border border-blue-500/20">6</div>
+                    <h2 class="text-3xl font-bold text-white">Security & Operational Control</h2>
+                </div>
+
+                <div class="glass-panel p-0 overflow-hidden flex flex-col md:flex-row">
+                    <div class="p-8 md:w-1/2 border-b md:border-b-0 md:border-r border-white/5 relative bg-white/[0.01]">
+                        <div class="flex flex-wrap items-center gap-3 mb-4">
+                            <h4 class="text-xl font-bold text-white">Ledger Verification</h4>
+                            <span class="status-badge status-live">Live</span>
+                        </div>
+                        <p class="text-sm text-slate-400 leading-relaxed">To rigorously avert spoofed financial payloads, the backend forcefully verifies submitted transaction hashes directly against the unified Horizon RPC API. It definitively asserts that tip amounts, destination receivers, and asset hashes identically mirror the blockchain.</p>
                     </div>
-                    <div class="text-center">
-                        <div class="text-3xl font-black text-green-600 mb-2">&lt;$0.01</div>
-                        <p class="text-green-700">Average Fee</p>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-3xl font-black text-green-600 mb-2">99.99%</div>
-                        <p class="text-green-700">Network Uptime</p>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-3xl font-black text-green-600 mb-2">Cross-Border</div>
-                        <p class="text-green-700">Global Payments</p>
+                    <div class="p-8 md:w-1/2 bg-white/[0.02]">
+                        <div class="flex flex-wrap items-center gap-3 mb-4">
+                            <h4 class="text-xl font-bold text-white">Observability Matrix</h4>
+                            <span class="status-badge status-live">Live</span>
+                        </div>
+                        <p class="text-sm text-slate-400 leading-relaxed">Crucial application errors log securely into dedicated monitoring channels. The deployed <code class="text-purple-300 font-mono text-[0.7rem] bg-purple-500/10 px-1 rounded">AdminPanel</code> offers authorized oversight to modulate fee parameters securely and effectively manage platform metrics.</p>
                     </div>
                 </div>
-                <p class="text-sm text-slate-500 mt-6 text-center">
-                    Yolixa is designed with a compliance-ready, non-custodial architecture, ensuring transparency,
-                    security, and scalability for future regulations in the digital economy.
-                    The platform is aligned with Stellar ecosystem standards (e.g. trustlines, asset flags, and
-                    SEP-based integrations) to remain interoperable and regulation-friendly.
-                </p>
-            </div>
+            </section>
 
-            <!-- Compliance & Governance Section -->
-            <div class="section-card bg-blue-50 border-blue-200">
-                <h3 class="text-2xl font-bold mb-4 text-blue-700">Compliance & Governance</h3>
-                <p class="text-slate-700 mb-4">
-                    Yolixa is built with a long-term, compliance-aware mindset. While the early phase focuses on
-                    product-market fit, the technical and economic design already follows best practices from
-                    the Stellar ecosystem and Web3 industry.
-                </p>
-                <ul class="space-y-2 text-slate-700">
-                    <li>• Non-custodial model: user funds settle directly into user-controlled Stellar wallets.</li>
-                    <li>• Trustline-based asset access, enabling granular control for users and partners.</li>
-                    <li>• Compatibility with Stellar’s SEP standards (e.g., SEP-0001, SEP-0005, SEP-0010) for
-                        future integrations and compliance tooling.</li>
-                    <li>• Transparent on-chain activity with verifiable token supply, rewards, and burns.</li>
-                    <li>• Governance vision: over time, community feedback and YLX holders will help guide
-                        key ecosystem decisions.</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-
-    <!-- Platform Workflow Page -->
-    <div class="page">
-        <div class="max-w-4xl mx-auto">
-            <div class="flex items-center mb-8">
-                <div class="w-12 h-12 gradient-bg rounded-xl flex items-center justify-center mr-4">
-                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5z" />
-                    </svg>
+            <!-- 7. Roadmap -->
+            <section id="roadmap" class="scroll-mt-32 border-t border-white/5 pt-16">
+                <div class="text-center mb-16">
+                    <h2 class="text-4xl font-bold text-white mb-5 font-outfit">Current Roadmap Context</h2>
+                    <p class="text-slate-400 max-w-2xl mx-auto text-lg leading-relaxed">A transparent tracking of the project's foundational delivery milestones and upcoming decentralized ecosystem upgrades.</p>
                 </div>
-                <h2 class="text-5xl font-black gradient-text">Platform Workflow</h2>
-            </div>
 
-            <div class="section-card">
-                <h3 class="text-2xl font-bold mb-8 text-center text-slate-800">Simple 3-Step Process</h3>
-
-                <div class="space-y-8">
-                    <!-- Step 1 -->
-                    <div class="workflow-step rounded-2xl p-6">
-                        <div class="flex items-center mb-4">
-                            <div class="w-16 h-16 gradient-bg rounded-full flex items-center justify-center text-2xl font-bold text-white mr-6">1</div>
-                            <div>
-                                <h4 class="text-2xl font-bold text-slate-800">Creator Registration</h4>
-                                <p class="text-yolixa-blue font-semibold">Wallet Setup</p>
-                            </div>
-                        </div>
-                        <p class="text-slate-700 ml-22">
-                            Creators sign up, connect their Stellar wallet, set up a trustline to YLX, and receive a unique referral link
-                            to share with fans. Creators keep ~98–99% of each tip, with instant settlement to their own non-custodial wallet.
-                        </p>
-                    </div>
-
-                    <!-- Step 2 -->
-                    <div class="workflow-step rounded-2xl p-6">
-                        <div class="flex items-center mb-4">
-                            <div class="w-16 h-16 gradient-bg rounded-full flex items-center justify-center text-2xl font-bold text-white mr-6">2</div>
-                            <div>
-                                <h4 class="text-2xl font-bold text-slate-800">Fan Tipping</h4>
-                                <p class="text-yolixa-purple font-semibold">Seamless Contribution</p>
-                            </div>
-                        </div>
-                        <p class="text-slate-700 ml-22">
-                            Fans open the creator’s referral link, connect their Stellar wallet, create a trustline to YLX to receive bonus rewards,
-                            and tip directly in XLM or USDC — no traditional account signup required. The experience is fast, transparent,
-                            and borderless.
-                        </p>
-                    </div>
-
-                    <!-- Step 3 -->
-                    <div class="workflow-step rounded-2xl p-6">
-                        <div class="flex items-center mb-4">
-                            <div class="w-16 h-16 gradient-bg rounded-full flex items-center justify-center text-2xl font-bold text-white mr-6">3</div>
-                            <div>
-                                <h4 class="text-2xl font-bold text-slate-800">Instant Rewards</h4>
-                                <p class="text-green-600 font-semibold">Fair Distribution</p>
-                            </div>
-                        </div>
-                        <p class="text-slate-700 ml-22">
-                            Every tip is instantly recorded on-chain. Creators receive the majority of the tip amount plus a YLX bonus,
-                            while fans also earn YLX rewards for supporting. Reward mechanics are designed to grow the ecosystem
-                            without creating unsustainable sell pressure.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="section-card bg-blue-50 border-blue-200">
-                <h3 class="text-2xl font-bold mb-4 text-blue-700">Platform Benefits</h3>
-                <div class="grid md:grid-cols-2 gap-8">
-                    <div>
-                        <h4 class="font-bold text-blue-600 mb-3">For Creators</h4>
-                        <ul class="space-y-2 text-slate-700">
-                            <li>• Instant Stellar settlement.</li>
-                            <li>• Global access without banking limits.</li>
-                            <li>• Bonus YLX on every tip and engagement.</li>
-                            <li>• Easy referral-based onboarding.</li>
-                        </ul>
-                    </div>
-                    <div>
-                        <h4 class="font-bold text-blue-600 mb-3">For Supporters</h4>
-                        <ul class="space-y-2 text-slate-700">
-                            <li>• No centralized account signup.</li>
-                            <li>• Tip directly in XLM/USDC.</li>
-                            <li>• Earn YLX rewards for participation.</li>
-                            <li>• Fast, transparent blockchain transfers.</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Token Utility Page -->
-    <div class="page">
-        <div class="max-w-4xl mx-auto">
-            <!-- Section Heading -->
-            <div class="flex items-center mb-8">
-                <div class="w-12 h-12 gradient-bg rounded-xl flex items-center justify-center mr-4">
-                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                    </svg>
-                </div>
-                <h2 class="text-5xl font-black gradient-text">Token Utility (YLX)</h2>
-            </div>
-
-            <!-- Intro -->
-            <div class="section-card">
-                <h3 class="text-2xl font-bold mb-6 text-slate-800">The Core of Yolixa Economy</h3>
-                <p class="text-lg text-slate-700 mb-8">
-                    The Yolixa Token (YLX) is not just a tipping token—it is the backbone of the Yolixa ecosystem.
-                    It fuels tipping, rewards, and engagement while ensuring long-term value for creators, supporters, and stakeholders.
-                </p>
-
-                <!-- Token Utility Grid -->
-                <div class="grid md:grid-cols-2 gap-8">
-                    <div class="space-y-6">
-                        <!-- Tipping -->
-                        <div class="flex items-start space-x-4">
-                            <div class="icon-circle gradient-bg" style="width: 120px; height: 55px;">
-                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.5 0-2.5.75-2.5 1.75S10.5 11.5 12 11.5s2.5.75 2.5 1.75S13.5 15 12 15m0-7V7m0 8v1m0 4.5a9.5 9.5 0 100-19 9.5 9.5 0 000 19z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h4 class="text-xl font-bold mb-2 text-yolixa-blue">Tipping Currency</h4>
-                                <p class="text-slate-700">Fans can tip directly in YLX or get extra rewards when tipping in XLM/USDC that auto-converts to YLX in the reward logic.</p>
-                            </div>
-                        </div>
-
-                        <!-- Rewards -->
-                        <div class="flex items-start space-x-4">
-                            <div class="icon-circle gradient-bg" style="width: 120px; height: 55px;">
-                                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h4 class="text-xl font-bold mb-2 text-yolixa-blue">Engagement Rewards</h4>
-                                <p class="text-slate-700">Creators and fans both earn YLX as bonuses for tipping activity, referrals, and platform engagement.</p>
-                            </div>
-                        </div>
-
-                        <!-- Discounts -->
-                        <div class="flex items-start space-x-4">
-                            <div class="icon-circle gradient-bg" style="width: 120px; height: 55px;">
-                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 9h.01M15 15h.01M7.5 16.5l9-9m1.086-3.414a2 2 0 012.828 0l1.5 1.5a2 2 0 010 2.828l-9.75 9.75a2 2 0 01-1.414.586H6.75a2.25 2.25 0 01-2.25-2.25v-4.5c0-.398.158-.78.44-1.06l9.75-9.75z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h4 class="text-xl font-bold mb-2 text-yolixa-blue">Discounts & Benefits</h4>
-                                <p class="text-slate-700">Holding YLX unlocks reduced fees, premium platform tools, and priority access to new features.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="space-y-6">
-                        <!-- Access -->
-                        <div class="flex items-start space-x-4">
-                            <div class="icon-circle gradient-bg" style="width: 115px; height: 58px;">
-                                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h4 class="text-xl font-bold mb-2 text-yolixa-purple">Exclusive Access</h4>
-                                <p class="text-slate-700">YLX holders unlock premium creator content, beta features, and VIP community benefits.</p>
-                            </div>
-                        </div>
-
-                        <!-- Staking -->
-                        <div class="flex items-start space-x-4">
-                            <div class="icon-circle gradient-bg" style="width: 115px; height: 58px;">
-                                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h4 class="text-xl font-bold mb-2 text-yolixa-purple">Staking Rewards</h4>
-                                <p class="text-slate-700">Stake YLX tokens to earn consistent passive rewards and strengthen long-term engagement.</p>
-                            </div>
-                        </div>
-
-                        <!-- Referral -->
-                        <div class="flex items-start space-x-4">
-                            <div class="icon-circle gradient-bg" style="width: 100px; height: 60px;">
-                                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20a7.5 7.5 0 0115 0c-2.5 1-5 1.75-7.5 1.75S7 21 4.5 20z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h4 class="text-xl font-bold mb-2 text-yolixa-purple">Referral Bonuses</h4>
-                                <p class="text-slate-700">Earn extra YLX by inviting new creators and fans to join the ecosystem.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Token Economics -->
-            <div class="section-card bg-purple-50 border-purple-200">
-                <h3 class="text-2xl font-bold mb-6 text-purple-700">Token Economics Model</h3>
-                <div class="grid md:grid-cols-3 gap-6">
-                    <div class="text-center">
-                        <div class="text-3xl font-black text-purple-600 mb-2">Deflationary</div>
-                        <p class="text-purple-700">
-                            A portion of platform revenue (e.g., 1% of fees) is periodically used to buy back and burn YLX,
-                            reducing circulating supply and increasing scarcity over time.
-                        </p>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-3xl font-black text-purple-600 mb-2">Utility-Driven</div>
-                        <p class="text-purple-700">
-                            Real-world tipping, staking, and reward use cases create organic, sustainable demand for YLX.
-                        </p>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-3xl font-black text-purple-600 mb-2">Community-Led</div>
-                        <p class="text-purple-700">
-                            Over time, YLX holders and creators will help shape key parameters, rewards, and ecosystem expansions.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Tokenomics Page -->
-    <div class="page">
-        <div class="max-w-4xl mx-auto">
-            <!-- Heading -->
-            <div class="flex items-center mb-8">
-                <div class="w-12 h-12 gradient-bg rounded-xl flex items-center justify-center mr-4">
-                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10
-                   10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5
-                   1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-                    </svg>
-                </div>
-                <h2 class="text-5xl font-black gradient-text">Tokenomics</h2>
-            </div>
-
-            <!-- Token Overview -->
-            <div class="section-card">
-                <div class="grid md:grid-cols-2 gap-8">
-                    <div>
-                        <h3 class="text-2xl font-bold mb-6 text-slate-800">Token Overview</h3>
-                        <div class="space-y-4">
-                            <div class="flex justify-between items-center py-3 border-b border-slate-200">
-                                <span class="text-slate-600">Token Name:</span>
-                                <span class="font-bold">Yolixa Token (YLX)</span>
-                            </div>
-                            <div class="flex justify-between items-center py-3 border-b border-slate-200">
-                                <span class="text-slate-600">Total Supply:</span>
-                                <span class="font-bold">1,000,000,000 YLX</span>
-                            </div>
-                            <div class="flex justify-between items-center py-3 border-b border-slate-200">
-                                <span class="text-slate-600">Blockchain:</span>
-                                <span class="font-bold">Stellar Network</span>
-                            </div>
-                            <div class="flex justify-between items-center py-3">
-                                <span class="text-slate-600">Token Type:</span>
-                                <span class="font-bold">Utility Token</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Chart Placeholder -->
-                    <div class="text-center">
-                        <h4 class="text-xl font-bold mb-6 text-slate-800">Token Distribution</h4>
-                        <div class="tokenomics-chart mx-auto mb-6"></div>
-                        <div class="text-center">
-                            <div class="text-2xl font-bold gradient-text mb-2">1B YLX</div>
-                            <div class="text-sm text-slate-600">Total Supply</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Allocation Breakdown -->
-            <div class="section-card">
-                <h3 class="text-2xl font-bold mb-6 text-slate-800">Allocation Breakdown</h3>
-                <div class="space-y-4">
-                    <div class="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
-                        <div class="flex items-center">
-                            <div class="w-4 h-4 bg-yolixa-blue rounded-full mr-3"></div>
-                            <div>
-                                <span class="font-bold">Rewards Pool (40%)</span>
-                                <p class="text-sm text-slate-600">Incentives for creators, supporters, referrals, and ecosystem activity.</p>
-                            </div>
-                        </div>
-                        <span class="font-bold text-yolixa-blue">400M YLX</span>
-                    </div>
-
-                    <div class="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
-                        <div class="flex items-center">
-                            <div class="w-4 h-4 bg-green-500 rounded-full mr-3"></div>
-                            <div>
-                                <span class="font-bold">Team & Development (10%)</span>
-                                <p class="text-sm text-slate-600">Core team allocation with a long-term vesting schedule.</p>
-                            </div>
-                        </div>
-                        <span class="font-bold text-green-600">100M YLX</span>
-                    </div>
-
-                    <div class="flex items-center justify-between p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                        <div class="flex items-center">
-                            <div class="w-4 h-4 bg-yellow-500 rounded-full mr-3"></div>
-                            <div>
-                                <span class="font-bold">Marketing, Partnerships & Ecosystem (45%)</span>
-                                <p class="text-sm text-slate-600">
-                                    Growth, collaborations, creator onboarding campaigns, exchange listings, and ecosystem grants.
-                                </p>
-                            </div>
-                        </div>
-                        <span class="font-bold text-yellow-600">450M YLX</span>
-                    </div>
-
-                    <div class="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
-                        <div class="flex items-center">
-                            <div class="w-4 h-4 bg-red-500 rounded-full mr-3"></div>
-                            <div>
-                                <span class="font-bold">Reserve Fund (5%)</span>
-                                <p class="text-sm text-slate-600">Emergency reserves and future strategic initiatives.</p>
-                            </div>
-                        </div>
-                        <span class="font-bold text-red-600">50M YLX</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Vesting Schedule -->
-            <div class="section-card bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
-                <h3 class="text-2xl font-bold mb-6 gradient-text">Vesting & Emission Schedule</h3>
-                <div class="grid md:grid-cols-2 gap-8">
-                    <div>
-                        <h4 class="font-bold text-slate-800 mb-4">Team Tokens</h4>
-                        <ul class="space-y-2 text-slate-700">
-                            <li>• 12-month cliff.</li>
-                            <li>• 36-month linear vesting after the cliff.</li>
-                            <li>• No immediate liquidity for core team allocation.</li>
-                            <li>• Linked to product and ecosystem milestones.</li>
-                        </ul>
-                    </div>
-                    <div>
-                        <h4 class="font-bold text-slate-800 mb-4">Rewards Distribution</h4>
-                        <ul class="space-y-2 text-slate-700">
-                            <li>• Daily reward emissions governed by activity.</li>
-                            <li>• Gradually decreasing over time to avoid inflation.</li>
-                            <li>• Anti-abuse mechanisms and caps per wallet.</li>
-                            <li>• Short-term vesting/linear unlock for selected rewards to reduce immediate sell pressure.</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Supply & Burn Mechanics -->
-            <div class="section-card bg-purple-50 border-purple-200">
-                <h3 class="text-2xl font-bold mb-4 text-purple-700">Supply & Burn Mechanics</h3>
-                <p class="text-slate-700 mb-4">
-                    YLX follows a transparent and predictable supply model. While the total supply is fixed at 1B YLX, the
-                    effective circulating supply can decrease over time through planned burns.
-                </p>
-                <ul class="space-y-2 text-slate-700">
-                    <li>• A small portion of platform fees may be allocated to periodic buyback-and-burn events.</li>
-                    <li>• Burn events are announced publicly, with on-chain proof for full transparency.</li>
-                    <li>• The burn policy focuses on long-term sustainability, not short-term pump-and-dump behavior.</li>
-                </ul>
-            </div>
-
-            <!-- Security & Audits -->
-            <div class="section-card bg-slate-50 border-slate-200">
-                <h3 class="text-2xl font-bold mb-4 text-slate-800">Security & Audits</h3>
-                <p class="text-slate-700 mb-4">
-                    Security is a core pillar of Yolixa’s design. The platform operates on a non-custodial model where users
-                    maintain control over their wallets and assets.
-                </p>
-                <ul class="space-y-2 text-slate-700">
-                    <li>• Smart contract and integration logic are built with minimal attack surface and clear separation of concerns.</li>
-                    <li>• Internal reviews and code audits happen before any major feature or tokenomics update.</li>
-                    <li>• The long-term roadmap includes partnering with reputable third-party Web3 security firms for external audits.</li>
-                    <li>• Transparent communication with the community around any security updates or changes.</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-
-    <!-- Revenue Model Page -->
-    <div class="page">
-        <div class="max-w-4xl mx-auto">
-            <!-- Heading -->
-            <div class="flex items-center mb-8">
-                <div class="w-12 h-12 gradient-bg rounded-xl flex items-center justify-center mr-4">
-                    <!-- Revenue / Earnings Icon -->
-                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M3 3h2v18H3V3zm16 0h2v18h-2V3zM7 13h2v8H7v-8zm4-6h2v14h-2V7zm4 4h2v10h-2V11z" />
-                        <path d="M12 1a3 3 0 100 6h1v2h-1a5 5 0 110-10h1v2h-1z" />
-                    </svg>
-                </div>
-                <h2 class="text-5xl font-black gradient-text">Revenue Model</h2>
-            </div>
-
-            <!-- Revenue Streams -->
-            <div class="section-card">
-                <h3 class="text-2xl font-bold mb-6 text-slate-800">Sustainable Revenue Streams</h3>
-                <p class="text-lg text-slate-700 mb-8">
-                    Yolixa ensures sustainability through a diversified revenue model with minimal fees, premium services,
-                    and long-term expansion opportunities—all while prioritizing creators and supporters.
-                </p>
-
-                <div class="grid md:grid-cols-2 gap-6">
-                    <!-- Small Tipping Fees -->
-                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
-                        <div class="icon-circle gradient-bg mb-4" style="width:65px">
-                            <!-- Percent Icon -->
-                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" />
-                                <path d="M8 16l8-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                                <circle cx="9" cy="9" r="1.5" fill="currentColor" />
-                                <circle cx="15" cy="15" r="1.5" fill="currentColor" />
-                            </svg>
-                        </div>
-                        <h4 class="text-xl font-bold mb-3 text-yolixa-blue">Small Tipping Fees</h4>
-                        <p class="text-slate-700 mb-4">
-                            The platform sustains itself by charging a minimal <strong>1–2% fee</strong> on every tip — keeping creators first
-                            while funding operations, development, and ecosystem expansion.
-                        </p>
-                        <div class="text-sm text-slate-600">
-                            <strong>Revenue Split:</strong> ~98–99% to creators, ~1–2% to the platform.
-                        </div>
-                    </div>
-
-                    <!-- Premium Tools & Staking -->
-                    <div class="bg-purple-50 border border-purple-200 rounded-xl p-6">
-                        <div class="icon-circle gradient-bg mb-4" style="width:65px">
-                            <!-- Star / tools icon -->
-                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 2l2.09 6.26L20 9.27l-5 3.64L16.18 20 12 16.9 7.82 20 9 12.91 4 9.27l5.91-.99L12 2z" />
-                            </svg>
-                        </div>
-                        <h4 class="text-xl font-bold mb-3 text-yolixa-purple">Premium Tools & Staking</h4>
-                        <p class="text-slate-700 mb-4">
-                            Additional revenue comes from optional premium features for creators (advanced analytics, branding tools,
-                            automation) and staking-related services for YLX holders.
-                        </p>
-                        <div class="text-sm text-slate-600">
-                            <strong>Goal:</strong> Align platform revenue with real usage and long-term value creation.
-                        </div>
-                    </div>
-
-                    <!-- Future Expansion -->
-                    <div class="bg-green-50 border border-green-200 rounded-xl p-6 md:col-span-2">
-                        <div class="icon-circle gradient-bg mb-4" style="width:65px">
-                            <!-- Rocket Icon -->
-                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M4 13a8 8 0 0116 0c0 3.866-2.239 7-5 8l-.5 2-2-.5c-3.5-.875-6.5-4.134-6.5-8.5z" />
-                            </svg>
-                        </div>
-                        <h4 class="text-xl font-bold mb-3 text-green-600">Future Expansion</h4>
-                        <p class="text-slate-700 mb-4">
-                            The expansion roadmap includes integrations with merchandise and creator collaboration tools, sponsorship marketplaces, and more advanced revenue-sharing models
-                            between creators, brands, and fans.
-                        </p>
-                        <div class="text-sm text-slate-600">
-                            <strong>Timeline:</strong> Phase 3 (2025–2026) and beyond, aligned with adoption milestones.
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Sustainability Factors -->
-            <div class="section-card bg-gradient-to-r from-green-50 to-blue-50 border-green-200">
-                <h3 class="text-2xl font-bold mb-6 gradient-text">Sustainability Factors</h3>
-                <div class="grid md:grid-cols-2 gap-8">
-                    <div>
-                        <h4 class="font-bold text-slate-800 mb-4">Growth Drivers</h4>
-                        <ul class="space-y-2 text-slate-700">
-                            <li>• Network effects via creator adoption.</li>
-                            <li>• Viral sharing of tipping links and content.</li>
-                            <li>• Cross-platform and cross-chain integrations.</li>
-                            <li>• Creator and community-driven expansion loops.</li>
-                        </ul>
-                    </div>
-                    <div>
-                        <h4 class="font-bold text-slate-800 mb-4">Cost Optimization</h4>
-                        <ul class="space-y-2 text-slate-700">
-                            <li>• Stellar’s low transaction costs and high efficiency.</li>
-                            <li>• Automated flows minimizing operational overhead.</li>
-                            <li>• Efficient tokenomics and transparent emissions.</li>
-                            <li>• Community-driven model, reducing centralized marketing costs.</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Roadmap Page -->
-    <div class="page">
-        <div class="max-w-4xl mx-auto">
-            <div class="flex items-center mb-8">
-                <div class="w-12 h-12 gradient-bg rounded-xl flex items-center justify-center mr-4">
-                    <!-- Roadmap Icon -->
-                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M4 17l6-6 4 4 6-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                </div>
-                <h2 class="text-5xl font-black gradient-text">Roadmap</h2>
-            </div>
-
-            <div class="section-card">
-                <h3 class="text-2xl font-bold mb-8 text-center text-slate-800">Development Timeline</h3>
-
-                <div class="space-y-8">
+                <div class="relative border-l border-white/10 ml-4 md:ml-[50%] md:-translate-x-px space-y-16 pb-10">
+                    
                     <!-- Phase 1 -->
-                    <div class="timeline-item">
-                        <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
-                            <div class="flex items-center mb-4">
-                                <div class="w-12 h-12 gradient-bg rounded-full flex items-center justify-center text-white font-bold mr-4">1</div>
-                                <div>
-                                    <h4 class="text-2xl font-bold text-slate-800">Phase 1: MVP Launch</h4>
-                                    <span class="text-yolixa-blue font-semibold">Q1–Q2 2025</span>
-                                </div>
-                            </div>
-                            <div class="ml-16">
-                                <p class="text-slate-700 mb-4">
-                                    Launch of the Minimum Viable Product with essential tipping features and token deployment.
-                                </p>
-                                <div class="grid md:grid-cols-2 gap-4">
-                                    <ul class="space-y-2 text-slate-700">
-                                        <li>✓ Stellar blockchain integration.</li>
-                                        <li>✓ Basic tipping functionality.</li>
-                                        <li>✓ YLX token deployment.</li>
-                                        <li>✓ Wallet connection for creators.</li>
-                                    </ul>
-                                    <ul class="space-y-2 text-slate-700">
-                                        <li>✓ Referral link system.</li>
-                                        <li>✓ Initial analytics dashboard.</li>
-                                        <li>✓ Community building.</li>
-                                        <li>✓ Web application launch.</li>
-                                    </ul>
-                                </div>
-                            </div>
+                    <div class="relative pl-10 md:pl-0 group">
+                        <div class="absolute left-[-8.5px] md:left-1/2 top-1.5 w-4 h-4 rounded-full bg-emerald-500 ring-4 ring-[#0B0F19] md:-translate-x-1/2 z-10 box-content transition-transform group-hover:scale-125 duration-300"></div>
+                        <div class="md:w-[45%] md:pr-14 ml-auto md:ml-0 text-left md:text-right">
+                            <div class="inline-block px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold text-[0.7rem] tracking-widest uppercase mb-4 rounded-md shadow-sm">Phase 1: Achieved</div>
+                            <h4 class="text-2xl font-bold text-white mb-4">Blockchain Foundation</h4>
+                            <ul class="text-sm text-slate-400 space-y-3 inline-block text-left md:text-right">
+                                <li class="flex items-center md:flex-row-reverse gap-3"><svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Non-custodial Wallet Authentication</li>
+                                <li class="flex items-center md:flex-row-reverse gap-3"><svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Base Tipping Logic (XLM/USDC)</li>
+                                <li class="flex items-center md:flex-row-reverse gap-3"><svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Ledger Verification Engine</li>
+                                <li class="flex items-center md:flex-row-reverse gap-3"><svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Administrative Dashboard Systems</li>
+                            </ul>
                         </div>
                     </div>
 
                     <!-- Phase 2 -->
-                    <div class="timeline-item">
-                        <div class="bg-purple-50 border border-purple-200 rounded-xl p-6">
-                            <div class="flex items-center mb-4">
-                                <div class="w-12 h-12 gradient-bg rounded-full flex items-center justify-center text-white font-bold mr-4">2</div>
-                                <div>
-                                    <h4 class="text-2xl font-bold text-slate-800">Phase 2: Growth & Features</h4>
-                                    <span class="text-yolixa-purple font-semibold">Q3–Q4 2025</span>
-                                </div>
-                            </div>
-                            <div class="ml-16">
-                                <p class="text-slate-700 mb-4">
-                                    Expansion of platform features and growth of creator and fan ecosystem.
-                                </p>
-                                <div class="grid md:grid-cols-2 gap-4">
-                                    <ul class="space-y-2 text-slate-700">
-                                        <li>• Premium subscription tiers.</li>
-                                        <li>• Advanced creator tools.</li>
-                                        <li>• Social media integrations.</li>
-                                        <li>• YLX staking & rewards.</li>
-                                    </ul>
-                                    <ul class="space-y-2 text-slate-700">
-                                        <li>• Referral & loyalty program.</li>
-                                        <li>• Third-party API integrations.</li>
-                                        <li>• Enhanced security protocols & monitoring.</li>
-                                    </ul>
-                                </div>
-                            </div>
+                    <div class="relative pl-10 md:pl-0 group">
+                        <div class="absolute left-[-8.5px] md:left-1/2 top-1.5 w-4 h-4 rounded-full bg-amber-500 ring-4 ring-[#0B0F19] shadow-[0_0_15px_rgba(245,158,11,0.5)] md:-translate-x-1/2 z-10 box-content transition-transform group-hover:scale-125 duration-300"></div>
+                        <div class="md:w-[45%] md:pl-14 ml-auto">
+                            <div class="inline-block px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-400 font-bold text-[0.7rem] tracking-widest uppercase mb-4 rounded-md shadow-sm">Phase 2: In Progress</div>
+                            <h4 class="text-2xl font-bold text-white mb-4">Utility Expansion</h4>
+                            <ul class="text-sm text-slate-400 space-y-3">
+                                <li class="flex items-center gap-3 text-emerald-300"><svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Sub-Zero Fee Discount Engine</li>
+                                <li class="flex items-center gap-3 text-emerald-300"><svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Implementation of Native YLX Tipping</li>
+                                <li class="flex items-center gap-3 text-slate-400"><svg class="w-4 h-4 text-amber-500 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg> YLX Rewards Pipeline Configuration</li>
+                                <li class="flex items-center gap-3 text-slate-500"><svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Scalable Distribution Logic</li>
+                            </ul>
                         </div>
                     </div>
 
                     <!-- Phase 3 -->
-                    <div class="timeline-item">
-                        <div class="bg-green-50 border border-green-200 rounded-xl p-6">
-                            <div class="flex items-center mb-4">
-                                <div class="w-12 h-12 gradient-bg rounded-full flex items-center justify-center text-white font-bold mr-4">3</div>
-                                <div>
-                                    <h4 class="text-2xl font-bold text-slate-800">Phase 3: Global Expansion</h4>
-                                    <span class="text-green-600 font-semibold">Q1–Q4 2026</span>
-                                </div>
-                            </div>
-                            <div class="ml-16">
-                                <p class="text-slate-700 mb-4">
-                                    Scaling the ecosystem globally with advanced Web3 features and cross-chain compatibility.
-                                </p>
-                                <div class="grid md:grid-cols-2 gap-4">
-                                    <ul class="space-y-2 text-slate-700">
-                                        <li>• Merchandise & e-commerce features.</li>
-                                        <li>• Cross-chain support.</li>
-                                        <li>• Enterprise partnerships.</li>
-                                    </ul>
-                                    <ul class="space-y-2 text-slate-700">
-                                        <li>• AI-driven personalization.</li>
-                                        <li>• Global strategic alliances.</li>
-                                        <li>• DeFi-based features & liquidity programs.</li>
-                                    </ul>
-                                </div>
-                            </div>
+                    <div class="relative pl-10 md:pl-0 group">
+                        <div class="absolute left-[-8.5px] md:left-1/2 top-1.5 w-4 h-4 rounded-full bg-blue-500/30 ring-4 ring-[#0B0F19] md:-translate-x-1/2 z-10 box-content transition-transform group-hover:scale-125 duration-300"></div>
+                        <div class="md:w-[45%] md:pr-14 ml-auto md:ml-0 text-left md:text-right opacity-80">
+                            <div class="inline-block px-3 py-1 bg-blue-500/10 border border-blue-500/20 text-blue-400 font-bold text-[0.7rem] tracking-widest uppercase mb-4 rounded-md shadow-sm">Phase 3: Planned Scope</div>
+                            <h4 class="text-2xl font-bold text-white mb-4">Ecosystem Maturity</h4>
+                            <ul class="text-sm text-slate-400 space-y-3 inline-block text-left md:text-right">
+                                <li class="flex items-center md:flex-row-reverse gap-3"><svg class="w-4 h-4 shrink-0 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"/></svg> Web3 Authenticated Content Locking</li>
+                                <li class="flex items-center md:flex-row-reverse gap-3"><svg class="w-4 h-4 shrink-0 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"/></svg> Token Staking Web Interfaces</li>
+                                <li class="flex items-center md:flex-row-reverse gap-3"><svg class="w-4 h-4 shrink-0 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"/></svg> Deflationary Tokenomics Enhancements</li>
+                                <li class="flex items-center md:flex-row-reverse gap-3"><svg class="w-4 h-4 shrink-0 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"/></svg> DAO Framework Initializations</li>
+                            </ul>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
+            </section>
+
+        </main>
     </div>
 
-    <!-- Vision Page -->
-    <div class="page">
-        <div class="max-w-4xl mx-auto">
-            <!-- Vision Heading -->
-            <div class="flex items-center mb-8">
-                <div class="w-12 h-12 gradient-bg rounded-xl flex items-center justify-center mr-4">
-                    <!-- Eye / Vision Icon -->
-                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                    </svg>
-                </div>
-                <h2 class="text-5xl font-black gradient-text">Vision</h2>
+    <!-- Footer -->
+    <footer class="border-t border-white/5 bg-[#06090F] py-14 relative z-10 mt-auto">
+        <div class="max-w-7xl mx-auto px-6 text-center">
+            <div class="w-14 h-14 mx-auto rounded-xl bg-gradient-brand flex items-center justify-center mb-6 shadow-lg shadow-purple-500/10">
+                <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
             </div>
-
-            <!-- Core Vision Statement -->
-            <div class="section-card">
-                <h3 class="text-3xl font-bold mb-8 text-center gradient-text">
-                    Redefining the Global Standard for Decentralized Tipping
-                </h3>
-                <p class="text-xl text-slate-700 leading-relaxed text-center mb-12">
-                    Yolixa envisions a world where creators earn fairly, supporters can tip instantly,
-                    and blockchain removes barriers between talent and financial reward.
-                    Our mission is to empower the creator economy with transparency, inclusivity, and trust.
-                </p>
-
-                <!-- Pillars -->
-                <div class="grid md:grid-cols-3 gap-8 mb-12">
-                    <div class="text-center">
-                        <div class="w-20 h-20 gradient-bg rounded-full flex items-center justify-center mx-auto mb-6">
-                            <!-- Globe Icon -->
-                            <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 0c-2.21 0-4 4.48-4 10s1.79 10 4 10 4-4.48 4-10-1.79-10-4-10z" />
-                            </svg>
-                        </div>
-                        <h4 class="text-2xl font-bold mb-4 text-yolixa-blue">Global Accessibility</h4>
-                        <p class="text-slate-700">
-                            Breaking down financial and geographic barriers so anyone with internet
-                            can participate in the creator economy.
-                        </p>
-                    </div>
-
-                    <div class="text-center">
-                        <div class="w-20 h-20 gradient-bg rounded-full flex items-center justify-center mx-auto mb-6">
-                            <!-- Lightning Icon -->
-                            <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
-                        </div>
-                        <h4 class="text-2xl font-bold mb-4 text-yolixa-purple">Instant Value Transfer</h4>
-                        <p class="text-slate-700">
-                            Real-time, low-cost blockchain transactions that maximize the value creators receive.
-                        </p>
-                    </div>
-
-                    <div class="text-center">
-                        <div class="w-20 h-20 gradient-bg rounded-full flex items-center justify-center mx-auto mb-6">
-                            <!-- Users / Community Icon -->
-                            <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20a7.5 7.5 0 0115 0c-2.5 1-5 1.75-7.5 1.75S7 21 4.5 20z" />
-                            </svg>
-                        </div>
-                        <h4 class="text-2xl font-bold mb-4 text-green-600">Community Empowerment</h4>
-                        <p class="text-slate-700">
-                            Rewarding both creators and supporters to build a thriving, self-sustaining ecosystem.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Long-Term Impact -->
-            <div class="section-card bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
-                <h3 class="text-2xl font-bold mb-8 text-center gradient-text">Our Long-Term Impact</h3>
-
-                <div class="space-y-8">
-                    <div class="flex items-start space-x-6">
-                        <div class="w-16 h-16 gradient-bg rounded-full flex items-center justify-center flex-shrink-0" style="width: 120px;">
-                            <span class="text-2xl font-bold text-white">2025</span>
-                        </div>
-                        <div>
-                            <h4 class="text-xl font-bold mb-3 text-slate-800">Market Leadership</h4>
-                            <p class="text-slate-700">
-                                Establish Yolixa as a leading decentralized tipping platform with tens of thousands of active creators
-                                and strong monthly tipping volume.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="flex items-start space-x-6">
-                        <div class="w-16 h-16 gradient-bg rounded-full flex items-center justify-center flex-shrink-0" style="width: 120px;">
-                            <span class="text-2xl font-bold text-white">2026</span>
-                        </div>
-                        <div>
-                            <h4 class="text-xl font-bold mb-3 text-slate-800">Ecosystem Expansion</h4>
-                            <p class="text-slate-700">
-                                Launch advanced creator tools including merchandise integration, cross-chain support,
-                                and enterprise partnerships.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="flex items-start space-x-6">
-                        <div class="w-16 h-16 gradient-bg rounded-full flex items-center justify-center flex-shrink-0" style="width: 120px;">
-                            <span class="text-2xl font-bold text-white">2027+</span>
-                        </div>
-                        <div>
-                            <h4 class="text-xl font-bold mb-3 text-slate-800">Global Standard</h4>
-                            <p class="text-slate-700">
-                                Become a universal standard for creator monetization, integrated with major social platforms
-                                and used by creators worldwide.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Closing Call-to-Action -->
-            <div class="section-card text-center">
-                <h3 class="text-2xl font-bold mb-6 gradient-text">Join the Revolution</h3>
-                <p class="text-lg text-slate-700 mb-8">
-                    The future of the creator economy is decentralized, transparent, and fair.
-                    Yolixa is building the infrastructure to make this vision a reality,
-                    empowering millions of creators worldwide to thrive.
-                </p>
-
-                <div class="grid md:grid-cols-2 gap-8">
-                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
-                        <h4 class="text-xl font-bold mb-4 text-yolixa-blue">For Creators</h4>
-                        <p class="text-slate-700">
-                            Take control of your income with minimal fees, instant payouts, and borderless reach.
-                        </p>
-                    </div>
-
-                    <div class="bg-purple-50 border border-purple-200 rounded-xl p-6">
-                        <h4 class="text-xl font-bold mb-4 text-yolixa-purple">For Supporters</h4>
-                        <p class="text-slate-700">
-                            Support creators you love directly and earn rewards for your engagement.
-                            Every contribution makes a lasting impact.
-                        </p>
-                    </div>
-                </div>
-            </div>
+            <p class="text-slate-300 font-medium text-lg mb-4 tracking-wide font-outfit">Empowering Creators Through Decentralization</p>
+            <p class="text-sm text-slate-500">&copy; 2025-2026 Yolixa Network. All rights reserved.</p>
         </div>
-    </div>
-
-    <!-- Contact Page -->
-    <div class="page">
-        <div class="max-w-4xl mx-auto">
-            <!-- Contact Heading -->
-            <div class="flex items-center mb-8">
-                <div class="w-12 h-12 gradient-bg rounded-xl flex items-center justify-center mr-4">
-                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                </div>
-                <h2 class="text-5xl font-black gradient-text">Contact Us</h2>
-            </div>
-
-            <!-- Intro -->
-            <div class="section-card text-center mb-8">
-                <h3 class="text-3xl font-bold mb-6 gradient-text">Let’s Connect</h3>
-                <p class="text-lg text-slate-700 mb-8">
-                    Whether you’re a creator, supporter, investor, or partner — we’d love to hear from you.
-                    Reach out through our official channels or join our growing community.
-                </p>
-            </div>
-
-            <!-- Official Channels + Community -->
-            <div class="grid md:grid-cols-1 gap-8 mb-8">
-                <!-- Official -->
-                <div class="bg-white rounded-2xl shadow-lg p-8 border border-slate-100">
-                    <h4 class="text-3xl font-extrabold mb-8 text-center text-yolixa-blue">Official Channels</h4>
-
-                    <div class="space-y-8">
-                        <!-- Website -->
-                        <div class="flex items-center space-x-5 hover:bg-slate-50 transition rounded-xl p-4">
-                            <div class="w-12 h-12 bg-gradient-to-r from-yolixa-blue to-blue-600 rounded-xl flex items-center justify-center shadow-md">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24"
-                                    stroke="currentColor" stroke-width="2">
-                                    <path
-                                        d="M12 3C7.03 3 3 7.03 3 12c0 4.97 4.03 9 9 9 4.97 0 9-4.03 9-9 0-4.97-4.03-9-9-9zm0 16c-3.86 0-7-3.14-7-7 0-3.86 3.14-7 7-7 3.86 0 7 3.14 7 7 0 3.86-3.14 7-7 7z" />
-                                    <path d="M12 3v18M3 12h18" />
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="font-bold text-slate-800">Website</p>
-                                <a href="https://www.yolixa.com" target="_blank" class="text-slate-600 hover:text-yolixa-blue transition">www.yolixa.com</a>
-                            </div>
-                        </div>
-
-                        <!-- Email -->
-                        <div class="flex items-center space-x-5 hover:bg-slate-50 transition rounded-xl p-4">
-                            <div class="w-12 h-12 bg-gradient-to-r from-yolixa-blue to-blue-600 rounded-xl flex items-center justify-center shadow-md">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24"
-                                    stroke="currentColor" stroke-width="2">
-                                    <path
-                                        d="M3 8l9 6 9-6M4 6h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="font-bold text-slate-800">Email</p>
-                                <a href="mailto:info.yolixa@gmail.com" class="text-slate-600 hover:text-yolixa-blue transition">yolixaofficial@gmail.com</a>
-                            </div>
-                        </div>
-
-                        <!-- Twitter -->
-                        <div class="flex items-center space-x-5 hover:bg-slate-50 transition rounded-xl p-4">
-                            <div class="w-12 h-12 bg-gradient-to-r from-yolixa-blue to-blue-600 rounded-xl flex items-center justify-center shadow-md">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
-                                    <path
-                                        d="M22.46 6c-.77.35-1.6.58-2.46.69a4.26 4.26 0 001.88-2.35 8.35 8.35 0 01-2.68 1.03A4.22 4.22 0 0015.5 4c-2.33 0-4.22 1.89-4.22 4.22 0 .33.04.65.1.96A11.96 11.96 0 013 5.16a4.22 4.22 0 001.31 5.64 4.21 4.21 0 01-1.91-.53v.05a4.23 4.23 0 003.38 4.14 4.24 4.24 0 01-1.9.07 4.23 4.23 0 003.95 2.94A8.48 8.48 0 012 19.54a11.94 11.94 0 006.48 1.9c7.78 0 12.04-6.45 12.04-12.04 0-.18-.01-.35-.02-.52A8.6 8.6 0 0022.46 6z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="font-bold text-slate-800">Twitter</p>
-                                <a href="https://twitter.com/YolixaOfficial" target="_blank" class="text-slate-600 hover:text-yolixa-blue transition">@YolixaOfficial</a>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-            </div>
-
-            <!-- Call to Action -->
-            <div class="section-card bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 text-center">
-                <h4 class="text-2xl font-bold mb-6 gradient-text">Ready to Get Started?</h4>
-                <p class="text-lg text-slate-700 mb-8">
-                    Join thousands of creators and supporters shaping the future of decentralized tipping.
-                    Your journey starts here.
-                </p>
-
-                <div class="grid md:grid-cols-3 gap-6">
-                    <div class="bg-white rounded-xl p-6 border border-slate-200">
-                        <h5 class="font-bold text-yolixa-blue mb-2">For Creators</h5>
-                        <p class="text-sm text-slate-600">Sign up and start receiving instant tips worldwide.</p>
-                    </div>
-
-                    <div class="bg-white rounded-xl p-6 border border-slate-200">
-                        <h5 class="font-bold text-yolixa-purple mb-2">For Investors</h5>
-                        <p class="text-sm text-slate-600">Discover YLX token utility and growth opportunities.</p>
-                    </div>
-
-                    <div class="bg-white rounded-xl p-6 border border-slate-200">
-                        <h5 class="font-bold text-green-600 mb-2">For Partners</h5>
-                        <p class="text-sm text-slate-600">Collaborate with Yolixa and explore integrations.</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Footer -->
-            <div class="text-center mt-8 pt-8 border-t border-slate-200">
-                <div class="flex items-center justify-center mb-4">
-                    <div class="w-8 h-8 gradient-bg rounded-lg flex items-center justify-center mr-3">
-                        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                        </svg>
-                    </div>
-                    <span class="text-2xl font-bold gradient-text">Yolixa</span>
-                </div>
-                <p class="text-slate-600 mb-2">Decentralized Tipping. Empowering Creators Everywhere.</p>
-                <p class="text-sm text-slate-500">© 2025 Yolixa. All rights reserved.</p>
-            </div>
-        </div>
-    </div>
-
+    </footer>
 
     <script>
-        // Print functionality
-        function printWhitepaper() {
-            window.print();
+        // Desktop Navbar Scroll Effect
+        const mainNav = document.getElementById('mainNav');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                mainNav.classList.add('nav-scrolled');
+                mainNav.classList.remove('py-4');
+                mainNav.classList.add('py-3');
+            } else {
+                mainNav.classList.remove('nav-scrolled');
+                mainNav.classList.add('py-4');
+                mainNav.classList.remove('py-3');
+            }
+        });
+
+        // Setup Intersection Observer for robust Scroll Spy (Top and Sidebar navs)
+        document.addEventListener('DOMContentLoaded', () => {
+            const sections = document.querySelectorAll('section[id]');
+            const tocLinks = document.querySelectorAll('.toc-link');
+            const topNavLinks = document.querySelectorAll('.top-nav-link');
+            const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
+
+            const observerOptions = {
+                root: null,
+                rootMargin: '-10% 0px -80% 0px',
+                threshold: 0
+            };
+
+            const observerCallback = (entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const targetId = entry.target.getAttribute('id');
+                        
+                        // Update Sidebar TOC
+                        tocLinks.forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href') === `#${targetId}`) {
+                                link.classList.add('active');
+                            }
+                        });
+
+                        // Update Top Nav
+                        topNavLinks.forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href') === `#${targetId}`) {
+                                link.classList.add('active');
+                            }
+                        });
+                        
+                        // Update Mobile Nav
+                        mobileNavLinks.forEach(link => {
+                            link.classList.remove('text-purple-400', 'bg-white/5');
+                            link.classList.add('text-slate-300');
+                            if (link.getAttribute('href') === `#${targetId}`) {
+                                link.classList.add('text-purple-400', 'bg-white/5');
+                                link.classList.remove('text-slate-300');
+                            }
+                        });
+                    }
+                });
+            };
+
+            const observer = new IntersectionObserver(observerCallback, observerOptions);
+            sections.forEach(sec => observer.observe(sec));
+            
+            // Smooth Scroll on Click
+            const allLinks = [...tocLinks, ...topNavLinks, ...mobileNavLinks];
+            allLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    const targetId = this.getAttribute('href');
+                    if (targetId.startsWith('#')) {
+                        e.preventDefault();
+                        const targetSection = document.querySelector(targetId);
+                        if (targetSection) {
+                            // close mobile menu if open
+                            if(document.getElementById('mobile-menu').classList.contains('open')) {
+                                closeMobileMenu();
+                            }
+                            
+                            const navHeight = document.getElementById('mainNav').offsetHeight;
+                            const targetPosition = targetSection.getBoundingClientRect().top + window.pageYOffset - navHeight - 32;
+                            window.scrollTo({
+                                top: targetPosition,
+                                behavior: 'smooth'
+                            });
+                        }
+                    }
+                });
+            });
+        });
+
+        // Mobile Drawer Logic
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const closeMobileBtn = document.getElementById('closeMobileBtn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const overlay = document.getElementById('mobileOverlay');
+
+        function openMobileMenu() {
+            mobileMenu.classList.add('open');
+            overlay.classList.add('show');
+            document.body.style.overflow = 'hidden';
         }
 
-        // Add any interactive elements here
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Yolixa Whitepaper loaded successfully');
-        });
-    </script>
-    <script>
-        (function() {
-            function c() {
-                var b = a.contentDocument || a.contentWindow.document;
-                if (b) {
-                    var d = b.createElement('script');
-                    d.innerHTML = "window.__CF$cv$params={r:'97df994632d19098',t:'MTc1NzY4MjE0Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";
-                    b.getElementsByTagName('head')[0].appendChild(d)
-                }
-            }
-            if (document.body) {
-                var a = document.createElement('iframe');
-                a.height = 1;
-                a.width = 1;
-                a.style.position = 'absolute';
-                a.style.top = 0;
-                a.style.left = 0;
-                a.style.border = 'none';
-                a.style.visibility = 'hidden';
-                document.body.appendChild(a);
-                if ('loading' !== document.readyState) c();
-                else if (window.addEventListener) document.addEventListener('DOMContentLoaded', c);
-                else {
-                    var e = document.onreadystatechange || function() {};
-                    document.onreadystatechange = function(b) {
-                        e(b);
-                        'loading' !== document.readyState && (document.onreadystatechange = e, c())
-                    }
-                }
-            }
-        })();
+        function closeMobileMenu() {
+            mobileMenu.classList.remove('open');
+            overlay.classList.remove('show');
+            document.body.style.overflow = '';
+        }
+
+        mobileMenuBtn.addEventListener('click', openMobileMenu);
+        closeMobileBtn.addEventListener('click', closeMobileMenu);
+        overlay.addEventListener('click', closeMobileMenu);
     </script>
 </body>
-
 </html>

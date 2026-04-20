@@ -8,7 +8,10 @@
 
     <title>Yolixa - Empowering Influencers with Web3 Tipping</title>
 
-    {{-- Tailwind CSS --}}
+    {{-- Tailwind CSS Prototype CDN --}}
+    <!--  WARNING: Tailwind CDN is active (which triggers the cdn.tailwindcss.com console warning). 
+          This is strictly for rapid prototyping and local development.
+          Before deploying to a true production environment, compile a static CSS bundle using Laravel Mix or Vite (e.g. `npm run build`). -->
     <script src="{{ asset('assets/js/talwind_cdn.js') }}"></script>
 
     {{-- Freighter CDN --}}
