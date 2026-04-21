@@ -51,9 +51,24 @@
                     <div>
                         <label for="tipAmount" class="block text-gray-300 mb-2 text-sm">Amount</label>
                         <div class="relative">
-                            <input type="number" id="tipAmount" placeholder="0.00" step="any"
+                            <input type="number" id="tipAmount" placeholder="0.00" step="any" oninput="debouncePreview()"
                                    class="w-full px-4 py-4 rounded-xl bg-gray-800/50 text-white border border-gray-700 focus:border-yolixa-purple focus:ring focus:ring-yolixa-purple/30 outline-none text-2xl font-bold">
                             <span id="assetLabel" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">XLM</span>
+                        </div>
+                    </div>
+
+                    <div id="conversionPreview" class="hidden bg-gray-800/60 border border-gray-700 rounded-xl p-4 mt-4 shadow-inner">
+                        <div class="flex justify-between text-sm mb-2">
+                            <span class="text-gray-400">Conversion Rate:</span>
+                            <span class="text-yolixa-blue font-bold" id="previewRate">-</span>
+                        </div>
+                        <div class="flex justify-between text-sm mb-2">
+                            <span class="text-gray-400">Platform Fee:</span>
+                            <span class="text-red-400 font-bold" id="previewFee">-</span>
+                        </div>
+                        <div class="flex justify-between text-base border-t border-gray-700 pt-2 mt-2">
+                            <span class="text-gray-300 font-bold">Creator Receives:</span>
+                            <span class="text-green-400 font-black" id="previewPayout">-</span>
                         </div>
                     </div>
 
@@ -152,10 +167,52 @@
 
         if (asset === 'YLX') {
             document.getElementById('feeDisclaimer').innerHTML = '<span class="text-yolixa-purple font-bold">0% Platform Fee!</span> You keep 100% of the value.';
-            document.getElementById('trustlineAlert').classList.remove('hidden');
         } else {
-            document.getElementById('feeDisclaimer').innerText = '* A small platform fee of 1.5% applies to support the Yolixa ecosystem.';
-            document.getElementById('trustlineAlert').classList.add('hidden');
+            document.getElementById('feeDisclaimer').innerText = '* A small platform fee applies for non-native assets to support the Yolixa ecosystem.';
+        }
+        
+        updatePreview();
+    }
+
+    let previewTimeout;
+    function debouncePreview() {
+        clearTimeout(previewTimeout);
+        previewTimeout = setTimeout(updatePreview, 500);
+    }
+
+    async function updatePreview() {
+        const amount = document.getElementById('tipAmount').value;
+        const previewBox = document.getElementById('conversionPreview');
+        const trustlineAlert = document.getElementById('trustlineAlert');
+        
+        // Always enforce trustline setup visibility logic for Creator
+        // (For MVP we can assume Creator might need setup, but technically user needs to know)
+        // We'll hide trustlineAlert by default and backend or checks could reveal it.
+        trustlineAlert.classList.add('hidden');
+
+        if (!amount || amount <= 0) {
+            previewBox.classList.add('hidden');
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/tip/preview', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                body: JSON.stringify({ amount, asset: selectedAsset })
+            });
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('previewRate').innerText = `1 ${selectedAsset} = ${data.rate} YLX`;
+                document.getElementById('previewFee').innerText = `- ${parseFloat(data.fee_ylx).toFixed(2)} YLX`;
+                document.getElementById('previewPayout').innerText = `${parseFloat(data.creator_payout_ylx).toFixed(2)} YLX`;
+                previewBox.classList.remove('hidden');
+            } else {
+                previewBox.classList.add('hidden');
+            }
+        } catch(e) {
+            console.error('Preview error:', e);
+            previewBox.classList.add('hidden');
         }
     }
 

@@ -8,9 +8,22 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use Soneso\StellarSDK\Crypto\KeyPair;
 
 class WalletController extends Controller
 {
+    public function getChallenge(Request $request)
+    {
+        $request->validate(['address' => 'required|string']);
+        $challenge = \Illuminate\Support\Str::random(64);
+        $request->session()->put('wallet_challenge_' . $request->address, $challenge);
+        
+        return response()->json([
+            'success' => true,
+            'challenge' => $challenge
+        ]);
+    }
+
     public function userWalletConnect(Request $request)
     {
         try {
@@ -25,6 +38,7 @@ class WalletController extends Controller
                 'blockchainId' => 'required|integer|exists:blockchains,id',
                 'walletId' => 'required|integer|exists:wallet_types,id',
                 'status' => 'required|boolean',
+                'signature' => 'required|string',
             ]);
 
             if ($validator->fails()) {
@@ -36,7 +50,57 @@ class WalletController extends Controller
                 ], 422);
             }
 
-            Log::info('Payload validation successful. Checking DB for existing user.');
+            // Cryptographic Verification
+            $challenge = $request->session()->get('wallet_challenge_' . $request->address);
+            
+            if (!$challenge) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Challenge missing or expired. Please refresh the page and try again.'
+                ], 401);
+            }
+
+            try {
+                $kp = KeyPair::fromAccountId($request->address);
+                
+                // Detect Hex vs Base64 signature length
+                $sigStr = $request->signature;
+                if (ctype_xdigit($sigStr) && strlen($sigStr) === 128) {
+                    $rawSig = hex2bin($sigStr);
+                } else {
+                    $rawSig = base64_decode($sigStr);
+                }
+                
+                if (strlen($rawSig) !== 64) {
+                    Log::warning('Signature is incorrectly formatted.', ['address' => $request->address, 'len' => strlen($rawSig)]);
+                    return response()->json(['success' => false, 'message' => 'Malformed signature length.'], 401);
+                }
+
+                $verified = $kp->verifySignature($rawSig, $challenge);
+                
+                // Freighter uses a specific prefix, if raw fails, check prefixed message
+                if (!$verified) {
+                    $freighterPrefix = "Stellar Signed Message:\n" . $challenge;
+                    $verified = $kp->verifySignature($rawSig, $freighterPrefix);
+                }
+
+                if (!$verified) {
+                    // Try with hashing the payload if it's signed over hash
+                    $verified = $kp->verifySignature($rawSig, hash('sha256', "Stellar Signed Message:\n" . $challenge, true));
+                }
+                
+                if (!$verified) {
+                    Log::warning('Signature verification failed.', ['address' => $request->address]);
+                    return response()->json(['success' => false, 'message' => 'Invalid wallet signature.'], 401);
+                }
+            } catch (\Exception $e) {
+                Log::error('Signature parsing error.', ['error' => $e->getMessage()]);
+                return response()->json(['success' => false, 'message' => 'Signature verification process failed.'], 401);
+            }
+
+            $request->session()->forget('wallet_challenge_' . $request->address);
+
+            Log::info('Payload validation and Signature verification successful. Checking DB for existing user.');
 
             $existingUser = User::where('public_key', $request->address)->first();
 

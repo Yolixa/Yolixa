@@ -179,6 +179,27 @@
             const result = await window.freighterApi.requestAccess();
             if (result && result.address) {
                 const publicKey = result.address;
+
+                // 1. Fetch Challenge
+                const chalRes = await fetch("/auth/challenge", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "X-CSRF-TOKEN": "{{ csrf_token() }}" },
+                    body: JSON.stringify({ address: publicKey })
+                });
+                const chalData = await chalRes.json();
+                if (!chalData.success) throw new Error("Could not acquire challenge");
+
+                // 2. Sign Challenge (Use signMessage or fallback)
+                let signature = "";
+                try {
+                    const signRes = await window.freighterApi.signMessage(chalData.challenge);
+                    if (signRes.error) throw new Error(signRes.error);
+                    signature = signRes.signedMessage;
+                } catch (signErr) {
+                    throw new Error("Signature rejected or failed in Freighter.");
+                }
+
+                // 3. Authenticate
                 const res = await fetch("/save-wallet", {
                     method: "POST",
                     headers: {
@@ -191,6 +212,7 @@
                         blockchainId: document.querySelector('.walletBlockchainSelect').value,
                         walletId: document.querySelector('.walletWalletSelect').value,
                         status: 1,
+                        signature: signature
                     }),
                 });
                 
@@ -227,6 +249,26 @@
             const result = await window.rabet.connect();
             if (result && result.publicKey) {
                 const publicKey = result.publicKey;
+
+                // 1. Fetch Challenge
+                const chalRes = await fetch("/auth/challenge", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "X-CSRF-TOKEN": "{{ csrf_token() }}" },
+                    body: JSON.stringify({ address: publicKey })
+                });
+                const chalData = await chalRes.json();
+                if (!chalData.success) throw new Error("Could not acquire challenge");
+
+                // 2. Sign Challenge
+                let signature = "";
+                try {
+                    const signRes = await window.rabet.signMessage(chalData.challenge, 'testnet');
+                    signature = signRes.signature;
+                } catch (signErr) {
+                    throw new Error("Signature rejected securely by Rabet.");
+                }
+
+                // 3. Authenticate
                 const res = await fetch("/save-wallet", {
                     method: "POST",
                     headers: {
@@ -239,6 +281,7 @@
                         blockchainId: document.querySelector('.walletBlockchainSelect').value,
                         walletId: document.querySelector('.walletWalletSelect').value,
                         status: 1,
+                        signature: signature
                     }),
                 });
                 

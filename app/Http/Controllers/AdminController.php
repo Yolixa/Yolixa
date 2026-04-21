@@ -25,18 +25,15 @@ class AdminController extends Controller
         $recentTips = Tip::with(['sender', 'receiver'])->orderBy('created_at', 'desc')->limit(10)->get();
         $suspiciousTips = Tip::where('status', 'failed')->orWhereNull('tx_hash')->count();
 
-        return response()->json([
-            'success' => true,
-            'stats' => [
-                'total_creators' => $totalCreators,
-                'total_fans' => $totalFans,
-                'total_tips_volume' => $totalTipsVolume,
-                'total_platform_revenue' => $totalPlatformRevenue,
-                'pending_claims' => $pendingClaims,
-                'suspicious_tips' => $suspiciousTips
-            ],
-            'recent_tips' => $recentTips
-        ]);
+        return view('admin.dashboard', compact(
+            'totalCreators',
+            'totalFans',
+            'totalTipsVolume',
+            'totalPlatformRevenue',
+            'pendingClaims',
+            'suspiciousTips',
+            'recentTips'
+        ));
     }
 
     public function manageCreator(Request $request, $id)

@@ -55,24 +55,22 @@ class StellarService
 
             $txBuilder = new TransactionBuilder($senderAccount);
             
-            // Operation 1: Payment to Creator
-            $paymentToCreator = (new PaymentOperationBuilder($destination, $asset, $creatorAmountStr))->build();
-            $txBuilder->addOperation($paymentToCreator);
-
-            // Operation 2: Payment to Platform (Fee)
-            if ($platformFeeAmount > 0) {
-                $platformPublic = env('ISSUER_PUBLIC_KEY');
-                if (!empty($platformPublic)) {
-                    try {
-                        // Check if platform wallet is funded
-                        $this->sdk->requestAccount($platformPublic);
-                        $paymentToPlatform = (new PaymentOperationBuilder($platformPublic, $asset, $platformFeeStr))->build();
-                        $txBuilder->addOperation($paymentToPlatform);
-                    } catch (\Throwable $e) {
-                        return ['success' => false, 'message' => 'Platform fee wallet is not funded on the Testnet. Please check ISSUER_PUBLIC_KEY.'];
-                    }
-                }
+            // In Option A, the User pays the full tip amount to the Platform Collection Wallet.
+            $platformCollection = config('yolixa.platform_collection_wallet');
+            if (empty($platformCollection)) {
+                return ['success' => false, 'message' => 'Platform collection wallet is not configured.'];
             }
+
+            try {
+                // Check if platform collection wallet is funded
+                $this->sdk->requestAccount($platformCollection);
+            } catch (\Throwable $e) {
+                return ['success' => false, 'message' => 'Platform collection wallet is not funded on the Testnet.'];
+            }
+
+            $totalAmountStr = number_format($totalAmount, 7, '.', '');
+            $paymentToPlatform = (new PaymentOperationBuilder($platformCollection, $asset, $totalAmountStr))->build();
+            $txBuilder->addOperation($paymentToPlatform);
 
             $transaction = $txBuilder->build();
             $xdr = $transaction->toEnvelopeXdrBase64();
@@ -123,6 +121,64 @@ class StellarService
         } catch (\Throwable $e) {
             Log::channel('stellar')->error("Submission Error: " . $e->getMessage());
             return ['success' => false, 'message' => 'Network error: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Submit a server-signed payout transaction to the creator.
+     */
+    public function payoutCreatorInYlx(string $creatorPubKey, float $amount): array
+    {
+        try {
+            $distSecret = config('yolixa.platform_distribution_seed');
+            if (empty($distSecret)) {
+                return ['success' => false, 'message' => 'Platform distribution seed is not configured.'];
+            }
+
+            $sourceKeyPair = \Soneso\StellarSDK\Crypto\KeyPair::fromSeed($distSecret);
+            $sourceAccount = $this->sdk->requestAccount($sourceKeyPair->getAccountId());
+
+            // Ensure destination has trustline
+            try {
+                $destAccount = $this->sdk->requestAccount($creatorPubKey);
+                $hasTrustline = false;
+                foreach ($destAccount->getBalances() as $balance) {
+                    if ($balance->getAssetCode() === env('YLX_ASSET_CODE', 'YLX')) {
+                        $hasTrustline = true;
+                        break;
+                    }
+                }
+                if (!$hasTrustline) {
+                     return ['success' => false, 'message' => 'Creator does not have a YLX trustline.'];
+                }
+            } catch (\Throwable $e) {
+                return ['success' => false, 'message' => 'Creator wallet is not funded on the network.'];
+            }
+
+            $asset = Asset::createNonNativeAsset(env('YLX_ASSET_CODE', 'YLX'), env('YLX_ISSUER_PUBLIC'));
+            $amountStr = number_format($amount, 7, '.', '');
+
+            $txBuilder = new TransactionBuilder($sourceAccount);
+            $paymentOp = (new PaymentOperationBuilder($creatorPubKey, $asset, $amountStr))->build();
+            $txBuilder->addOperation($paymentOp);
+            
+            $transaction = $txBuilder->build();
+            $transaction->sign($sourceKeyPair, $this->network);
+
+            $response = $this->sdk->submitTransaction($transaction);
+            
+            if ($response->isSuccessful()) {
+                return [
+                    'success' => true,
+                    'hash'    => $response->getHash(),
+                ];
+            }
+
+            return ['success' => false, 'message' => 'Payout transaction failed.'];
+
+        } catch (\Throwable $e) {
+            Log::channel('stellar')->error("Payout Error: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Failed to process payout: ' . $e->getMessage()];
         }
     }
 

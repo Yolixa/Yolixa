@@ -76,6 +76,29 @@ class CreatorController extends Controller
         return view('creator.referral', compact('creator'));
     }
 
+    public function showProfile(string $username)
+    {
+        $creator = User::where('username', $username)
+            ->where('role', 'creator')
+            ->firstOrFail();
+
+        $recentTips = \App\Models\Tip::where('receiver_id', $creator->id)
+            ->where('status', 'confirmed')
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+
+        $tipsSum = \App\Models\Tip::where('receiver_id', $creator->id)
+            ->where('status', 'confirmed')
+            ->sum('amount'); // This is a bit complex if assets differ, but we can do a naive sum or rely on converted_ylx_amount
+        
+        $convertedTotal = \App\Models\Tip::where('receiver_id', $creator->id)
+            ->where('status', 'confirmed')
+            ->sum('converted_ylx_amount');
+
+        return view('creator.profile', compact('creator', 'recentTips', 'convertedTotal'));
+    }
+
     public function dashboard(string $publicKey = null)
     {
         \Illuminate\Support\Facades\Log::info("Dashboard access initiated.", ['requested_public_key' => $publicKey]);

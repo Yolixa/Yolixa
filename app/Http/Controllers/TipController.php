@@ -8,15 +8,42 @@ use Illuminate\Http\Request;
 use App\Services\StellarService;
 use App\Services\TipService;
 
+use App\Services\ConversionService;
+
 class TipController extends Controller
 {
     private StellarService $stellarService;
     private TipService $tipService;
+    private ConversionService $conversionService;
 
-    public function __construct(StellarService $stellarService, TipService $tipService)
+    public function __construct(StellarService $stellarService, TipService $tipService, ConversionService $conversionService)
     {
         $this->stellarService = $stellarService;
         $this->tipService = $tipService;
+        $this->conversionService = $conversionService;
+    }
+
+    public function getPreview(Request $request)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:1',
+            'asset'  => 'required|in:XLM,USDC,YLX',
+        ]);
+
+        try {
+            $conversion = $this->conversionService->convertToYlx($request->asset, floatval($request->amount));
+            $fees = $this->conversionService->calculateFees($conversion['converted_amount'], $request->asset);
+
+            return response()->json([
+                'success' => true,
+                'rate' => $conversion['rate'],
+                'gross_ylx' => $conversion['converted_amount'],
+                'fee_ylx' => $fees['fee_amount'],
+                'creator_payout_ylx' => $fees['net_payout'],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
+        }
     }
 
     public function buildXdr(Request $request)
@@ -24,7 +51,7 @@ class TipController extends Controller
         $request->validate([
             'amount'      => 'required|numeric|min:1',
             'destination' => 'required|string',
-            'asset'       => 'required|in:XLM,YLX',
+            'asset'       => 'required|in:XLM,USDC,YLX',
             'sender'      => 'required|string',
         ]);
 
@@ -32,7 +59,8 @@ class TipController extends Controller
             return response()->json(['success' => false, 'message' => 'You cannot tip yourself.'], 400);
         }
 
-        $platformFee = $this->tipService->calculatePlatformFee($request->asset, $request->amount);
+        // Entire amount goes to platform collection wallet, so fee is 0 in the XDR
+        $platformFee = 0;
         
         $result = $this->stellarService->buildTipXdr(
             $request->sender,
@@ -76,7 +104,6 @@ class TipController extends Controller
         ]);
 
         $receiver = User::findOrFail($request->receiver_id);
-        $platformFee = $this->tipService->calculatePlatformFee($request->asset, $request->amount);
 
         $result = $this->tipService->recordTipSecurely([
             'tx_hash'             => $request->tx_hash,
@@ -85,7 +112,6 @@ class TipController extends Controller
             'receiver_id'         => $request->receiver_id,
             'sender_key'          => $request->sender_key,
             'receiver_public_key' => $receiver->public_key,
-            'platform_fee'        => $platformFee,
             'message'             => $request->message,
             'is_anonymous'        => $request->is_anonymous,
             'sender_name'         => $request->sender_name,
