@@ -28,6 +28,12 @@ class User extends Authenticatable
         'status',
         'bio',
         'verified',
+        'category',
+        'preferred_tip_asset',
+        'min_tip_amount',
+        'custom_thank_you_message',
+        'goal_title',
+        'goal_amount',
     ];
 
     /**
@@ -50,6 +56,23 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'status' => 'boolean',
+            'verified' => 'boolean',
         ];
+    }
+
+    public function wallets()
+    {
+        return $this->hasMany(Wallet::class);
+    }
+
+    public function tipsReceived()
+    {
+        return $this->hasMany(Tip::class, 'receiver_id');
+    }
+
+    public function tipsSent()
+    {
+        return $this->hasMany(Tip::class, 'sender_id');
     }
 }

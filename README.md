@@ -1,66 +1,108 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Yolixa
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Yolixa is a creator-focused micro-tipping MVP built with Laravel and Stellar. Creators connect a Stellar wallet, generate a public referral/tip link, and receive XLM testnet tips directly from fans through Freighter or Rabet.
 
-## About Laravel
+## Problem
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Creators often lose small payments to platform custody, withdrawal delays, and high fees. Yolixa uses Stellar for fast, low-cost, transparent settlement so fans can support creators with direct wallet-to-wallet micro-tips.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Why Stellar
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- Fast finality suitable for micro-tips.
+- Very low transaction fees.
+- Public Horizon API for transaction proof and history.
+- Mature browser wallet ecosystem through Freighter and Rabet.
+- Testnet support for safe reviewer demos.
 
-## Learning Laravel
+## Current Working MVP
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- Wallet-based fan and creator onboarding.
+- Freighter wallet connection.
+- Rabet wallet connection when the extension is installed.
+- Connected public key saved to `users` and `wallets`.
+- Creator registration and dashboard.
+- Unique creator referral link at `/r/{code}`.
+- Public creator tip page.
+- Direct XLM payment XDR built by Laravel with Soneso Stellar SDK.
+- Transaction signed by the fan wallet in the browser.
+- Signed transaction submitted to Stellar testnet Horizon.
+- Backend verification of tx hash, amount, asset, sender, and receiver.
+- Tip record saved with tx hash, amount, asset, sender wallet, receiver wallet, network fee, platform fee, and status.
+- Creator dashboard with total tips, wallet address, referral link, and transaction history.
+- Self-tipping prevention.
+- CSRF, validation, duplicate tx hash protection, and clear UI success/error messages.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## Stellar Configuration
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Yolixa currently uses Stellar testnet only.
 
-## Laravel Sponsors
+```env
+STELLAR_HORIZON=https://horizon-testnet.stellar.org
+STELLAR_PASSPHRASE="Test SDF Network ; September 2015"
+YOLIXA_FEE_PERCENTAGE=0.015
+YOLIXA_SUPPORTED_TIP_ASSETS=XLM
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+No secret keys are required for the current direct-tip MVP. Do not put wallet seed phrases in `.env`.
 
-### Premium Partners
+## Install And Run
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate:fresh --seed
+npm install
+npm run build
+php artisan serve
+```
 
-## Contributing
+Open the app at the URL printed by `php artisan serve`, usually `http://127.0.0.1:8000`.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Wallet Setup
 
-## Code of Conduct
+1. Install Freighter or Rabet.
+2. Switch the wallet to Stellar testnet.
+3. Create or import a testnet account.
+4. Fund testnet accounts with Friendbot.
+5. Use different accounts for creator and fan to verify self-tip prevention.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Demo Flow For Reviewers
 
-## Security Vulnerabilities
+1. Open Yolixa locally.
+2. Select Stellar and Freighter or Rabet from the wallet modal.
+3. Connect and sign the login challenge.
+4. Click `Join as Creator`.
+5. Enter creator name and email.
+6. Submit registration.
+7. Copy the referral link from the dashboard.
+8. Open the referral link in another browser profile or after switching to a different wallet account.
+9. Connect the fan wallet.
+10. Enter an XLM testnet tip amount.
+11. Sign the transaction in Freighter or Rabet.
+12. Wait for success confirmation.
+13. Return to the creator dashboard and verify the transaction history.
+14. Open the tx hash on Stellar Expert testnet.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## SCF Reviewer Notes
 
-## License
+- Live MVP status: functional local Laravel MVP with real Stellar testnet XLM transactions.
+- Stellar transaction proof: dashboard stores and links the testnet tx hash for each confirmed tip.
+- Settlement model: fan wallet sends XLM directly to creator wallet; Yolixa records fee metadata for reporting.
+- Review setup: seeders create Stellar, Freighter, and Rabet wallet options.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Current Limitations
+
+- Mainnet is intentionally disabled.
+- MVP supports direct XLM tips only.
+- Platform fee is recorded for reporting; it is not collected on-chain in the current direct-payment MVP.
+- YLX rewards, trustlines, automated payouts, analytics, and admin moderation are roadmap features.
+- Wallet extensions must be available in the browser; the app cannot sign transactions itself.
+
+## Roadmap
+
+- Optional on-chain fee split or claimable balance flow.
+- USDC support through Stellar assets and trustline checks.
+- Creator analytics and exportable transaction reports.
+- Public profile customization and verified creator badges.
+- Production deployment hardening, observability, and SCF demo video.

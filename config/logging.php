@@ -65,6 +65,20 @@ return [
             'replace_placeholders' => true,
         ],
 
+        'stellar' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/stellar.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'replace_placeholders' => true,
+        ],
+
+        'security' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/security.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'replace_placeholders' => true,
+        ],
+
         'daily' => [
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),

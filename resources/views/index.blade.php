@@ -8,8 +8,8 @@
                 Empower Your <span class="gradient-text">Influence</span>
             </h1>
             <p class="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
-                Yolixa is the first Web3 tipping platform on Stellar, powered by the YLX token.
-                Creators earn instant crypto tips + bonus rewards, while fans also get rewarded for their support.
+                Yolixa is a Web3 tipping MVP on Stellar testnet.
+                Creators receive direct XLM micro-tips from fans through Freighter or Rabet.
             </p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
                 <button onclick="openCreatorModal()" class="gradient-bg px-8 py-4 rounded-lg font-semibold text-lg hover:scale-105 transition-transform pulse-glow">
@@ -33,7 +33,7 @@
                 Why Choose <span class="gradient-text">Yolixa</span>?
             </h2>
             <p class="text-xl text-gray-300 max-w-2xl mx-auto">
-                The first Web3 tipping ecosystem where both creators and supporters earn. Powered by Stellar & YLX token.
+                Direct creator tips with transparent Stellar testnet transaction proof.
             </p>
         </div>
 
@@ -60,7 +60,7 @@
                 </div>
                 <h3 class="text-2xl font-bold mb-4">Secure & Transparent</h3>
                 <p class="text-gray-300">
-                    Built on Stellar blockchain with automatic trustline setup. Every transaction is secure and verifiable.
+                    Built on Stellar testnet with Horizon verification. Every confirmed tip is traceable by tx hash.
                 </p>
             </div>
 
@@ -73,7 +73,7 @@
                 </div>
                 <h3 class="text-2xl font-bold mb-4">YLX Rewards</h3>
                 <p class="text-gray-300">
-                    Every tip converts into YLX tokens. Creators earn bonus rewards, and fans also get incentives for tipping.
+                    Yolixa records the transaction hash, wallets, amount, network fee, platform fee metadata, and status.
                 </p>
             </div>
 
@@ -152,8 +152,7 @@
                 </div>
                 <h3 class="text-2xl font-bold mb-4">Create Your Account</h3>
                 <p class="text-gray-300">
-                    Sign up on Yolixa and link your Stellar wallet. Our platform
-                    automatically sets up trustlines so you’re ready to receive tips.
+                    Sign up on Yolixa and link your Stellar testnet wallet. Your public key becomes your creator identity.
                 </p>
             </div>
 
@@ -176,8 +175,7 @@
                 </div>
                 <h3 class="text-2xl font-bold mb-4">Earn Instantly</h3>
                 <p class="text-gray-300">
-                    Followers send tips directly to your Stellar wallet—no delays, no
-                    withdrawal requests. Plus, both you and your fans earn YLX rewards.
+                    Followers send XLM tips directly to your Stellar wallet. No delays and no withdrawal requests.
                 </p>
             </div>
         </div>
@@ -218,8 +216,7 @@
                 </div>
                 <h3 class="text-xl font-bold mb-3">Rewards & Liquidity</h3>
                 <p class="text-gray-300">
-                    YLX rewards system launch. Users earn bonuses on every tip. Liquidity
-                    pools introduced for token stability and trading incentives.
+                    Rewards and asset expansion. USDC and future token incentives are introduced after MVP validation.
                 </p>
             </div>
 
@@ -260,7 +257,7 @@
         </h2>
         <p class="text-xl text-gray-300 mb-8">
             Be among the first creators to join Yolixa, connect your Stellar wallet,
-            and start receiving tips, bonuses, and rewards directly from your fans.
+            and start receiving direct XLM testnet tips from your fans.
         </p>
         <button onclick="openCreatorModal()" class="gradient-bg px-12 py-4 rounded-lg font-semibold text-xl hover:scale-105 transition-transform glow-effect">
             Create Your Account
@@ -268,4 +265,3 @@
     </div>
 </section>
 @endsection
-

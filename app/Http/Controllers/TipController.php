@@ -26,13 +26,14 @@ class TipController extends Controller
     public function getPreview(Request $request)
     {
         $request->validate([
-            'amount' => 'required|numeric|min:1',
-            'asset'  => 'required|in:XLM,USDC,YLX',
+            'amount' => 'required|numeric|min:0.0000001',
+            'asset'  => 'required|in:XLM',
         ]);
 
         try {
             $conversion = $this->conversionService->convertToYlx($request->asset, floatval($request->amount));
             $fees = $this->conversionService->calculateFees($conversion['converted_amount'], $request->asset);
+            $platformFeeXlm = $this->tipService->calculatePlatformFee($request->asset, floatval($request->amount));
 
             return response()->json([
                 'success' => true,
@@ -40,6 +41,8 @@ class TipController extends Controller
                 'gross_ylx' => $conversion['converted_amount'],
                 'fee_ylx' => $fees['fee_amount'],
                 'creator_payout_ylx' => $fees['net_payout'],
+                'platform_fee_xlm' => $platformFeeXlm,
+                'creator_receives_xlm' => floatval($request->amount),
             ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
@@ -49,9 +52,9 @@ class TipController extends Controller
     public function buildXdr(Request $request)
     {
         $request->validate([
-            'amount'      => 'required|numeric|min:1',
+            'amount'      => 'required|numeric|min:0.0000001',
             'destination' => 'required|string',
-            'asset'       => 'required|in:XLM,USDC,YLX',
+            'asset'       => 'required|in:XLM',
             'sender'      => 'required|string',
         ]);
 
@@ -59,15 +62,11 @@ class TipController extends Controller
             return response()->json(['success' => false, 'message' => 'You cannot tip yourself.'], 400);
         }
 
-        // Entire amount goes to platform collection wallet, so fee is 0 in the XDR
-        $platformFee = 0;
-        
         $result = $this->stellarService->buildTipXdr(
             $request->sender,
             $request->destination,
             $request->asset,
-            floatval($request->amount),
-            $platformFee
+            floatval($request->amount)
         );
 
         if (!$result['success']) {
@@ -94,8 +93,8 @@ class TipController extends Controller
     {
         $request->validate([
             'tx_hash'      => 'required|string|unique:tips,tx_hash',
-            'amount'       => 'required|numeric',
-            'asset'        => 'required|string',
+            'amount'       => 'required|numeric|min:0.0000001',
+            'asset'        => 'required|in:XLM',
             'receiver_id'  => 'required|exists:users,id',
             'sender_key'   => 'nullable|string',
             'message'      => 'nullable|string|max:500',
@@ -124,18 +123,4 @@ class TipController extends Controller
         return response()->json($result);
     }
 
-    public function buildTrustlineXdr(Request $request)
-    {
-        $request->validate([
-            'sender' => 'required|string',
-        ]);
-
-        $result = $this->stellarService->buildTrustlineXdr($request->sender);
-
-        if (!$result['success']) {
-            return response()->json($result, 400);
-        }
-
-        return response()->json($result);
-    }
 }

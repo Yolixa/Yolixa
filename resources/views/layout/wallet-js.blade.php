@@ -1,7 +1,61 @@
 <script>
+    let currentCsrfToken = "{{ csrf_token() }}";
+
     document.addEventListener("DOMContentLoaded", function () {
         updateWalletUIStatus();
+        bindDashboardReconnect();
     });
+
+    async function fetchSessionStatus() {
+        const response = await fetch("/auth/session", {
+            headers: { "Accept": "application/json" },
+            credentials: "same-origin",
+        });
+        const data = await response.json();
+
+        if (data.csrf_token) {
+            currentCsrfToken = data.csrf_token;
+        }
+
+        return { response, data };
+    }
+
+    async function postJsonWithFreshCsrf(url, payload) {
+        const request = () => fetch(url, {
+            method: "POST",
+            headers: {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": currentCsrfToken,
+            },
+            credentials: "same-origin",
+            body: JSON.stringify(payload),
+        });
+
+        let response = await request();
+
+        if (response.status === 419) {
+            await fetchSessionStatus();
+            response = await request();
+        }
+
+        return response;
+    }
+
+    function bindDashboardReconnect() {
+        const dashboardNavLink = document.getElementById("dashboardNavLink");
+        if (!dashboardNavLink) return;
+
+        dashboardNavLink.addEventListener("click", async function (event) {
+            const connectedWallet = localStorage.getItem("connected_wallet");
+            const publicKey = connectedWallet ? localStorage.getItem(`${connectedWallet}_wallet`) : null;
+
+            if (!publicKey) return;
+
+            event.preventDefault();
+            await goToCreatorDashboard(publicKey, connectedWallet);
+        });
+    }
 
     function updateWalletUIStatus() {
         const connectedWallet = localStorage.getItem("connected_wallet");
@@ -152,12 +206,18 @@
         }
     }
 
-    async function handleWalletLoginSuccess(publicKey, walletType, data) {
+    function rememberWalletSession(publicKey, walletType, data) {
         localStorage.setItem(`${walletType}_wallet`, publicKey);
         localStorage.setItem("connected_wallet", walletType);
         localStorage.setItem("user_role", data.role || 'fan');
-        
+        if (data.blockchain_id) localStorage.setItem("wallet_blockchain_id", data.blockchain_id);
+        if (data.wallet_type_id) localStorage.setItem("wallet_type_id", data.wallet_type_id);
+
         updateWalletUIStatus();
+    }
+
+    async function handleWalletLoginSuccess(publicKey, walletType, data) {
+        rememberWalletSession(publicKey, walletType, data);
         closeWalletModal();
         
         if (data.role === 'creator') {
@@ -170,15 +230,135 @@
         }
     }
 
+    async function goToCreatorDashboard(publicKey, walletType) {
+        try {
+            const { response: statusRes, data: status } = await fetchSessionStatus();
+
+            if (statusRes.ok && status.authenticated && status.role === 'creator' && status.public_key === publicKey) {
+                window.location.href = `/dashboard/${publicKey}`;
+                return;
+            }
+        } catch (error) {
+            console.warn("Could not verify current dashboard session. Reconnecting wallet.", error);
+        }
+
+        toastr.warning("Your app session expired. Please connect your wallet again.");
+        localStorage.removeItem("connected_wallet");
+        localStorage.removeItem("freighter_wallet");
+        localStorage.removeItem("rabet_wallet");
+        localStorage.removeItem("walletconnect_wallet");
+        localStorage.removeItem("user_role");
+        updateWalletUIStatus();
+    }
+
+    function normalizeWalletSignature(response) {
+        const signature = response?.signature
+            || response?.signedMessage
+            || response?.signed_message
+            || response?.signedPayload
+            || response?.data?.signature
+            || response?.data?.signedMessage
+            || response?.data?.signed_message
+            || (typeof response === 'string' ? response : null);
+
+        if (typeof signature === 'string') {
+            return signature;
+        }
+
+        if (signature instanceof Uint8Array || Array.isArray(signature)) {
+            return btoa(String.fromCharCode(...signature));
+        }
+
+        if (signature && typeof signature === 'object') {
+            if (signature.type === 'Buffer' && Array.isArray(signature.data)) {
+                return btoa(String.fromCharCode(...signature.data));
+            }
+
+            if (Array.isArray(signature.data)) {
+                return btoa(String.fromCharCode(...signature.data));
+            }
+
+            const nested = signature.signature
+                || signature.signedMessage
+                || signature.signed_message
+                || signature.data?.signature;
+
+            if (typeof nested === 'string') {
+                return nested;
+            }
+
+            if (nested instanceof Uint8Array || Array.isArray(nested)) {
+                return btoa(String.fromCharCode(...nested));
+            }
+        }
+
+        throw new Error("Wallet returned an unsupported signature format.");
+    }
+
+    function getFreighterApi() {
+        return window.freighterApi
+            || window.stellarFreighter
+            || window.StellarFreighter
+            || window.freighter
+            || null;
+    }
+
+    async function signFreighterChallenge(challenge, publicKey) {
+        const freighter = getFreighterApi();
+
+        if (!freighter || typeof freighter.signMessage !== "function") {
+            throw new Error("This Freighter version does not support message signing.");
+        }
+
+        const attempts = [
+            () => freighter.signMessage(challenge, {
+                address: publicKey,
+                networkPassphrase: window.config?.STELLAR_PASSPHRASE || "Test SDF Network ; September 2015",
+            }),
+            () => freighter.signMessage(challenge, {
+                network: "TESTNET",
+                networkPassphrase: window.config?.STELLAR_PASSPHRASE || "Test SDF Network ; September 2015",
+            }),
+            () => freighter.signMessage(challenge),
+        ];
+
+        let lastError = null;
+
+        for (const attempt of attempts) {
+            try {
+                const response = await attempt();
+                if (response?.error) {
+                    throw new Error(response.error);
+                }
+
+                return normalizeWalletSignature(response);
+            } catch (error) {
+                lastError = error;
+
+                const message = String(error?.message || error || '').toLowerCase();
+                if (message.includes('reject') || message.includes('declin') || message.includes('denied')) {
+                    throw error;
+                }
+            }
+        }
+
+        throw lastError || new Error("Freighter did not return a valid signature.");
+    }
+
     async function connectFreighter() {
-        if (typeof window.freighterApi === "undefined") {
-            toastr.error("Freighter not found.");
+        const freighter = getFreighterApi();
+
+        if (!freighter) {
+            toastr.error("Freighter API not loaded. Please hard refresh or check the Freighter extension/CDN.");
             return;
         }
         try {
-            const result = await window.freighterApi.requestAccess();
-            if (result && result.address) {
-                const publicKey = result.address;
+            const result = typeof freighter.requestAccess === "function"
+                ? await freighter.requestAccess()
+                : { address: await freighter.getPublicKey() };
+            const publicKey = result?.address || result?.publicKey || result;
+
+            if (publicKey) {
 
                 // 1. Fetch Challenge
                 const chalRes = await fetch("/auth/challenge", {
@@ -192,11 +372,10 @@
                 // 2. Sign Challenge (Use signMessage or fallback)
                 let signature = "";
                 try {
-                    const signRes = await window.freighterApi.signMessage(chalData.challenge);
-                    if (signRes.error) throw new Error(signRes.error);
-                    signature = signRes.signedMessage;
+                    signature = await signFreighterChallenge(chalData.challenge, publicKey);
                 } catch (signErr) {
-                    throw new Error("Signature rejected or failed in Freighter.");
+                    console.error("Freighter signMessage failed:", signErr);
+                    throw new Error(signErr?.message || "Signature rejected or failed in Freighter.");
                 }
 
                 // 3. Authenticate
@@ -235,7 +414,7 @@
             }
         } catch (error) {
             console.error("Freighter flow interrupted:", error);
-            toastr.error("User denied permission or connection failed.");
+            toastr.error(error?.message || "User denied permission or connection failed.");
         }
     }
 
@@ -263,7 +442,7 @@
                 let signature = "";
                 try {
                     const signRes = await window.rabet.signMessage(chalData.challenge, 'testnet');
-                    signature = signRes.signature;
+                    signature = normalizeWalletSignature(signRes);
                 } catch (signErr) {
                     throw new Error("Signature rejected securely by Rabet.");
                 }

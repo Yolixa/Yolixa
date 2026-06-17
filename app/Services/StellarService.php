@@ -2,269 +2,178 @@
 
 namespace App\Services;
 
-use Soneso\StellarSDK\StellarSDK;
-use Soneso\StellarSDK\Asset;
-use Soneso\StellarSDK\TransactionBuilder;
-use Soneso\StellarSDK\PaymentOperationBuilder;
-use Soneso\StellarSDK\ChangeTrustOperationBuilder;
-use Soneso\StellarSDK\Network;
 use Illuminate\Support\Facades\Log;
+use Soneso\StellarSDK\AbstractTransaction;
+use Soneso\StellarSDK\Asset;
+use Soneso\StellarSDK\Crypto\KeyPair;
+use Soneso\StellarSDK\Exceptions\HorizonRequestException;
+use Soneso\StellarSDK\PaymentOperationBuilder;
+use Soneso\StellarSDK\Responses\Operations\PaymentOperationResponse;
+use Soneso\StellarSDK\StellarSDK;
+use Soneso\StellarSDK\TransactionBuilder;
 
 class StellarService
 {
-    private $sdk;
-    private $network;
+    private StellarSDK $sdk;
 
     public function __construct()
     {
         $this->sdk = StellarSDK::getTestNetInstance();
-        $this->network = Network::testnet();
     }
 
-    /**
-     * Build an XDR transaction for sending a tip.
-     */
-    public function buildTipXdr(string $sender, string $destination, string $assetCode, float $totalAmount, float $platformFeeAmount): array
+    public function isValidPublicKey(string $publicKey): bool
     {
         try {
-            // Check if sender actually exists and is funded on the Testnet
-            try {
-                $senderAccount = $this->sdk->requestAccount($sender);
-            } catch (\Throwable $e) {
-                return ['success' => false, 'message' => 'Sender wallet is not funded on the Testnet. Please fund it using Friendbot.'];
-            }
-
-            // Check if destination actually exists
-            try {
-                $this->sdk->requestAccount($destination);
-            } catch (\Throwable $e) {
-                return ['success' => false, 'message' => 'Creator wallet is not funded on the Testnet. It must be funded first.'];
-            }
-            
-            if ($assetCode === 'YLX') {
-                $asset = Asset::createNonNativeAsset(env('YLX_ASSET_CODE', 'YLX'), env('YLX_ISSUER_PUBLIC'));
-            } else {
-                $asset = Asset::native();
-            }
-
-            $creatorAmountFloat = $totalAmount - $platformFeeAmount;
-
-            // Security: FORMATTING: Soneso SDK requires precise string numeric formatting (max 7 decimals)
-            $platformFeeStr = number_format($platformFeeAmount, 7, '.', '');
-            $creatorAmountStr = number_format($creatorAmountFloat, 7, '.', '');
-
-            $txBuilder = new TransactionBuilder($senderAccount);
-            
-            // In Option A, the User pays the full tip amount to the Platform Collection Wallet.
-            $platformCollection = config('yolixa.platform_collection_wallet');
-            if (empty($platformCollection)) {
-                return ['success' => false, 'message' => 'Platform collection wallet is not configured.'];
-            }
-
-            try {
-                // Check if platform collection wallet is funded
-                $this->sdk->requestAccount($platformCollection);
-            } catch (\Throwable $e) {
-                return ['success' => false, 'message' => 'Platform collection wallet is not funded on the Testnet.'];
-            }
-
-            $totalAmountStr = number_format($totalAmount, 7, '.', '');
-            $paymentToPlatform = (new PaymentOperationBuilder($platformCollection, $asset, $totalAmountStr))->build();
-            $txBuilder->addOperation($paymentToPlatform);
-
-            $transaction = $txBuilder->build();
-            $xdr = $transaction->toEnvelopeXdrBase64();
-
-            return ['success' => true, 'xdr' => $xdr];
-
-        } catch (\Throwable $e) {
-            Log::channel('stellar')->error('Tip XDR Build Error: ' . $e->getMessage());
-            return ['success' => false, 'message' => 'Failed to build transaction: ' . $e->getMessage()];
+            KeyPair::fromAccountId($publicKey);
+            return str_starts_with($publicKey, 'G') && strlen($publicKey) === 56;
+        } catch (\Throwable) {
+            return false;
         }
     }
 
     /**
-     * Submit a signed XDR to the network.
+     * Build the core Yolixa MVP transaction: a real direct XLM payment from fan to creator.
+     * The app never handles secret keys; Freighter/Rabet signs this XDR in the browser.
      */
+    public function buildTipXdr(string $sender, string $destination, string $assetCode, float $amount): array
+    {
+        try {
+            if (!$this->isValidPublicKey($sender) || !$this->isValidPublicKey($destination)) {
+                return ['success' => false, 'message' => 'Invalid Stellar public key.'];
+            }
+
+            if ($sender === $destination) {
+                return ['success' => false, 'message' => 'You cannot tip yourself.'];
+            }
+
+            if ($assetCode !== 'XLM') {
+                return ['success' => false, 'message' => 'The current MVP supports direct XLM testnet tips only.'];
+            }
+
+            if ($amount <= 0) {
+                return ['success' => false, 'message' => 'Tip amount must be greater than zero.'];
+            }
+
+            try {
+                $senderAccount = $this->sdk->requestAccount($sender);
+            } catch (\Throwable) {
+                return ['success' => false, 'message' => 'Sender wallet is not funded on the Stellar testnet. Fund it with Friendbot first.'];
+            }
+
+            try {
+                $this->sdk->requestAccount($destination);
+            } catch (\Throwable) {
+                return ['success' => false, 'message' => 'Creator wallet is not funded on the Stellar testnet.'];
+            }
+
+            $amountString = number_format($amount, 7, '.', '');
+            $payment = (new PaymentOperationBuilder($destination, Asset::native(), $amountString))->build();
+
+            $transaction = (new TransactionBuilder($senderAccount))
+                ->addOperation($payment)
+                ->build();
+
+            return [
+                'success' => true,
+                'xdr' => $transaction->toEnvelopeXdrBase64(),
+                'network' => 'TESTNET',
+                'network_passphrase' => config('yolixa.stellar_passphrase'),
+            ];
+        } catch (\Throwable $e) {
+            Log::channel('stellar')->error('Tip XDR build failed: ' . $e->getMessage());
+            return ['success' => false, 'message' => 'Failed to build Stellar transaction.'];
+        }
+    }
+
     public function submitTransaction(string $signedXdr): array
     {
         try {
-            $transaction = \Soneso\StellarSDK\AbstractTransaction::fromEnvelopeBase64XdrString($signedXdr);
+            $transaction = AbstractTransaction::fromEnvelopeBase64XdrString($signedXdr);
             $response = $this->sdk->submitTransaction($transaction);
-            
+
             if ($response->isSuccessful()) {
                 return [
                     'success' => true,
-                    'hash'    => $response->getHash(),
+                    'hash' => $response->getHash(),
                 ];
             }
 
-            return ['success' => false, 'message' => 'Transaction failed but no exception thrown.'];
-
-        } catch (\Soneso\StellarSDK\Exceptions\HorizonRequestException $e) {
-            $errorMsg = 'Network error: ' . $e->getMessage();
-            $horizonErr = $e->getHorizonErrorResponse();
-            
-            if ($horizonErr && $horizonErr->getExtras()) {
-                $extras = $horizonErr->getExtras();
-                $txCode = method_exists($extras, 'getResultCodesTransaction') ? $extras->getResultCodesTransaction() : 'Unknown';
-                $opCodes = method_exists($extras, 'getResultCodesOperation') ? $extras->getResultCodesOperation() : [];
-                
-                $errorMsg = 'Horizon Rejected (Tx: ' . $txCode . ')';
-                if (!empty($opCodes)) {
-                     $errorMsg .= ' | Ops: ' . implode(', ', $opCodes);
-                }
-            }
-            
-            Log::channel('stellar')->error("Horizon Fail: " . $errorMsg);
-            return ['success' => false, 'message' => $errorMsg];
+            return ['success' => false, 'message' => 'Horizon rejected the transaction.'];
+        } catch (HorizonRequestException $e) {
+            $message = $this->formatHorizonError($e);
+            Log::channel('stellar')->warning('Horizon submit failed: ' . $message);
+            return ['success' => false, 'message' => $message];
         } catch (\Throwable $e) {
-            Log::channel('stellar')->error("Submission Error: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Network error: ' . $e->getMessage()];
+            Log::channel('stellar')->error('Transaction submit failed: ' . $e->getMessage());
+            return ['success' => false, 'message' => 'Could not submit transaction to Stellar testnet.'];
         }
     }
 
-    /**
-     * Submit a server-signed payout transaction to the creator.
-     */
-    public function payoutCreatorInYlx(string $creatorPubKey, float $amount): array
-    {
+    public function verifyTransaction(
+        string $txHash,
+        string $expectedReceiver,
+        float $expectedAmount,
+        string $expectedAssetCode,
+        ?string $expectedSender = null
+    ): array {
         try {
-            $distSecret = config('yolixa.platform_distribution_seed');
-            if (empty($distSecret)) {
-                return ['success' => false, 'message' => 'Platform distribution seed is not configured.'];
+            if ($expectedAssetCode !== 'XLM') {
+                return ['success' => false, 'message' => 'Only XLM tips are supported in the current MVP.'];
             }
 
-            $sourceKeyPair = \Soneso\StellarSDK\Crypto\KeyPair::fromSeed($distSecret);
-            $sourceAccount = $this->sdk->requestAccount($sourceKeyPair->getAccountId());
-
-            // Ensure destination has trustline
-            try {
-                $destAccount = $this->sdk->requestAccount($creatorPubKey);
-                $hasTrustline = false;
-                foreach ($destAccount->getBalances() as $balance) {
-                    if ($balance->getAssetCode() === env('YLX_ASSET_CODE', 'YLX')) {
-                        $hasTrustline = true;
-                        break;
-                    }
-                }
-                if (!$hasTrustline) {
-                     return ['success' => false, 'message' => 'Creator does not have a YLX trustline.'];
-                }
-            } catch (\Throwable $e) {
-                return ['success' => false, 'message' => 'Creator wallet is not funded on the network.'];
-            }
-
-            $asset = Asset::createNonNativeAsset(env('YLX_ASSET_CODE', 'YLX'), env('YLX_ISSUER_PUBLIC'));
-            $amountStr = number_format($amount, 7, '.', '');
-
-            $txBuilder = new TransactionBuilder($sourceAccount);
-            $paymentOp = (new PaymentOperationBuilder($creatorPubKey, $asset, $amountStr))->build();
-            $txBuilder->addOperation($paymentOp);
-            
-            $transaction = $txBuilder->build();
-            $transaction->sign($sourceKeyPair, $this->network);
-
-            $response = $this->sdk->submitTransaction($transaction);
-            
-            if ($response->isSuccessful()) {
-                return [
-                    'success' => true,
-                    'hash'    => $response->getHash(),
-                ];
-            }
-
-            return ['success' => false, 'message' => 'Payout transaction failed.'];
-
-        } catch (\Throwable $e) {
-            Log::channel('stellar')->error("Payout Error: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Failed to process payout: ' . $e->getMessage()];
-        }
-    }
-
-    /**
-     * Build an XDR transaction for adding a trustline.
-     */
-    public function buildTrustlineXdr(string $sender): array
-    {
-        try {
-            $senderAccount = $this->sdk->requestAccount($sender);
-            $assetCode = env('YLX_ASSET_CODE', 'YLX');
-            $issuerPublicKey = env('YLX_ISSUER_PUBLIC');
-            
-            if (empty($issuerPublicKey)) {
-                return ['success' => false, 'message' => 'YLX Issuer public key is not configured.'];
-            }
-
-            $asset = Asset::createNonNativeAsset($assetCode, $issuerPublicKey);
-            $txBuilder = new TransactionBuilder($senderAccount);
-            
-            $changeTrustOp = (new ChangeTrustOperationBuilder($asset))->build();
-            $txBuilder->addOperation($changeTrustOp);
-            
-            $transaction = $txBuilder->build();
-            $xdr = $transaction->toEnvelopeXdrBase64();
-
-            return ['success' => true, 'xdr' => $xdr];
-
-        } catch (\Throwable $e) {
-            Log::channel('stellar')->error("Trustline XDR Build Error: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Failed to build trustline transaction: ' . $e->getMessage()];
-        }
-    }
-
-    /**
-     * Verify a transaction hash exists on the network and matches our expected values.
-     */
-    public function verifyTransaction(string $txHash, string $expectedReceiver, float $expectedAmount, string $expectedAssetCode): array
-    {
-        try {
             $txResponse = $this->sdk->requestTransaction($txHash);
-            
             if (!$txResponse->isSuccessful()) {
-                return ['success' => false, 'message' => 'Transaction was not successful on the ledger.'];
+                return ['success' => false, 'message' => 'Transaction was not successful on Stellar.'];
             }
 
-            // Next we must request the operations for this transaction to verify the transfer
             $opsResponse = $this->sdk->operations()->forTransaction($txHash)->execute();
-            
-            $foundMatch = false;
+
             foreach ($opsResponse->getOperations() as $op) {
-                if ($op instanceof \Soneso\StellarSDK\Responses\Operations\PaymentOperationResponse) {
-                    $opAmount = (float) $op->getAmount();
-                    $opReceiver = $op->getTo();
-                    
-                    // Simple logic for native vs credit assets
-                    if ($op->getAssetType() === 'native' && $expectedAssetCode === 'XLM') {
-                        if ($opReceiver === $expectedReceiver && abs($opAmount - $expectedAmount) < 0.00001) {
-                            $foundMatch = true;
-                            break;
-                        }
-                    } else if ($op->getAssetCode() === $expectedAssetCode) {
-                         // Check exact match (ignoring precision errors)
-                         if ($opReceiver === $expectedReceiver && abs($opAmount - $expectedAmount) < 0.00001) {
-                            $foundMatch = true;
-                            break;
-                        }
-                    }
+                if (!$op instanceof PaymentOperationResponse || $op->getAsset()->getType() !== Asset::TYPE_NATIVE) {
+                    continue;
+                }
+
+                $matchesReceiver = $op->getTo() === $expectedReceiver;
+                $matchesAmount = abs(((float) $op->getAmount()) - $expectedAmount) < 0.0000001;
+                $matchesSender = $expectedSender === null || $op->getFrom() === $expectedSender;
+
+                if ($matchesReceiver && $matchesAmount && $matchesSender) {
+                    return [
+                        'success' => true,
+                        'sender_wallet' => $op->getFrom(),
+                        'receiver_wallet' => $op->getTo(),
+                        'network_fee' => ((float) $txResponse->getFeeCharged()) / 10000000,
+                        'ledger' => $txResponse->getLedger(),
+                        'created_at' => $txResponse->getCreatedAt(),
+                    ];
                 }
             }
 
-            if ($foundMatch) {
-                return ['success' => true];
-            } else {
-                return ['success' => false, 'message' => 'Transaction hash exists but details (amount/receiver/asset) do not match.'];
-            }
-
-        } catch (\Soneso\StellarSDK\Exceptions\HorizonRequestException $e) {
-            if ($e->getStatusCode() === 404) {
-                 return ['success' => false, 'message' => 'Transaction hash not found on the network.'];
-            }
-            Log::channel('security')->warning("Verify TX Error: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Error verifying transaction against Horizon.'];
+            return ['success' => false, 'message' => 'Transaction hash exists, but amount, sender, receiver, or asset does not match this tip.'];
+        } catch (HorizonRequestException $e) {
+            Log::channel('security')->warning('Horizon verify failed: ' . $e->getMessage());
+            return ['success' => false, 'message' => $e->getStatusCode() === 404 ? 'Transaction hash was not found on Stellar testnet.' : 'Could not verify transaction on Horizon.'];
         } catch (\Throwable $e) {
-            Log::channel('security')->error("Verify TX Fatal: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Internal error during verification: ' . $e->getMessage()];
+            Log::channel('security')->error('Transaction verify failed: ' . $e->getMessage());
+            return ['success' => false, 'message' => 'Internal error while verifying transaction.'];
         }
+    }
+
+    private function formatHorizonError(HorizonRequestException $e): string
+    {
+        $horizon = $e->getHorizonErrorResponse();
+        if (!$horizon || !$horizon->getExtras()) {
+            return 'Horizon error: ' . $e->getMessage();
+        }
+
+        $extras = $horizon->getExtras();
+        $txCode = method_exists($extras, 'getResultCodesTransaction') ? $extras->getResultCodesTransaction() : null;
+        $opCodes = method_exists($extras, 'getResultCodesOperation') ? $extras->getResultCodesOperation() : [];
+
+        if ($txCode || $opCodes) {
+            return trim('Horizon rejected transaction ' . ($txCode ? "({$txCode})" : '') . (!empty($opCodes) ? ': ' . implode(', ', $opCodes) : ''));
+        }
+
+        return 'Horizon rejected the transaction.';
     }
 }

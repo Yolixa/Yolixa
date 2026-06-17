@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Models\User;
+use App\Models\Wallet;
+use App\Models\WalletType;
+use Soneso\StellarSDK\Crypto\KeyPair;
 
 class CreatorController extends Controller
 {
@@ -16,11 +19,17 @@ class CreatorController extends Controller
         $data = $request->validate([
             'name'          => ['required','string','max:100'],
             'email'         => ['required','email','max:150'],
-            'blockchain_id' => ['required','integer'],
+            'blockchain_id' => ['required','integer','exists:blockchains,id'],
             'wallet_type'   => ['required','string','max:50'],
             'public_key'    => ['required','string','max:150'],
             'trust_tx_hash' => ['nullable','string','max:100'],
         ]);
+
+        try {
+            KeyPair::fromAccountId($data['public_key']);
+        } catch (\Throwable) {
+            return response()->json(['status' => false, 'message' => 'Invalid Stellar public key.'], 422);
+        }
 
         // Email uniqueness check manually to avoid complex rules
         if (User::where('email', $data['email'])->where('public_key', '!=', $data['public_key'])->exists()) {
@@ -56,6 +65,28 @@ class CreatorController extends Controller
             ]);
         }
 
+        $walletType = WalletType::where('blockchain_id', $data['blockchain_id'])
+            ->where(function ($query) use ($data) {
+                $query->where('name', $data['wallet_type'])
+                    ->orWhere('slug', Str::slug($data['wallet_type']));
+            })
+            ->first();
+
+        if (!$walletType && is_numeric($data['wallet_type'])) {
+            $walletType = WalletType::where('blockchain_id', $data['blockchain_id'])->find($data['wallet_type']);
+        }
+
+        if ($walletType) {
+            Wallet::updateOrCreate(
+                ['public_key' => $user->public_key],
+                [
+                    'user_id' => $user->id,
+                    'blockchain_id' => $data['blockchain_id'],
+                    'wallet_type_id' => $walletType->id,
+                ]
+            );
+        }
+
         $refUrl = route('creator.referral', ['code' => $user->referral_key]);
         \Illuminate\Support\Facades\Log::info("Creator registration completed successfully. Handing off to frontend redirect phase.", ['user_id' => $user->id]);
 
@@ -82,21 +113,7 @@ class CreatorController extends Controller
             ->where('role', 'creator')
             ->firstOrFail();
 
-        $recentTips = \App\Models\Tip::where('receiver_id', $creator->id)
-            ->where('status', 'confirmed')
-            ->orderBy('created_at', 'desc')
-            ->limit(10)
-            ->get();
-
-        $tipsSum = \App\Models\Tip::where('receiver_id', $creator->id)
-            ->where('status', 'confirmed')
-            ->sum('amount'); // This is a bit complex if assets differ, but we can do a naive sum or rely on converted_ylx_amount
-        
-        $convertedTotal = \App\Models\Tip::where('receiver_id', $creator->id)
-            ->where('status', 'confirmed')
-            ->sum('converted_ylx_amount');
-
-        return view('creator.profile', compact('creator', 'recentTips', 'convertedTotal'));
+        return view('creator.referral', compact('creator'));
     }
 
     public function dashboard(string $publicKey = null)
@@ -142,8 +159,16 @@ class CreatorController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
+        if ($request->filled('username')) {
+            $request->merge([
+                'username' => Str::slug($request->input('username')),
+            ]);
+        } elseif ($request->has('username')) {
+            $request->merge(['username' => null]);
+        }
+
         $data = $request->validate([
-            'username' => 'nullable|string|max:50|unique:users,username,' . $creator->id,
+            'username' => 'nullable|string|min:3|max:50|alpha_dash|not_in:admin,api,auth,creator,dashboard,disconnect-wallet,get-wallets,r,save-wallet,storage,up,whitepaper|unique:users,username,' . $creator->id,
             'bio' => 'nullable|string|max:255',
             'category' => 'nullable|string|max:50',
             'preferred_tip_asset' => 'nullable|in:XLM,YLX',
@@ -155,11 +180,15 @@ class CreatorController extends Controller
         ]);
 
         $creator->update($data);
+        $creator = $creator->fresh();
 
         return response()->json([
             'success' => true,
             'message' => 'Profile updated successfully.',
-            'creator' => $creator
+            'creator' => $creator,
+            'profile_url' => $creator->username
+                ? route('creator.profile', ['username' => $creator->username])
+                : route('creator.referral', ['code' => $creator->referral_key]),
         ]);
     }
 

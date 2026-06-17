@@ -40,7 +40,7 @@
             overflow-x: hidden;
             font-family: 'Inter', sans-serif;
         }
-        
+
         h1, h2, h3, h4, h5, h6 {
             font-family: 'Outfit', sans-serif;
         }
@@ -54,7 +54,7 @@
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
         }
-        
+
         .glass-panel:hover {
             border-color: rgba(139, 92, 246, 0.2);
             background: rgba(19, 26, 42, 0.5);
@@ -83,19 +83,19 @@
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
-        
+
         .status-live {
             background: rgba(16, 185, 129, 0.1);
             color: #34D399;
             border: 1px solid rgba(16, 185, 129, 0.3);
         }
-        
+
         .status-progress {
             background: rgba(245, 158, 11, 0.1);
             color: #FBBF24;
             border: 1px solid rgba(245, 158, 11, 0.3);
         }
-        
+
         .status-planned {
             background: rgba(59, 130, 246, 0.1);
             color: #60A5FA;
@@ -192,7 +192,7 @@
             -webkit-backdrop-filter: blur(16px);
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
         }
-        
+
         /* Mobile Overlay */
         #mobile-menu {
             transform: translateX(100%);
@@ -229,7 +229,7 @@
     <!-- Navigation -->
     <nav id="mainNav" class="fixed top-0 w-full z-50 transition-all duration-300 px-6 py-4 border-b border-transparent">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
-            
+
             <!-- Logo -->
             <a href="#" class="flex items-center gap-3 group">
                 <div class="relative">
@@ -256,7 +256,7 @@
                 <a href="{{ url('/') }}" class="hidden sm:inline-flex px-5 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold text-sm transition-all duration-300 shadow-sm hover:shadow-purple-500/10">
                     Back to App
                 </a>
-                
+
                 <!-- Hamburger -->
                 <button id="mobileMenuBtn" class="md:hidden p-2 text-slate-300 hover:text-white focus:outline-none">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -296,7 +296,7 @@
 
     <!-- Main Content Layout -->
     <div class="max-w-7xl mx-auto px-6 pt-36 pb-24 flex flex-col lg:flex-row gap-12 relative">
-        
+
         <!-- Table of Contents Sidebar -->
         <aside class="hidden lg:block w-64 shrink-0">
             <div class="sticky top-32 glass-panel p-6">
@@ -324,7 +324,7 @@
 
         <!-- Whitepaper Document -->
         <main class="flex-1 space-y-24 min-w-0">
-            
+
             <!-- Cover/Hero -->
             <section class="text-center md:text-left pt-6 pb-12 border-b border-white/10 relative">
                 <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 font-semibold text-xs mb-6 animate__animated animate__fadeInDown">
@@ -344,11 +344,11 @@
                     </div>
                     <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
                         <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                        <span class="text-xs font-medium text-slate-300">Last Updated: April 2026</span>
+                        <span class="text-xs font-medium text-slate-300">Last Updated: June 2026</span>
                     </div>
                     <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
                         <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                        <span class="text-xs font-medium text-slate-300">Network: Stellar Public</span>
+                        <span class="text-xs font-medium text-slate-300">Network: Stellar Testnet</span>
                     </div>
                 </div>
             </section>
@@ -370,7 +370,7 @@
                         </div>
                         <div class="p-6 rounded-2xl bg-white/[0.02] border border-white/5 relative overflow-hidden transition-all duration-300 hover:border-emerald-500/30">
                             <h4 class="text-white font-bold mb-3 font-outfit text-xl flex flex-wrap items-center gap-3">
-                                Current Status 
+                                Current Status
                                 <span class="status-badge status-live">Live</span>
                             </h4>
                             <p class="text-sm text-slate-400 leading-relaxed">The core application plumbing—including non-custodial wallet integrations, fast tipping workflows, secure admin dashboards, and blockchain state monitoring—is deployed and functionally robust.</p>
@@ -446,7 +446,7 @@
                                 <h3 class="text-xl font-bold text-white">Creator Flow</h3>
                                 <span class="status-badge status-live">Live</span>
                             </div>
-                            <p class="text-slate-400 text-sm leading-relaxed mb-5">Content creators onboard securely using a standard Stellar wallet (e.g., Freighter). The seamless frontend yields a personalized public referral tipping URL. Through a convenient 1-click UI module, the creator dynamically configures trustlines, preparing their wallet to receive natively routed XLM, USDC, and YLX parameters.</p>
+                            <p class="text-slate-400 text-sm leading-relaxed mb-5">Content creators onboard securely using a standard Stellar wallet such as Freighter or Rabet. The frontend generates a public referral tipping URL, and the current MVP receives direct XLM testnet payments verified through Horizon.</p>
                             <div class="flex flex-wrap gap-2">
                                 <span class="px-3 py-1 bg-white/[0.04] border border-white/10 rounded-md text-[0.7rem] uppercase tracking-wider font-bold text-slate-300">Wallet Connect Auth</span>
                                 <span class="px-3 py-1 bg-white/[0.04] border border-white/10 rounded-md text-[0.7rem] uppercase tracking-wider font-bold text-slate-300">Dashboard Control</span>
@@ -482,10 +482,10 @@
                     <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center font-black text-lg border border-blue-500/20">4</div>
                     <h2 class="text-3xl font-bold text-white">Stellar Network Architecture</h2>
                 </div>
-                
+
                 <div class="glass-panel p-8 md:p-10">
                     <p class="text-slate-300 mb-8 leading-relaxed text-lg">Yolixa heavily leverages Stellar for its remarkable throughput and native smart asset protocols. The internal service handlers are inherently defensive against common Web3 failure vectors.</p>
-                    
+
                     <div class="grid lg:grid-cols-2 gap-8 relative">
                         <div class="bg-white/[0.02] border border-white/5 p-6 rounded-2xl relative z-10 transition-colors hover:bg-white/[0.04]">
                             <h4 class="text-lg font-bold text-white mb-4 flex flex-wrap items-center gap-3 justify-between">
@@ -511,7 +511,7 @@
                     <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center font-black text-lg border border-blue-500/20">5</div>
                     <h2 class="text-3xl font-bold text-white">Platform Fees & Token Rewards</h2>
                 </div>
-                
+
                 <div class="grid lg:grid-cols-2 gap-8 relative">
                     <div class="glass-panel p-8 border-t-2 border-emerald-500/50">
                         <div class="w-12 h-12 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/10">
@@ -524,15 +524,15 @@
                         <p class="text-sm text-slate-400 mb-6 leading-relaxed">Yolixa utilizes a granular fee logic structured to incentivize native ecosystem growth while remaining highly competitive against legacy platforms.</p>
                         <div class="text-sm text-slate-300 bg-[#06090F] border border-white/5 p-5 rounded-xl font-mono shadow-inner">
                             <div class="flex justify-between items-center border-b border-white/5 pb-3 mb-3">
-                                <span class="font-medium">Asset: YLX</span> 
+                                <span class="font-medium">Asset: YLX</span>
                                 <span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded-md font-bold text-xs tracking-wide">0.00% Fee</span>
                             </div>
                             <div class="flex justify-between items-center border-b border-white/5 pb-3 mb-3">
-                                <span class="font-medium">Asset: XLM</span> 
+                                <span class="font-medium">Asset: XLM</span>
                                 <span class="px-2 py-1 bg-blue-500/20 text-blue-400 rounded-md font-bold text-xs tracking-wide">1.50% Fee</span>
                             </div>
                             <div class="flex justify-between items-center">
-                                <span class="font-medium">Asset: USDC</span> 
+                                <span class="font-medium">Asset: USDC</span>
                                 <span class="px-2 py-1 bg-blue-500/20 text-blue-400 rounded-md font-bold text-xs tracking-wide">1.50% Fee</span>
                             </div>
                         </div>
@@ -548,7 +548,7 @@
                                 <span class="status-badge status-progress">Partially Implemented</span>
                             </div>
                             <p class="text-sm text-slate-400 mb-6 leading-relaxed">The YLX token system is being intentionally designed to reward active participants. Foundational portions of the reward logic exist in the backend architecture.</p>
-                            
+
                             <div class="bg-amber-500/5 border border-amber-500/20 p-5 rounded-xl mb-4 transition-colors hover:bg-amber-500/10">
                                 <div class="flex flex-wrap justify-between items-center mb-2 gap-2">
                                     <h5 class="text-white text-sm font-bold">Profile Accumulation</h5>
@@ -601,7 +601,7 @@
                 </div>
 
                 <div class="relative border-l border-white/10 ml-4 md:ml-[50%] md:-translate-x-px space-y-16 pb-10">
-                    
+
                     <!-- Phase 1 -->
                     <div class="relative pl-10 md:pl-0 group">
                         <div class="absolute left-[-8.5px] md:left-1/2 top-1.5 w-4 h-4 rounded-full bg-emerald-500 ring-4 ring-[#0B0F19] md:-translate-x-1/2 z-10 box-content transition-transform group-hover:scale-125 duration-300"></div>
@@ -697,7 +697,7 @@
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
                         const targetId = entry.target.getAttribute('id');
-                        
+
                         // Update Sidebar TOC
                         tocLinks.forEach(link => {
                             link.classList.remove('active');
@@ -713,7 +713,7 @@
                                 link.classList.add('active');
                             }
                         });
-                        
+
                         // Update Mobile Nav
                         mobileNavLinks.forEach(link => {
                             link.classList.remove('text-purple-400', 'bg-white/5');
@@ -729,7 +729,7 @@
 
             const observer = new IntersectionObserver(observerCallback, observerOptions);
             sections.forEach(sec => observer.observe(sec));
-            
+
             // Smooth Scroll on Click
             const allLinks = [...tocLinks, ...topNavLinks, ...mobileNavLinks];
             allLinks.forEach(link => {
@@ -743,7 +743,7 @@
                             if(document.getElementById('mobile-menu').classList.contains('open')) {
                                 closeMobileMenu();
                             }
-                            
+
                             const navHeight = document.getElementById('mainNav').offsetHeight;
                             const targetPosition = targetSection.getBoundingClientRect().top + window.pageYOffset - navHeight - 32;
                             window.scrollTo({

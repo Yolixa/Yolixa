@@ -22,6 +22,7 @@ return new class extends Migration
             $table->boolean('status')->default(false)->comment('0 => inactive', '1 => active');
             $table->text('bio')->nullable();
             $table->boolean('verified')->default(false);
+            $table->rememberToken();
             $table->timestamps();
         });
 

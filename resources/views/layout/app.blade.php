@@ -14,9 +14,6 @@
           Before deploying to a true production environment, compile a static CSS bundle using Laravel Mix or Vite (e.g. `npm run build`). -->
     <script src="{{ asset('assets/js/talwind_cdn.js') }}"></script>
 
-    {{-- Freighter CDN --}}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-freighter-api/3.0.0/index.min.js"></script>
-
     {{-- Tailwind Config --}}
     <script>
         tailwind.config = {
@@ -211,7 +208,7 @@
 
      {{-- Wallet SDKs --}}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-sdk/10.4.0/stellar-sdk.min.js"></script>
-    <script src="https://unpkg.com/@stellar/freighter-api/dist/index.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-freighter-api/3.0.0/index.min.js"></script>
     <script src="https://unpkg.com/@rabet/extension/dist/rabet.umd.min.js"></script>
 
     <script>
@@ -226,15 +223,12 @@
     {{-- Core JS --}}
     <script>
         window.config = {
-            STELLAR_HORIZON: "{{ env('STELLAR_HORIZON') }}",
-            STELLAR_PASSPHRASE: "{{ env('STELLAR_PASSPHRASE') }}",
-            YLX_ASSET_CODE: "{{ env('YLX_ASSET_CODE') }}",
+            STELLAR_HORIZON: "{{ config('yolixa.stellar_horizon') }}",
+            STELLAR_PASSPHRASE: "{{ config('yolixa.stellar_passphrase') }}",
+            YLX_ASSET_CODE: "{{ env('YLX_ASSET_CODE', 'YLX') }}",
             YLX_ISSUER_PUBLIC: "{{ env('YLX_ISSUER_PUBLIC') }}"
         };
     </script>
-
-    <script src="{{ asset('assets/js/wallets.js') }}"></script>
-    <script src="{{ asset('assets/js/creator.js') }}"></script>
 
     <script>
         const mobileMenuBtn = document.getElementById('mobile-menu-btn');

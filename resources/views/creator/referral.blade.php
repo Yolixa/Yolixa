@@ -27,23 +27,10 @@
 
                     <div>
                         <label class="block text-gray-300 mb-2 text-sm">Select Asset</label>
-                        <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="grid grid-cols-1 gap-4">
                             <button onclick="selectAsset('XLM')" id="assetXLM" class="asset-btn active-asset flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-gray-700 bg-gray-800 text-white hover:border-yolixa-purple transition-all">
                                 <img src="{{ asset('assets/images/stellar-xlm-logo.png') }}" class="w-6 h-6" alt="XLM">
-                                <span>XLM</span>
-                            </button>
-                            <button onclick="selectAsset('USDC')" id="assetUSDC" class="asset-btn flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-gray-700 bg-gray-800 text-white hover:border-yolixa-purple transition-all">
-                                <img src="{{ asset('assets/images/usd-coin-usdc-logo.png') }}" class="w-6 h-6" alt="USDC">
-                                <span>USDC</span>
-                            </button>
-                            <button onclick="selectAsset('YLX')" id="assetYLX" class="relative asset-btn flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-gray-700 bg-gray-800 text-white hover:border-yolixa-purple transition-all">
-                                <span class="absolute -top-3 -right-2 bg-gradient-to-r from-yolixa-purple to-yolixa-blue text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg pulse-glow">0% Fee!</span>
-                                <div class="w-6 h-6 rounded-full flex items-center justify-center shadow-glow text-[10px] font-bold text-white">
-                                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                                    </svg>
-                                </div>
-                                <span>YOLIXA</span>
+                                <span>XLM on Stellar testnet</span>
                             </button>
                         </div>
                     </div>
@@ -59,15 +46,15 @@
 
                     <div id="conversionPreview" class="hidden bg-gray-800/60 border border-gray-700 rounded-xl p-4 mt-4 shadow-inner">
                         <div class="flex justify-between text-sm mb-2">
-                            <span class="text-gray-400">Conversion Rate:</span>
-                            <span class="text-yolixa-blue font-bold" id="previewRate">-</span>
+                            <span class="text-gray-400">Network:</span>
+                            <span class="text-yolixa-blue font-bold" id="previewRate">Stellar testnet</span>
                         </div>
                         <div class="flex justify-between text-sm mb-2">
                             <span class="text-gray-400">Platform Fee:</span>
                             <span class="text-red-400 font-bold" id="previewFee">-</span>
                         </div>
                         <div class="flex justify-between text-base border-t border-gray-700 pt-2 mt-2">
-                            <span class="text-gray-300 font-bold">Creator Receives:</span>
+                            <span class="text-gray-300 font-bold">Creator Receives On-Chain:</span>
                             <span class="text-green-400 font-black" id="previewPayout">-</span>
                         </div>
                     </div>
@@ -78,15 +65,8 @@
                     </button>
 
                     <p class="text-center text-xs text-gray-500 mt-4 leading-relaxed" id="feeDisclaimer">
-                        * A small platform fee of 1.5% applies to support the Yolixa ecosystem.
+                        * The MVP sends the full XLM tip directly to the creator wallet. Yolixa records a 1.5% platform fee for reporting only.
                     </p>
-
-                    <div id="trustlineAlert" class="hidden mt-4 bg-gray-800/80 border border-yolixa-purple/30 rounded-xl p-4 text-center">
-                        <p class="text-sm text-gray-300 mb-3">Don't have the YLX token in your wallet yet?</p>
-                        <button onclick="createTrustline()" id="trustlineBtn" class="text-xs bg-yolixa-purple/20 hover:bg-yolixa-purple/40 text-yolixa-purple border border-yolixa-purple/50 px-4 py-2 rounded-lg transition-colors font-bold">
-                            Initialize YLX Trustline
-                        </button>
-                    </div>
                 </div>
 
                 <!-- Info Card -->
@@ -110,7 +90,7 @@
                                 <div class="mt-1 w-5 h-5 bg-yolixa-purple/20 rounded-full flex items-center justify-center flex-shrink-0">
                                     <svg class="w-3 h-3 text-yolixa-purple" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
                                 </div>
-                                <span class="text-yolixa-purple text-sm font-bold">Bonus: You get YLX token rewards!</span>
+                                <span class="text-yolixa-purple text-sm font-bold">Transparent testnet transaction proof is recorded.</span>
                             </li>
                         </ul>
                     </div>
@@ -138,7 +118,7 @@
             <svg class="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
         </div>
         <h2 class="text-3xl font-bold text-white mb-2">Tip Sent!</h2>
-        <p class="text-gray-400 mb-6">Your support has been sent to the creator. YLX rewards are on their way!</p>
+        <p class="text-gray-400 mb-6">Your XLM support was sent directly to the creator and recorded in Yolixa.</p>
         <button onclick="location.reload()" class="w-full gradient-bg py-3 rounded-lg font-bold">Awesome!</button>
     </div>
 </div>
@@ -160,16 +140,15 @@
     let selectedAsset = 'XLM';
 
     function selectAsset(asset) {
+        if (asset !== 'XLM') {
+            toastr.info('The current MVP supports XLM tips only.');
+            return;
+        }
+
         selectedAsset = asset;
         document.querySelectorAll('.asset-btn').forEach(btn => btn.classList.remove('active-asset'));
         document.getElementById('asset' + asset).classList.add('active-asset');
         document.getElementById('assetLabel').innerText = asset;
-
-        if (asset === 'YLX') {
-            document.getElementById('feeDisclaimer').innerHTML = '<span class="text-yolixa-purple font-bold">0% Platform Fee!</span> You keep 100% of the value.';
-        } else {
-            document.getElementById('feeDisclaimer').innerText = '* A small platform fee applies for non-native assets to support the Yolixa ecosystem.';
-        }
         
         updatePreview();
     }
@@ -183,12 +162,6 @@
     async function updatePreview() {
         const amount = document.getElementById('tipAmount').value;
         const previewBox = document.getElementById('conversionPreview');
-        const trustlineAlert = document.getElementById('trustlineAlert');
-        
-        // Always enforce trustline setup visibility logic for Creator
-        // (For MVP we can assume Creator might need setup, but technically user needs to know)
-        // We'll hide trustlineAlert by default and backend or checks could reveal it.
-        trustlineAlert.classList.add('hidden');
 
         if (!amount || amount <= 0) {
             previewBox.classList.add('hidden');
@@ -203,9 +176,9 @@
             });
             const data = await res.json();
             if (data.success) {
-                document.getElementById('previewRate').innerText = `1 ${selectedAsset} = ${data.rate} YLX`;
-                document.getElementById('previewFee').innerText = `- ${parseFloat(data.fee_ylx).toFixed(2)} YLX`;
-                document.getElementById('previewPayout').innerText = `${parseFloat(data.creator_payout_ylx).toFixed(2)} YLX`;
+                document.getElementById('previewRate').innerText = 'Stellar testnet';
+                document.getElementById('previewFee').innerText = `${parseFloat(data.platform_fee_xlm).toFixed(7)} XLM reporting fee`;
+                document.getElementById('previewPayout').innerText = `${parseFloat(data.creator_receives_xlm).toFixed(7)} XLM`;
                 previewBox.classList.remove('hidden');
             } else {
                 previewBox.classList.add('hidden');
@@ -264,6 +237,7 @@
 
             if (txHash) {
                 await recordTip(txHash, amount, selectedAsset);
+                toastr.success('Tip confirmed on Stellar testnet.');
                 document.getElementById('successModal').classList.remove('hidden');
                 document.getElementById('successModal').classList.add('flex');
             }
@@ -278,6 +252,11 @@
     }
 
     async function processFreighterTip(amount, destination, assetCode) {
+        const freighter = getFreighterApi();
+        if (!freighter) {
+            throw new Error('Freighter API not loaded. Please hard refresh or check the Freighter extension/CDN.');
+        }
+
         // Build transaction logic usually happens via backend or a bridge
         // For simplicity in this demo, we'll call a backend endpoint to get XDR to sign
         const response = await fetch('/api/tip/build-xdr', {
@@ -305,8 +284,8 @@
         if (!data.success) throw new Error(data.message);
 
         // Ensure active address matches local storage to avoid tx_bad_auth
-        if (window.freighterApi && typeof window.freighterApi.getPublicKey === 'function') {
-            const activeKey = await window.freighterApi.getPublicKey();
+        if (typeof freighter.getPublicKey === 'function') {
+            const activeKey = await freighter.getPublicKey();
             if (activeKey !== localStorage.getItem('freighter_wallet')) {
                 localStorage.setItem('freighter_wallet', activeKey);
                 throw new Error("Connected Freighter account changed. Please try sending the tip again.");
@@ -314,10 +293,11 @@
         }
 
         // Sign with Freighter (Requires explicit TESTNET options to avoid tx_bad_auth)
-        const signedTx = await window.freighterApi.signTransaction(data.xdr, { 
+            const signResult = await freighter.signTransaction(data.xdr, { 
             network: "TESTNET", 
             networkPassphrase: "Test SDF Network ; September 2015" 
         });
+        const signedTx = normalizeSignedXdr(signResult);
 
         // Submit to Horizon
         const submitRes = await fetch('/api/tip/submit', {
@@ -377,7 +357,7 @@
         let signedTx;
         try {
             const result = await window.rabet.sign(data.xdr, network);
-            signedTx = result.xdr;
+            signedTx = normalizeSignedXdr(result);
         } catch (error) {
             console.error(error);
             throw new Error("Transaction signing was rejected.");
@@ -407,7 +387,7 @@
     }
 
     async function recordTip(txHash, amount, asset) {
-        await fetch('/api/tip/record', {
+        const response = await fetch('/api/tip/record', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -421,87 +401,40 @@
                 sender_key: localStorage.getItem(localStorage.getItem('connected_wallet') + '_wallet')
             })
         });
-    }
 
-    async function createTrustline() {
-        const btn = document.getElementById('trustlineBtn');
-        const connectedWallet = localStorage.getItem("connected_wallet");
-        if (!connectedWallet) {
-            toastr.info('Please connect your wallet first.');
-            return;
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Tip was submitted but could not be recorded.');
         }
 
-        const senderKey = localStorage.getItem(connectedWallet + '_wallet');
-        
-        btn.disabled = true;
-        btn.innerText = 'Building...';
-
-        try {
-            const response = await fetch('/api/tip/build-trustline', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({ sender: senderKey })
-            });
-
-            if (!response.ok) {
-                const errText = await response.text();
-                let errMsg = 'Server error configuring trustline.';
-                try { errMsg = JSON.parse(errText).message; } catch(e) {}
-                throw new Error(errMsg);
-            }
-
-            const data = await response.json();
-            if (!data.success) throw new Error(data.message);
-
-            btn.innerText = 'Signing...';
-            
-            let signedTx;
-            if (connectedWallet === 'freighter') {
-                signedTx = await window.freighterApi.signTransaction(data.xdr, { 
-                    network: "TESTNET", 
-                    networkPassphrase: "Test SDF Network ; September 2015" 
-                });
-            } else if (connectedWallet === 'rabet') {
-                const res = await window.rabet.sign(data.xdr, 'testnet');
-                signedTx = res.xdr;
-            } else {
-                throw new Error('Wallet not supported.');
-            }
-
-            btn.innerText = 'Submitting...';
-
-            const submitRes = await fetch('/api/tip/submit', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({ signedXdr: signedTx })
-            });
-
-            if (!submitRes.ok) {
-                const errorText = await submitRes.text();
-                let errorMessage = 'Transaction submission failed.';
-                try { errorMessage = JSON.parse(errorText).message; } catch (e) {}
-                throw new Error(errorMessage);
-            }
-
-            const subData = await submitRes.json();
-            if (!subData.success) throw new Error(subData.message);
-
-            toastr.success('Success! YLX trustline initialized.');
-            document.getElementById('trustlineAlert').classList.add('hidden');
-
-        } catch (err) {
-            console.error(err);
-            toastr.error(err.message || 'Failed to create trustline. Try again.');
-        } finally {
-            btn.disabled = false;
-            btn.innerText = 'Initialize YLX Trustline';
-        }
+        return data.tip;
     }
+
+    function normalizeSignedXdr(response) {
+        const signedXdr = response?.signedTxXdr
+            || response?.signedTx
+            || response?.signed_transaction
+            || response?.signed_envelope_xdr
+            || response?.xdr
+            || response?.data?.signedTxXdr
+            || response?.data?.signed_envelope_xdr
+            || response?.data?.xdr
+            || (typeof response === 'string' ? response : null);
+
+        if (!signedXdr || typeof signedXdr !== 'string') {
+            throw new Error('Wallet returned an invalid signed transaction.');
+        }
+
+        return signedXdr;
+    }
+
+    function getFreighterApi() {
+        return window.freighterApi
+            || window.stellarFreighter
+            || window.StellarFreighter
+            || window.freighter
+            || null;
+    }
+
 </script>
 @endpush

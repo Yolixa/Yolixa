@@ -11,7 +11,7 @@
         <!-- Wallet Connect Section -->
         <div id="walletConnect">
             <h2 class="text-xl font-bold mb-4 gradient-text text-center">Connect Your Wallet</h2>
-            <p class="text-gray-400 text-center mb-6 text-sm">Select your blockchain and wallet to connect instantly.</p>
+            <p class="text-gray-400 text-center mb-6 text-sm">Connect a Stellar testnet wallet to create a profile or send a tip.</p>
 
             <div class="mb-4">
                 <label for="walletBlockchainSelect" class="block text-gray-300 mb-2 text-sm">Select Blockchain</label>

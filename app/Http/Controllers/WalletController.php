@@ -12,6 +12,18 @@ use Soneso\StellarSDK\Crypto\KeyPair;
 
 class WalletController extends Controller
 {
+    public function sessionStatus(Request $request)
+    {
+        $user = Auth::user();
+
+        return response()->json([
+            'authenticated' => (bool) $user,
+            'public_key' => $user?->public_key,
+            'role' => $user?->role,
+            'csrf_token' => csrf_token(),
+        ]);
+    }
+
     public function getChallenge(Request $request)
     {
         $request->validate(['address' => 'required|string']);
@@ -33,10 +45,16 @@ class WalletController extends Controller
                 'walletId' => $request->walletId
             ]);
 
+            if (is_array($request->input('signature'))) {
+                $request->merge([
+                    'signature' => $this->extractSignatureString($request->input('signature')),
+                ]);
+            }
+
             $validator = Validator::make($request->all(), [
                 'address' => 'required|string|max:100',
-                'blockchainId' => 'required|integer|exists:blockchains,id',
-                'walletId' => 'required|integer|exists:wallet_types,id',
+                'blockchainId' => 'nullable|integer|exists:blockchains,id',
+                'walletId' => 'nullable|integer|exists:wallet_types,id',
                 'status' => 'required|boolean',
                 'signature' => 'required|string',
             ]);
@@ -50,6 +68,12 @@ class WalletController extends Controller
                 ], 422);
             }
 
+            try {
+                $kp = KeyPair::fromAccountId($request->address);
+            } catch (\Throwable) {
+                return response()->json(['success' => false, 'message' => 'Invalid Stellar public key.'], 422);
+            }
+
             // Cryptographic Verification
             $challenge = $request->session()->get('wallet_challenge_' . $request->address);
             
@@ -61,18 +85,16 @@ class WalletController extends Controller
             }
 
             try {
-                $kp = KeyPair::fromAccountId($request->address);
-                
                 // Detect Hex vs Base64 signature length
                 $sigStr = $request->signature;
                 if (ctype_xdigit($sigStr) && strlen($sigStr) === 128) {
                     $rawSig = hex2bin($sigStr);
                 } else {
-                    $rawSig = base64_decode($sigStr);
+                    $rawSig = base64_decode($sigStr, true);
                 }
                 
-                if (strlen($rawSig) !== 64) {
-                    Log::warning('Signature is incorrectly formatted.', ['address' => $request->address, 'len' => strlen($rawSig)]);
+                if ($rawSig === false || strlen($rawSig) !== 64) {
+                    Log::warning('Signature is incorrectly formatted.', ['address' => $request->address]);
                     return response()->json(['success' => false, 'message' => 'Malformed signature length.'], 401);
                 }
 
@@ -103,26 +125,32 @@ class WalletController extends Controller
             Log::info('Payload validation and Signature verification successful. Checking DB for existing user.');
 
             $existingUser = User::where('public_key', $request->address)->first();
+            $existingWallet = Wallet::where('public_key', $request->address)->first();
+            $blockchainId = $request->filled('blockchainId') ? $request->blockchainId : $existingWallet?->blockchain_id;
+            $walletTypeId = $request->filled('walletId') ? $request->walletId : $existingWallet?->wallet_type_id;
+
+            if (!$blockchainId || !$walletTypeId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Wallet metadata missing. Please reconnect from the wallet modal once.'
+                ], 422);
+            }
 
             if ($existingUser) {
                 Log::info("Existing User located [{$existingUser->id}]. Updating status.");
                 $existingUser->status = 1;
                 $existingUser->update();
 
-                $existingWallet = Wallet::where('public_key', $request->address)->first();
-
-                if (!$existingWallet) {
-                    Log::warning("User [{$existingUser->id}] existed, but no matching wallet found in database. Recreating mapping.");
-                    Wallet::create([
+                Wallet::updateOrCreate(
+                    ['public_key' => $request->address],
+                    [
                         'user_id' => $existingUser->id,
-                        'blockchain_id' => $request->blockchainId,
-                        'wallet_type_id' => $request->walletId,
-                        'public_key' => $request->address,
-                    ]);
-                }
+                        'blockchain_id' => $blockchainId,
+                        'wallet_type_id' => $walletTypeId,
+                    ]
+                );
 
-                // Removed `true` parameter to prevent the 'remember_token' SQL logic break.
-                Auth::login($existingUser);
+                Auth::login($existingUser, true);
                 Log::info('User re-authenticated into application session successfully.', ['user_id' => $existingUser->id]);
 
                 return response()->json([
@@ -130,6 +158,8 @@ class WalletController extends Controller
                     'message' => 'Welcome back! Your wallet is connected.',
                     'public_key' => $existingUser->public_key,
                     'role' => $existingUser->role,
+                    'blockchain_id' => $blockchainId,
+                    'wallet_type_id' => $walletTypeId,
                 ]);
             }
 
@@ -143,17 +173,18 @@ class WalletController extends Controller
 
             Log::info('New User created mapping completed.', ['user_id' => $user->id]);
 
-            $wallet = new Wallet();
-            $wallet->user_id = $user->id;   
-            $wallet->blockchain_id = $request->blockchainId;
-            $wallet->wallet_type_id = $request->walletId;
-            $wallet->public_key = $request->address;
-            $wallet->save();
+            Wallet::updateOrCreate(
+                    ['public_key' => $request->address],
+                    [
+                        'user_id' => $user->id,
+                        'blockchain_id' => $blockchainId,
+                        'wallet_type_id' => $walletTypeId,
+                    ]
+                );
             
             Log::info('New Wallet entity saved alongside the user instance.');
 
-            // Removed `true` parameter to prevent the 'remember_token' SQL logic break.
-            Auth::login($user);
+            Auth::login($user, true);
             Log::info('Brand new Wallet User authenticated successfully.', ['user_id' => $user->id]);
 
             return response()->json([
@@ -161,6 +192,8 @@ class WalletController extends Controller
                 'message' => 'Your wallet has been connected successfully.',
                 'public_key' => $user->public_key,
                 'role' => $user->role,
+                'blockchain_id' => $blockchainId,
+                'wallet_type_id' => $walletTypeId,
             ]);
 
         } catch (\Exception $e) {
@@ -223,5 +256,31 @@ class WalletController extends Controller
                 'message' => 'Failed to disconnect wallet securely.'
             ], 500);
         }
+    }
+
+    private function extractSignatureString(array $signature): ?string
+    {
+        foreach (['signature', 'signedMessage', 'signed_message', 'signedPayload'] as $key) {
+            if (isset($signature[$key]) && is_string($signature[$key])) {
+                return $signature[$key];
+            }
+
+            if (isset($signature[$key]) && is_array($signature[$key])) {
+                $nested = $this->extractSignatureString($signature[$key]);
+                if ($nested) {
+                    return $nested;
+                }
+            }
+        }
+
+        if (isset($signature['data']) && is_array($signature['data'])) {
+            return $this->extractSignatureString($signature['data']);
+        }
+
+        if (array_is_list($signature) && count($signature) === 64) {
+            return base64_encode(pack('C*', ...$signature));
+        }
+
+        return null;
     }
 }

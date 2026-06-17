@@ -13,12 +13,12 @@ use App\Http\Controllers\TipController;
 Route::get('/', [WebController::class, 'index'])->name('index');
 Route::get('/whitepaper', [WebController::class, 'whitepaper'])->name('whitepaper');
 Route::get('/get-wallets/{blockchain}', [WebController::class, 'getWallets']);
+Route::get('/auth/session', [WalletController::class, 'sessionStatus']);
 Route::post('/auth/challenge', [WalletController::class, 'getChallenge']);
 Route::post('/save-wallet', [WalletController::class, 'userWalletConnect'])->name('save.wallet');
 Route::post('/disconnect-wallet', [WalletController::class, 'disconnectWallet']);
 Route::post('/creator/register', [CreatorController::class, 'store'])->name('creator.store');
 Route::get('/r/{code}', [CreatorController::class, 'referralLanding'])->name('creator.referral');
-Route::get('/{username}', [CreatorController::class, 'showProfile'])->name('creator.profile');
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard/{publicKey}', [CreatorController::class, 'dashboard'])->name('creator.dashboard');
@@ -35,8 +35,10 @@ Route::middleware('auth')->group(function () {
 Route::prefix('api/tip')->group(function() {
     Route::post('/preview', [TipController::class, 'getPreview']);
     Route::post('/build-xdr', [TipController::class, 'buildXdr']);
-    Route::post('/build-trustline', [TipController::class, 'buildTrustlineXdr']);
     Route::post('/submit', [TipController::class, 'submitTransaction']);
     Route::post('/record', [TipController::class, 'recordTip']);
 });
 
+Route::get('/{username}', [CreatorController::class, 'showProfile'])
+    ->where('username', '[A-Za-z0-9][A-Za-z0-9_-]{2,49}')
+    ->name('creator.profile');
