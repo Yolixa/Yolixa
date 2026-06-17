@@ -12,7 +12,7 @@
                 Creators receive direct XLM micro-tips from fans through Freighter or Rabet.
             </p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <button onclick="openCreatorModal()" class="gradient-bg px-8 py-4 rounded-lg font-semibold text-lg hover:scale-105 transition-transform pulse-glow">
+                <button onclick="openCreatorModal()" class="creatorButton gradient-bg px-8 py-4 rounded-lg font-semibold text-lg hover:scale-105 transition-transform pulse-glow">
                     Join as Creator
                 </button>
                 <a href="{{ route('whitepaper') }}" target="_blank" rel="noopener noreferrer"
@@ -259,7 +259,7 @@
             Be among the first creators to join Yolixa, connect your Stellar wallet,
             and start receiving direct XLM testnet tips from your fans.
         </p>
-        <button onclick="openCreatorModal()" class="gradient-bg px-12 py-4 rounded-lg font-semibold text-xl hover:scale-105 transition-transform glow-effect">
+        <button onclick="openCreatorModal()" class="creatorButton gradient-bg px-12 py-4 rounded-lg font-semibold text-xl hover:scale-105 transition-transform glow-effect">
             Create Your Account
         </button>
     </div>

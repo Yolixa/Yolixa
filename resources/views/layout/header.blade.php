@@ -3,17 +3,21 @@
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex justify-between items-center h-20">
       <!-- Logo -->
-      <div class="flex items-center space-x-4">
-        <div class="relative group">
-          <div class="w-12 h-12 gradient-bg rounded-xl flex items-center justify-center logo-glow transition-all duration-300 group-hover:scale-110">
-            <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-            </svg>
-          </div>
-          <div class="absolute inset-0 w-12 h-12 gradient-bg rounded-xl opacity-0 group-hover:opacity-30 blur-lg transition-opacity duration-300"></div>
-        </div>
-        <div class="text-3xl font-black gradient-text tracking-tight">Yolixa</div>
-      </div>
+        <a href="{{ route('index') }}"
+            aria-label="Go to Yolixa homepage"
+            class="group">
+            <div class="flex items-center space-x-4">
+                <div class="relative group">
+                <div class="w-12 h-12 gradient-bg rounded-xl flex items-center justify-center logo-glow transition-all duration-300 group-hover:scale-110">
+                    <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                </div>
+                <div class="absolute inset-0 w-12 h-12 gradient-bg rounded-xl opacity-0 group-hover:opacity-30 blur-lg transition-opacity duration-300"></div>
+                </div>
+                <div class="text-3xl font-black gradient-text tracking-tight">Yolixa</div>
+            </div>
+        </a>
 
       <!-- Right Side: Links + Connect Wallet -->
       <div class="flex items-center">
@@ -44,26 +48,22 @@
         </div>
 
         <!-- Single Connect Wallet Button (for both views) -->
-        <button id="connectWalletBtn"
-                onclick="openWalletModal()"
-                class="border border-yolixa-purple px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-yolixa-purple/10 transition-all duration-300 ml-4">
-          Connect Wallet
+        <button id="connectWalletBtn" onclick="openWalletModal()" class="border border-yolixa-purple px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-yolixa-purple/10 transition-all duration-300 ml-4">
+            Connect Wallet
         </button>
 
         <!-- Mobile Menu Button -->
-        <button id="mobile-menu-btn"
-                class="ml-3 p-2 text-white hover:text-yolixa-purple transition-all duration-300 hover:bg-yolixa-purple/10 rounded-lg md:hidden">
-          <svg class="w-6 h-6 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-          </svg>
+        <button id="mobile-menu-btn" class="ml-3 p-2 text-white hover:text-yolixa-purple transition-all duration-300 hover:bg-yolixa-purple/10 rounded-lg md:hidden">
+            <svg class="w-6 h-6 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
         </button>
       </div>
     </div>
   </div>
 
   <!-- Mobile Menu -->
-  <div id="mobile-menu"
-       class="mobile-menu fixed top-0 right-0 h-full w-80 bg-[#0a0a0a]/95 backdrop-blur-lg border-l border-yolixa-purple/30 shadow-2xl shadow-yolixa-purple/10 md:hidden transition-all duration-300 z-50">
+  <div id="mobile-menu" class="mobile-menu fixed top-0 right-0 h-full w-80 bg-[#0a0a0a]/95 backdrop-blur-lg border-l border-yolixa-purple/30 shadow-2xl shadow-yolixa-purple/10 md:hidden transition-all duration-300 z-50">
     <div class="p-8">
       <div class="flex justify-between items-center mb-8">
         <div class="flex items-center space-x-3">

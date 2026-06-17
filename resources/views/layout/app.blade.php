@@ -6,10 +6,26 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="icon" type="image/svg+xml" href="{{ asset('assets/images/favicon-32x32.png') }}">
 
+    <script>
+        (function () {
+            try {
+                var connectedWallet = localStorage.getItem('connected_wallet');
+                var walletKey = connectedWallet ? localStorage.getItem(connectedWallet + '_wallet') : null;
+                var role = localStorage.getItem('user_role') || localStorage.getItem('user-role');
+
+                if (walletKey && (role === 'creator' || role === 'creater')) {
+                    document.documentElement.classList.add('creator-wallet-connected');
+                }
+            } catch (error) {
+                document.documentElement.classList.remove('creator-wallet-connected');
+            }
+        })();
+    </script>
+
     <title>Yolixa - Empowering Influencers with Web3 Tipping</title>
 
     {{-- Tailwind CSS Prototype CDN --}}
-    <!--  WARNING: Tailwind CDN is active (which triggers the cdn.tailwindcss.com console warning). 
+    <!--  WARNING: Tailwind CDN is active (which triggers the cdn.tailwindcss.com console warning).
           This is strictly for rapid prototyping and local development.
           Before deploying to a true production environment, compile a static CSS bundle using Laravel Mix or Vite (e.g. `npm run build`). -->
     <script src="{{ asset('assets/js/talwind_cdn.js') }}"></script>
@@ -45,6 +61,9 @@
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
+        }
+        .creator-wallet-connected .creatorButton {
+        display: none !important;
         }
         .glow-effect {
         box-shadow: 0 0 30px rgba(203, 108, 230, 0.3);
@@ -327,7 +346,7 @@
     <!-- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97be0440f7dbc976',t:'MTc1NzMzMDAwOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script> -->
     @include('layout.modals')
     @include('layout.wallet-js')
-    
+
     @stack('js')
 </body>
 </html>

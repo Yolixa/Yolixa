@@ -42,6 +42,27 @@
         return response;
     }
 
+    async function readJsonResponse(response, fallbackMessage) {
+        try {
+            return await response.json();
+        } catch (error) {
+            console.error("Expected JSON response, received something else.", error);
+            throw new Error(fallbackMessage);
+        }
+    }
+
+    function getStoredUserRole() {
+        return localStorage.getItem("user_role") || localStorage.getItem("user-role");
+    }
+
+    function isCreatorRole(role) {
+        return role === 'creator' || role === 'creater';
+    }
+
+    function updateCreatorConnectedClass(isCreatorConnected) {
+        document.documentElement.classList.toggle('creator-wallet-connected', isCreatorConnected);
+    }
+
     function bindDashboardReconnect() {
         const dashboardNavLink = document.getElementById("dashboardNavLink");
         if (!dashboardNavLink) return;
@@ -61,11 +82,21 @@
         const connectedWallet = localStorage.getItem("connected_wallet");
         const walletButton = document.getElementById("connectWalletBtn");
         const dashboardNavLink = document.getElementById("dashboardNavLink");
+        const creatorButtons = document.querySelectorAll('.creatorButton');
         
         let walletKey = null;
         if (connectedWallet) {
             walletKey = localStorage.getItem(`${connectedWallet}_wallet`);
         }
+
+        const role = getStoredUserRole();
+        const isCreatorConnected = Boolean(walletKey && isCreatorRole(role));
+
+        updateCreatorConnectedClass(isCreatorConnected);
+
+        creatorButtons.forEach(function (button) {
+            button.classList.toggle('hidden', isCreatorConnected);
+        });
 
         if (walletKey) {
             if (walletButton) {
@@ -73,8 +104,7 @@
             }
             
             // Show dashboard link conditionally
-            const role = localStorage.getItem("user_role");
-            if (role === 'creator') {
+            if (isCreatorRole(role)) {
                 if(dashboardNavLink) dashboardNavLink.classList.remove('hidden');
                 if(dashboardNavLink) dashboardNavLink.href = `/dashboard/${walletKey}`;
             } else {
@@ -108,8 +138,12 @@
 
     function openCreatorModal() {
         const connectedWallet = localStorage.getItem("connected_wallet");
+
         if (!connectedWallet) {
-            toastr.warning("Please connect your wallet first before registering as a creator.");
+            toastr.warning(
+                'Please connect your wallet first before registering as a creator.'
+            );
+
             openWalletModal();
             return;
         }
@@ -143,8 +177,8 @@
     document.addEventListener('change', function(e) {
         if (e.target.classList.contains('creatorBlockchainSelect') || e.target.classList.contains('walletBlockchainSelect')) {
             let blockchainId = e.target.value;
-            let targetSelect = e.target.classList.contains('creatorBlockchainSelect') 
-                               ? document.querySelector('.creatorWalletSelect') 
+            let targetSelect = e.target.classList.contains('creatorBlockchainSelect')
+                               ? document.querySelector('.creatorWalletSelect')
                                : document.querySelector('.walletWalletSelect');
 
             if (blockchainId && targetSelect) {
@@ -190,7 +224,7 @@
         if(modalBtn) modalBtn.innerText = "Connecting...";
 
         let walletName = walletSelect.options[walletSelect.selectedIndex].text.toLowerCase();
-        
+
         try {
             if (walletName.includes("freighter")) {
                 await connectFreighter();
@@ -219,7 +253,7 @@
     async function handleWalletLoginSuccess(publicKey, walletType, data) {
         rememberWalletSession(publicKey, walletType, data);
         closeWalletModal();
-        
+
         if (data.role === 'creator') {
             toastr.success("Welcome back Creator! Redirecting to dashboard...");
             setTimeout(() => {
@@ -361,13 +395,9 @@
             if (publicKey) {
 
                 // 1. Fetch Challenge
-                const chalRes = await fetch("/auth/challenge", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json", "X-CSRF-TOKEN": "{{ csrf_token() }}" },
-                    body: JSON.stringify({ address: publicKey })
-                });
-                const chalData = await chalRes.json();
-                if (!chalData.success) throw new Error("Could not acquire challenge");
+                const chalRes = await postJsonWithFreshCsrf("/auth/challenge", { address: publicKey });
+                const chalData = await readJsonResponse(chalRes, "Could not acquire challenge. Please refresh and try again.");
+                if (!chalRes.ok || !chalData.success) throw new Error(chalData.message || "Could not acquire challenge");
 
                 // 2. Sign Challenge (Use signMessage or fallback)
                 let signature = "";
@@ -379,28 +409,20 @@
                 }
 
                 // 3. Authenticate
-                const res = await fetch("/save-wallet", {
-                    method: "POST",
-                    headers: {
-                        "Accept": "application/json",
-                        "Content-Type": "application/json",
-                        "X-CSRF-TOKEN": "{{ csrf_token() }}",
-                    },
-                    body: JSON.stringify({
-                        address: publicKey,
-                        blockchainId: document.querySelector('.walletBlockchainSelect').value,
-                        walletId: document.querySelector('.walletWalletSelect').value,
-                        status: 1,
-                        signature: signature
-                    }),
+                const res = await postJsonWithFreshCsrf("/save-wallet", {
+                    address: publicKey,
+                    blockchainId: document.querySelector('.walletBlockchainSelect').value,
+                    walletId: document.querySelector('.walletWalletSelect').value,
+                    status: 1,
+                    signature: signature
                 });
-                
+
                 let data;
                 try {
-                    data = await res.json();
+                    data = await readJsonResponse(res, "Received unexpected format from server.");
                 } catch (parseError) {
                     console.error("JSON parse error on saving freighter connection:", parseError);
-                    toastr.error("Received unexpected format from server.");
+                    toastr.error(parseError.message || "Received unexpected format from server.");
                     return;
                 }
 
@@ -423,20 +445,16 @@
             toastr.error("Rabet not found.");
             return;
         }
-        
+
         try {
             const result = await window.rabet.connect();
             if (result && result.publicKey) {
                 const publicKey = result.publicKey;
 
                 // 1. Fetch Challenge
-                const chalRes = await fetch("/auth/challenge", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json", "X-CSRF-TOKEN": "{{ csrf_token() }}" },
-                    body: JSON.stringify({ address: publicKey })
-                });
-                const chalData = await chalRes.json();
-                if (!chalData.success) throw new Error("Could not acquire challenge");
+                const chalRes = await postJsonWithFreshCsrf("/auth/challenge", { address: publicKey });
+                const chalData = await readJsonResponse(chalRes, "Could not acquire challenge. Please refresh and try again.");
+                if (!chalRes.ok || !chalData.success) throw new Error(chalData.message || "Could not acquire challenge");
 
                 // 2. Sign Challenge
                 let signature = "";
@@ -448,28 +466,20 @@
                 }
 
                 // 3. Authenticate
-                const res = await fetch("/save-wallet", {
-                    method: "POST",
-                    headers: {
-                        "Accept": "application/json",
-                        "Content-Type": "application/json",
-                        "X-CSRF-TOKEN": "{{ csrf_token() }}",
-                    },
-                    body: JSON.stringify({
-                        address: publicKey,
-                        blockchainId: document.querySelector('.walletBlockchainSelect').value,
-                        walletId: document.querySelector('.walletWalletSelect').value,
-                        status: 1,
-                        signature: signature
-                    }),
+                const res = await postJsonWithFreshCsrf("/save-wallet", {
+                    address: publicKey,
+                    blockchainId: document.querySelector('.walletBlockchainSelect').value,
+                    walletId: document.querySelector('.walletWalletSelect').value,
+                    status: 1,
+                    signature: signature
                 });
-                
+
                 let data;
                 try {
-                    data = await res.json();
+                    data = await readJsonResponse(res, "Received unexpected server response format.");
                 } catch (parseError) {
                     console.error("JSON parse error on saving rabet connection:", parseError);
-                    toastr.error("Received unexpected server response format.");
+                    toastr.error(parseError.message || "Received unexpected server response format.");
                     return;
                 }
 
@@ -491,7 +501,7 @@
         const connectedWallet = localStorage.getItem("connected_wallet");
         const publicKey = localStorage.getItem(`${connectedWallet}_wallet`);
         const disconnectBtn = document.getElementById("disconnectWalletBtn");
-        
+
         if (!publicKey) {
             closeDisconnectModal();
             return;
@@ -500,19 +510,11 @@
         if(disconnectBtn) disconnectBtn.innerText = "Disconnecting...";
 
         try {
-            const res = await fetch("/disconnect-wallet", {
-                method: "POST",
-                headers: {
-                    "Accept": "application/json",
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": "{{ csrf_token() }}",
-                },
-                body: JSON.stringify({ address: publicKey }),
-            });
-            
+            const res = await postJsonWithFreshCsrf("/disconnect-wallet", { address: publicKey });
+
             let data;
             try {
-                data = await res.json();
+                data = await readJsonResponse(res, "Received unexpected disconnect response.");
             } catch (p) {
                 console.error("JSON parser failed on disconnect", p);
             }
@@ -525,18 +527,18 @@
             console.error("Disconnect networking error", err);
         } finally {
             if(disconnectBtn) disconnectBtn.innerText = "Disconnect Wallet";
-            
+
             // Clean client side state safely regardless of server error in this context
             localStorage.removeItem("connected_wallet");
             localStorage.removeItem("freighter_wallet");
             localStorage.removeItem("rabet_wallet");
             localStorage.removeItem("walletconnect_wallet");
             localStorage.removeItem("user_role");
-            
+
             updateWalletUIStatus();
             closeDisconnectModal();
             toastr.info("Wallet Disconnected.");
-            
+
             if(window.location.pathname.includes('/dashboard')) {
                 window.location.href = '/';
             }
@@ -550,7 +552,7 @@
         const blockchainId = document.getElementById('creatorBlockchainSelect').value;
         const walletTypeSelect = document.querySelector('.creatorWalletSelect');
         const walletType = walletTypeSelect.options[walletTypeSelect.selectedIndex]?.text || '';
-        
+
         const connectedWallet = localStorage.getItem("connected_wallet");
         if (!connectedWallet) {
             toastr.warning("Please connect your wallet first.");
@@ -569,29 +571,21 @@
         statusDiv.innerText = "Registering securely...";
 
         try {
-            const response = await fetch("{{ route('creator.store') }}", {
-                method: "POST",
-                headers: {
-                    "Accept": "application/json",
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": "{{ csrf_token() }}",
-                },
-                body: JSON.stringify({
-                    name,
-                    email,
-                    blockchain_id: blockchainId,
-                    wallet_type: walletType,
-                    public_key: publicKey
-                })
+            const response = await postJsonWithFreshCsrf("{{ route('creator.store') }}", {
+                name,
+                email,
+                blockchain_id: blockchainId,
+                wallet_type: walletType,
+                public_key: publicKey
             });
 
             let data;
             try {
-                data = await response.json();
+                data = await readJsonResponse(response, "Invalid server response. Please try again.");
             } catch (err) {
                 console.error("Invalid response from creator registration:", err);
                 statusDiv.innerText = "";
-                toastr.error("Invalid server response. Please try again.");
+                toastr.error(err.message || "Invalid server response. Please try again.");
                 return;
             }
 
@@ -608,7 +602,7 @@
             setTimeout(() => {
                 window.location.href = `/dashboard/${publicKey}`;
             }, 1000);
-            
+
         } catch (err) {
             console.error("Networking error on creator join:", err);
             statusDiv.innerText = "";
