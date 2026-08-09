@@ -26,13 +26,13 @@
                 <p class="text-3xl font-black text-white">{{ number_format($totalFans) }}</p>
             </div>
             <div class="bg-gray-900 rounded-2xl p-6 border border-gray-800 shadow-lg">
-                <p class="text-gray-500 font-bold uppercase text-xs mb-1">Total Tips Volume</p>
+                <p class="text-gray-500 font-bold uppercase text-xs mb-1">Gross Tips Volume</p>
                 <p class="text-3xl font-black text-blue-400 flex items-baseline gap-1">{{ number_format($totalTipsVolume, 2) }} <span class="text-sm text-gray-500">MIXED</span></p>
             </div>
             <div class="bg-gray-900 rounded-2xl p-6 border border-red-500/20 shadow-lg relative overflow-hidden">
                 <div class="absolute -right-4 -top-4 w-16 h-16 bg-red-500/10 rounded-full blur-xl"></div>
-                <p class="text-red-400 font-bold uppercase text-xs mb-1">Platform Revenue (YLX)</p>
-                <p class="text-3xl font-black text-white">{{ number_format($totalPlatformRevenue, 2) }} <span class="text-sm text-red-400 font-bold">YLX</span></p>
+                <p class="text-red-400 font-bold uppercase text-xs mb-1">Platform Fees</p>
+                <p class="text-3xl font-black text-white">{{ number_format($totalPlatformRevenue, 2) }} <span class="text-sm text-red-400 font-bold">MIXED</span></p>
             </div>
         </div>
 
@@ -81,7 +81,8 @@
                                     <th class="pb-3">Sender</th>
                                     <th class="pb-3">Creator</th>
                                     <th class="pb-3 text-right">Amount</th>
-                                    <th class="pb-3 text-right">Revenue</th>
+                                    <th class="pb-3 text-right">Fee / Net</th>
+                                    <th class="pb-3 text-center">Soroban</th>
                                     <th class="pb-3 text-center">Status</th>
                                 </tr>
                             </thead>
@@ -89,16 +90,20 @@
                                 @forelse($recentTips as $tip)
                                 <tr class="hover:bg-gray-800/30 transition-colors">
                                     <td class="py-4 text-sm">
-                                        <span class="font-mono text-gray-400" title="{{ $tip->sender_key }}">{{ substr($tip->sender_key, 0, 5) }}...{{ substr($tip->sender_key, -4) }}</span>
+                                        <span class="font-mono text-gray-400" title="{{ $tip->sender_wallet }}">{{ $tip->sender_wallet ? substr($tip->sender_wallet, 0, 5).'...'.substr($tip->sender_wallet, -4) : 'Unknown' }}</span>
                                     </td>
                                     <td class="py-4 text-sm font-bold text-white">
                                         {{ $tip->receiver ? $tip->receiver->username : 'Unknown' }}
                                     </td>
                                     <td class="py-4 text-sm text-right font-bold">
-                                        {{ number_format($tip->amount, 2) }} <span class="text-gray-500 text-xs">{{ $tip->asset }}</span>
+                                        {{ number_format($tip->amount, 7) }} <span class="text-gray-500 text-xs">{{ $tip->asset }}</span>
                                     </td>
                                     <td class="py-4 text-sm text-right text-red-400 font-bold">
-                                        +{{ number_format($tip->platform_fee_ylx ?? 0, 2) }}
+                                        Fee {{ number_format($tip->platform_fee, 7) }}<br>
+                                        <span class="text-green-400">Net {{ number_format($tip->creator_payout_amount, 7) }}</span>
+                                    </td>
+                                    <td class="py-4 text-center text-xs text-gray-400">
+                                        {{ $tip->soroban_status ?? 'disabled' }}
                                     </td>
                                     <td class="py-4 text-center">
                                         <span class="px-2 py-1 rounded text-[10px] font-black {{ $tip->status == 'confirmed' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400' }}">
@@ -108,7 +113,7 @@
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="5" class="py-8 text-center text-gray-500 text-sm">No recent network activity observed.</td>
+                                    <td colspan="6" class="py-8 text-center text-gray-500 text-sm">No recent network activity observed.</td>
                                 </tr>
                                 @endforelse
                             </tbody>

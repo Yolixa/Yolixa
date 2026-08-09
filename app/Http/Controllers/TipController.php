@@ -9,6 +9,7 @@ use App\Services\StellarService;
 use App\Services\TipService;
 
 use App\Services\ConversionService;
+use Illuminate\Validation\Rule;
 
 class TipController extends Controller
 {
@@ -26,14 +27,14 @@ class TipController extends Controller
     public function getPreview(Request $request)
     {
         $request->validate([
-            'amount' => 'required|numeric|min:0.0000001',
-            'asset'  => 'required|in:XLM',
+            'amount' => 'required|numeric|min:' . config('yolixa.min_payment_amount', 0.0000001) . '|max:' . config('yolixa.max_payment_amount', 1000),
+            'asset'  => ['required', Rule::in($this->stellarService->supportedTipAssets())],
         ]);
 
         try {
             $conversion = $this->conversionService->convertToYlx($request->asset, floatval($request->amount));
             $fees = $this->conversionService->calculateFees($conversion['converted_amount'], $request->asset);
-            $platformFeeXlm = $this->tipService->calculatePlatformFee($request->asset, floatval($request->amount));
+            $split = $this->stellarService->calculateSplitAmounts((string) $request->amount);
 
             return response()->json([
                 'success' => true,
@@ -41,8 +42,11 @@ class TipController extends Controller
                 'gross_ylx' => $conversion['converted_amount'],
                 'fee_ylx' => $fees['fee_amount'],
                 'creator_payout_ylx' => $fees['net_payout'],
-                'platform_fee_xlm' => $platformFeeXlm,
-                'creator_receives_xlm' => floatval($request->amount),
+                'gross_amount' => $split['gross_amount'],
+                'platform_fee' => $split['platform_fee'],
+                'creator_receives' => $split['creator_payout_amount'],
+                'asset' => $request->asset,
+                'network' => config('yolixa.network', 'testnet'),
             ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
@@ -52,14 +56,22 @@ class TipController extends Controller
     public function buildXdr(Request $request)
     {
         $request->validate([
-            'amount'      => 'required|numeric|min:0.0000001',
+            'amount'      => 'required|numeric|min:' . config('yolixa.min_payment_amount', 0.0000001) . '|max:' . config('yolixa.max_payment_amount', 1000),
             'destination' => 'required|string',
-            'asset'       => 'required|in:XLM',
+            'asset'       => ['required', Rule::in($this->stellarService->supportedTipAssets())],
             'sender'      => 'required|string',
         ]);
 
+        if (!$this->stellarService->isValidPublicKey($request->sender)) {
+            return response()->json(['success' => false, 'message' => 'Invalid sender wallet.'], 422);
+        }
+
+        if (!$this->stellarService->isValidPublicKey($request->destination)) {
+            return response()->json(['success' => false, 'message' => 'Invalid creator wallet.'], 422);
+        }
+
         if ($request->destination === $request->sender) {
-            return response()->json(['success' => false, 'message' => 'You cannot tip yourself.'], 400);
+            return response()->json(['success' => false, 'message' => 'Self tip blocked.'], 400);
         }
 
         $result = $this->stellarService->buildTipXdr(
@@ -78,7 +90,14 @@ class TipController extends Controller
 
     public function submitTransaction(Request $request)
     {
-        $request->validate(['signedXdr' => 'required|string']);
+        $request->validate([
+            'signedXdr' => 'required|string',
+            'sender_key' => 'required|string',
+        ]);
+
+        if (!$this->stellarService->isValidPublicKey($request->sender_key)) {
+            return response()->json(['success' => false, 'message' => 'Invalid sender wallet.'], 422);
+        }
 
         $result = $this->stellarService->submitTransaction($request->signedXdr);
 
@@ -93,16 +112,31 @@ class TipController extends Controller
     {
         $request->validate([
             'tx_hash'      => 'required|string|unique:tips,tx_hash',
-            'amount'       => 'required|numeric|min:0.0000001',
-            'asset'        => 'required|in:XLM',
+            'amount'       => 'required|numeric|min:' . config('yolixa.min_payment_amount', 0.0000001) . '|max:' . config('yolixa.max_payment_amount', 1000),
+            'asset'        => ['required', Rule::in($this->stellarService->supportedTipAssets())],
             'receiver_id'  => 'required|exists:users,id',
-            'sender_key'   => 'nullable|string',
+            'sender_key'   => 'required|string',
             'message'      => 'nullable|string|max:500',
             'is_anonymous' => 'nullable|boolean',
             'sender_name'  => 'nullable|string|max:100',
         ]);
 
         $receiver = User::findOrFail($request->receiver_id);
+        if ($receiver->role !== 'creator') {
+            return response()->json(['success' => false, 'message' => 'Receiver must be a creator.'], 422);
+        }
+
+        if (!$this->stellarService->isValidPublicKey($receiver->public_key)) {
+            return response()->json(['success' => false, 'message' => 'Creator wallet is invalid.'], 422);
+        }
+
+        if (!$this->stellarService->isValidPublicKey($request->sender_key)) {
+            return response()->json(['success' => false, 'message' => 'Invalid sender wallet.'], 422);
+        }
+
+        if ($receiver->public_key === $request->sender_key) {
+            return response()->json(['success' => false, 'message' => 'Self tip blocked.'], 400);
+        }
 
         $result = $this->tipService->recordTipSecurely([
             'tx_hash'             => $request->tx_hash,

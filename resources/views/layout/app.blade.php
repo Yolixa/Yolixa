@@ -242,8 +242,12 @@
     {{-- Core JS --}}
     <script>
         window.config = {
-            STELLAR_HORIZON: "{{ config('yolixa.stellar_horizon') }}",
-            STELLAR_PASSPHRASE: "{{ config('yolixa.stellar_passphrase') }}",
+            YOLIXA_NETWORK: "{{ config('yolixa.network') }}",
+            STELLAR_HORIZON: "{{ app(\App\Services\StellarConfigurationService::class)->horizonUrl() }}",
+            STELLAR_PASSPHRASE: "{{ app(\App\Services\StellarConfigurationService::class)->passphrase() }}",
+            STELLAR_NETWORK_LABEL: "{{ app(\App\Services\StellarConfigurationService::class)->networkLabel() }}",
+            STELLAR_EXPLORER_TX_URL: "{{ app(\App\Services\StellarConfigurationService::class)->explorerTxUrl() }}",
+            STELLAR_EXPLORER_ACCOUNT_URL: "{{ app(\App\Services\StellarConfigurationService::class)->explorerAccountUrl() }}",
             YLX_ASSET_CODE: "{{ env('YLX_ASSET_CODE', 'YLX') }}",
             YLX_ISSUER_PUBLIC: "{{ env('YLX_ISSUER_PUBLIC') }}"
         };

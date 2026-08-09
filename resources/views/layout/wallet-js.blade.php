@@ -350,7 +350,7 @@
                 networkPassphrase: window.config?.STELLAR_PASSPHRASE || "Test SDF Network ; September 2015",
             }),
             () => freighter.signMessage(challenge, {
-                network: "TESTNET",
+                network: window.config?.STELLAR_NETWORK_LABEL || "TESTNET",
                 networkPassphrase: window.config?.STELLAR_PASSPHRASE || "Test SDF Network ; September 2015",
             }),
             () => freighter.signMessage(challenge),
@@ -459,7 +459,7 @@
                 // 2. Sign Challenge
                 let signature = "";
                 try {
-                    const signRes = await window.rabet.signMessage(chalData.challenge, 'testnet');
+                    const signRes = await window.rabet.signMessage(chalData.challenge, (window.config?.YOLIXA_NETWORK || 'testnet').toLowerCase());
                     signature = normalizeWalletSignature(signRes);
                 } catch (signErr) {
                     throw new Error("Signature rejected securely by Rabet.");

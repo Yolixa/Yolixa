@@ -31,13 +31,21 @@ class CreatorController extends Controller
             return response()->json(['status' => false, 'message' => 'Invalid Stellar public key.'], 422);
         }
 
+        $authenticatedUser = \Illuminate\Support\Facades\Auth::user();
+        if (!$authenticatedUser || $authenticatedUser->public_key !== $data['public_key']) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Creator registration must match the authenticated wallet session.',
+            ], 403);
+        }
+
         // Email uniqueness check manually to avoid complex rules
         if (User::where('email', $data['email'])->where('public_key', '!=', $data['public_key'])->exists()) {
              \Illuminate\Support\Facades\Log::warning('Creator registration failed due to existing email address.', ['email' => $data['email']]);
              return response()->json(['status' => false, 'message' => 'Email already taken.'], 422);
         }
 
-        $user = User::where('public_key', $data['public_key'])->first();
+        $user = $authenticatedUser;
 
         $ref = strtoupper(Str::random(10));
         while (User::where('referral_key', $ref)->exists()) {

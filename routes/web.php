@@ -14,10 +14,10 @@ Route::get('/', [WebController::class, 'index'])->name('index');
 Route::get('/whitepaper', [WebController::class, 'whitepaper'])->name('whitepaper');
 Route::get('/get-wallets/{blockchain}', [WebController::class, 'getWallets']);
 Route::get('/auth/session', [WalletController::class, 'sessionStatus']);
-Route::post('/auth/challenge', [WalletController::class, 'getChallenge']);
-Route::post('/save-wallet', [WalletController::class, 'userWalletConnect'])->name('save.wallet');
-Route::post('/disconnect-wallet', [WalletController::class, 'disconnectWallet']);
-Route::post('/creator/register', [CreatorController::class, 'store'])->name('creator.store');
+Route::post('/auth/challenge', [WalletController::class, 'getChallenge'])->middleware('throttle:wallet-auth');
+Route::post('/save-wallet', [WalletController::class, 'userWalletConnect'])->middleware('throttle:wallet-auth')->name('save.wallet');
+Route::post('/disconnect-wallet', [WalletController::class, 'disconnectWallet'])->middleware('auth');
+Route::post('/creator/register', [CreatorController::class, 'store'])->middleware('auth')->name('creator.store');
 Route::get('/r/{code}', [CreatorController::class, 'referralLanding'])->name('creator.referral');
 
 Route::middleware('auth')->group(function () {
@@ -32,7 +32,7 @@ Route::middleware('auth')->group(function () {
     });
 });
 // Tip & Reward API routes
-Route::prefix('api/tip')->group(function() {
+Route::prefix('api/tip')->middleware('throttle:tip-api')->group(function() {
     Route::post('/preview', [TipController::class, 'getPreview']);
     Route::post('/build-xdr', [TipController::class, 'buildXdr']);
     Route::post('/submit', [TipController::class, 'submitTransaction']);

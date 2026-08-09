@@ -9,9 +9,14 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Soneso\StellarSDK\Crypto\KeyPair;
+use App\Services\StellarConfigurationService;
 
 class WalletController extends Controller
 {
+    public function __construct(private StellarConfigurationService $stellarConfiguration)
+    {
+    }
+
     public function sessionStatus(Request $request)
     {
         $user = Auth::user();
@@ -26,9 +31,17 @@ class WalletController extends Controller
 
     public function getChallenge(Request $request)
     {
-        $request->validate(['address' => 'required|string']);
+        $request->validate(['address' => 'required|string|max:100']);
+        $address = strtoupper(trim($request->address));
+        if (!$this->stellarConfiguration->isValidPublicKey($address)) {
+            return response()->json(['success' => false, 'message' => 'Invalid Stellar public key.'], 422);
+        }
+
         $challenge = \Illuminate\Support\Str::random(64);
-        $request->session()->put('wallet_challenge_' . $request->address, $challenge);
+        $request->session()->put('wallet_challenge_' . $address, [
+            'challenge' => $challenge,
+            'expires_at' => now()->addSeconds((int) config('yolixa.wallet_challenge_ttl_seconds', 300))->timestamp,
+        ]);
         
         return response()->json([
             'success' => true,
@@ -50,6 +63,7 @@ class WalletController extends Controller
                     'signature' => $this->extractSignatureString($request->input('signature')),
                 ]);
             }
+            $request->merge(['address' => strtoupper(trim((string) $request->address))]);
 
             $validator = Validator::make($request->all(), [
                 'address' => 'required|string|max:100',
@@ -75,14 +89,25 @@ class WalletController extends Controller
             }
 
             // Cryptographic Verification
-            $challenge = $request->session()->get('wallet_challenge_' . $request->address);
+            $challengePayload = $request->session()->get('wallet_challenge_' . $request->address);
             
-            if (!$challenge) {
+            if (!$challengePayload || !is_array($challengePayload) || empty($challengePayload['challenge'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Challenge missing or expired. Please refresh the page and try again.'
                 ], 401);
             }
+
+            if (($challengePayload['expires_at'] ?? 0) < now()->timestamp) {
+                $request->session()->forget('wallet_challenge_' . $request->address);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Challenge expired. Please try again.'
+                ], 401);
+            }
+
+            $challenge = $challengePayload['challenge'];
 
             try {
                 // Detect Hex vs Base64 signature length
@@ -150,6 +175,7 @@ class WalletController extends Controller
                     ]
                 );
 
+                $request->session()->regenerate();
                 Auth::login($existingUser, true);
                 Log::info('User re-authenticated into application session successfully.', ['user_id' => $existingUser->id]);
 
@@ -184,6 +210,7 @@ class WalletController extends Controller
             
             Log::info('New Wallet entity saved alongside the user instance.');
 
+            $request->session()->regenerate();
             Auth::login($user, true);
             Log::info('Brand new Wallet User authenticated successfully.', ['user_id' => $user->id]);
 
@@ -225,14 +252,14 @@ class WalletController extends Controller
                 ], 422);
             }
 
-            $user = User::where('public_key', $request->address)->first();
+            $user = Auth::user();
 
-            if (!$user) {
-                Log::warning('Disconnect called for unknown User payload.', ['address' => $request->address]);
+            if (!$user || $user->public_key !== $request->address) {
+                Log::warning('Disconnect rejected for non-session wallet payload.', ['requested_address' => $request->address, 'user_id' => $user?->id]);
                 return response()->json([
                     'success' => false,
-                    'message' => 'User not found.',
-                ], 404);
+                    'message' => 'You can only disconnect the wallet authenticated in this session.',
+                ], 403);
             }
 
             $user->status = 0;

@@ -19,6 +19,7 @@ class AdminController extends Controller
         $totalCreators = User::where('role', 'creator')->count();
         $totalFans = User::where('role', 'fan')->count();
         $totalTipsVolume = Tip::where('status', 'confirmed')->sum('amount');
+        $totalCreatorPayout = Tip::where('status', 'confirmed')->sum('creator_payout_amount');
         $totalPlatformRevenue = Tip::where('status', 'confirmed')->sum('platform_fee');
 
         $pendingClaims = RewardClaim::where('status', 'pending')->count();
@@ -29,6 +30,7 @@ class AdminController extends Controller
             'totalCreators',
             'totalFans',
             'totalTipsVolume',
+            'totalCreatorPayout',
             'totalPlatformRevenue',
             'pendingClaims',
             'suspiciousTips',

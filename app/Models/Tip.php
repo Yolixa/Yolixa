@@ -12,7 +12,10 @@ class Tip extends Model
         'amount' => 'decimal:8',
         'platform_fee' => 'decimal:8',
         'network_fee' => 'decimal:8',
+        'creator_payout_amount' => 'decimal:8',
+        'reward_ylx_amount' => 'decimal:8',
         'confirmed_at' => 'datetime',
+        'soroban_recorded_at' => 'datetime',
         'stellar_meta' => 'array',
         'is_anonymous' => 'boolean',
     ];

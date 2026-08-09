@@ -30,8 +30,14 @@
                         <div class="grid grid-cols-1 gap-4">
                             <button onclick="selectAsset('XLM')" id="assetXLM" class="asset-btn active-asset flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-gray-700 bg-gray-800 text-white hover:border-yolixa-purple transition-all">
                                 <img src="{{ asset('assets/images/stellar-xlm-logo.png') }}" class="w-6 h-6" alt="XLM">
-                                <span>XLM on Stellar testnet</span>
+                                <span>XLM on {{ strtoupper(config('yolixa.network', 'testnet')) }}</span>
                             </button>
+                            @if(config('yolixa.assets.USDC.enabled') && config('yolixa.assets.USDC.issuer'))
+                            <button onclick="selectAsset('USDC')" id="assetUSDC" class="asset-btn flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-gray-700 bg-gray-800 text-white hover:border-yolixa-purple transition-all">
+                                <img src="{{ asset('assets/images/usd-coin-usdc-logo.png') }}" class="w-6 h-6" alt="USDC">
+                                <span>USDC on {{ strtoupper(config('yolixa.network', 'testnet')) }}</span>
+                            </button>
+                            @endif
                         </div>
                     </div>
 
@@ -47,7 +53,11 @@
                     <div id="conversionPreview" class="hidden bg-gray-800/60 border border-gray-700 rounded-xl p-4 mt-4 shadow-inner">
                         <div class="flex justify-between text-sm mb-2">
                             <span class="text-gray-400">Network:</span>
-                            <span class="text-yolixa-blue font-bold" id="previewRate">Stellar testnet</span>
+                            <span class="text-yolixa-blue font-bold" id="previewRate">{{ strtoupper(config('yolixa.network', 'testnet')) }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm mb-2">
+                            <span class="text-gray-400">Gross Tip:</span>
+                            <span class="text-white font-bold" id="previewGross">-</span>
                         </div>
                         <div class="flex justify-between text-sm mb-2">
                             <span class="text-gray-400">Platform Fee:</span>
@@ -65,7 +75,7 @@
                     </button>
 
                     <p class="text-center text-xs text-gray-500 mt-4 leading-relaxed" id="feeDisclaimer">
-                        * The MVP sends the full XLM tip directly to the creator wallet. Yolixa records a 1.5% platform fee for reporting only.
+                        * The Stellar transaction pays the creator net amount and platform fee in the same signed transaction.
                     </p>
                 </div>
 
@@ -102,7 +112,7 @@
                         </div>
                         <div class="flex items-center justify-between">
                             <span class="text-gray-400 text-sm">Network</span>
-                            <span class="text-white text-xs font-bold">Stellar (Testnet)</span>
+                            <span class="text-white text-xs font-bold">Stellar ({{ strtoupper(config('yolixa.network', 'testnet')) }})</span>
                         </div>
                     </div>
                 </div>
@@ -118,7 +128,9 @@
             <svg class="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
         </div>
         <h2 class="text-3xl font-bold text-white mb-2">Tip Sent!</h2>
-        <p class="text-gray-400 mb-6">Your XLM support was sent directly to the creator and recorded in Yolixa.</p>
+        <p class="text-gray-400 mb-4">Your tip was confirmed on Stellar and recorded in Yolixa.</p>
+        <a id="successExplorerLink" href="#" target="_blank" rel="noopener noreferrer" class="hidden block text-yolixa-blue text-sm hover:underline mb-6">View Stellar transaction</a>
+        <p id="successSorobanStatus" class="text-xs text-gray-500 mb-6"></p>
         <button onclick="location.reload()" class="w-full gradient-bg py-3 rounded-lg font-bold">Awesome!</button>
     </div>
 </div>
@@ -140,11 +152,6 @@
     let selectedAsset = 'XLM';
 
     function selectAsset(asset) {
-        if (asset !== 'XLM') {
-            toastr.info('The current MVP supports XLM tips only.');
-            return;
-        }
-
         selectedAsset = asset;
         document.querySelectorAll('.asset-btn').forEach(btn => btn.classList.remove('active-asset'));
         document.getElementById('asset' + asset).classList.add('active-asset');
@@ -176,9 +183,10 @@
             });
             const data = await res.json();
             if (data.success) {
-                document.getElementById('previewRate').innerText = 'Stellar testnet';
-                document.getElementById('previewFee').innerText = `${parseFloat(data.platform_fee_xlm).toFixed(7)} XLM reporting fee`;
-                document.getElementById('previewPayout').innerText = `${parseFloat(data.creator_receives_xlm).toFixed(7)} XLM`;
+                document.getElementById('previewRate').innerText = String(data.network || window.config?.YOLIXA_NETWORK || 'testnet').toUpperCase();
+                document.getElementById('previewGross').innerText = `${parseFloat(data.gross_amount).toFixed(7)} ${data.asset}`;
+                document.getElementById('previewFee').innerText = `${parseFloat(data.platform_fee).toFixed(7)} ${data.asset}`;
+                document.getElementById('previewPayout').innerText = `${parseFloat(data.creator_receives).toFixed(7)} ${data.asset}`;
                 previewBox.classList.remove('hidden');
             } else {
                 previewBox.classList.add('hidden');
@@ -236,8 +244,15 @@
             }
 
             if (txHash) {
-                await recordTip(txHash, amount, selectedAsset);
-                toastr.success('Tip confirmed on Stellar testnet.');
+                const tip = await recordTip(txHash, amount, selectedAsset);
+                toastr.success('Tip confirmed on Stellar.');
+                const explorerTemplate = window.config?.STELLAR_EXPLORER_TX_URL || '';
+                if (explorerTemplate && txHash) {
+                    const link = document.getElementById('successExplorerLink');
+                    link.href = explorerTemplate.replace('{hash}', txHash);
+                    link.classList.remove('hidden');
+                }
+                document.getElementById('successSorobanStatus').innerText = `Soroban receipt: ${tip.soroban_status || 'disabled'}`;
                 document.getElementById('successModal').classList.remove('hidden');
                 document.getElementById('successModal').classList.add('flex');
             }
@@ -292,10 +307,9 @@
             }
         }
 
-        // Sign with Freighter (Requires explicit TESTNET options to avoid tx_bad_auth)
-            const signResult = await freighter.signTransaction(data.xdr, { 
-            network: "TESTNET", 
-            networkPassphrase: "Test SDF Network ; September 2015" 
+        const signResult = await freighter.signTransaction(data.xdr, {
+            network: data.network || window.config?.STELLAR_NETWORK_LABEL || "TESTNET",
+            networkPassphrase: data.network_passphrase || window.config?.STELLAR_PASSPHRASE
         });
         const signedTx = normalizeSignedXdr(signResult);
 
@@ -306,7 +320,7 @@
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
             },
-            body: JSON.stringify({ signedXdr: signedTx })
+            body: JSON.stringify({ signedXdr: signedTx, sender_key: localStorage.getItem('freighter_wallet') })
         });
 
         if (!submitRes.ok) {
@@ -351,8 +365,7 @@
         const data = await response.json();
         if (!data.success) throw new Error(data.message);
 
-        // Rabet expects 'mainnet' or 'testnet' in most versions
-        const network = 'testnet'; 
+        const network = (window.config?.YOLIXA_NETWORK || 'testnet').toLowerCase();
 
         let signedTx;
         try {
@@ -370,7 +383,7 @@
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
             },
-            body: JSON.stringify({ signedXdr: signedTx })
+            body: JSON.stringify({ signedXdr: signedTx, sender_key: localStorage.getItem('rabet_wallet') })
         });
 
         if (!submitRes.ok) {

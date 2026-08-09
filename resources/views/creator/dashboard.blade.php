@@ -7,7 +7,7 @@
         <div class="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
             <div>
                 <h1 class="text-4xl font-black text-white mb-2">Creator <span class="gradient-text">Dashboard</span></h1>
-                <p class="text-gray-400">Welcome back, {{ $creator->name }}. Track your Stellar testnet tips.</p>
+                <p class="text-gray-400">Welcome back, {{ $creator->name }}. Track your Stellar {{ strtolower(config('yolixa.network', 'testnet')) }} tips.</p>
             </div>
             
             <div class="flex items-center gap-4 bg-gray-900/50 p-4 rounded-2xl border border-gray-700">
@@ -24,8 +24,8 @@
         <!-- Stats Grid -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
             <div class="card-hover rounded-2xl p-8 border border-gray-800 flex flex-col justify-center">
-                <p class="text-gray-500 font-bold mb-2 uppercase text-xs">Total XLM Received</p>
-                <h3 class="text-4xl font-black text-white">{{ number_format($tips->where('status', 'confirmed')->sum('amount'), 7) }} <span class="text-lg text-gray-500">XLM</span></h3>
+                <p class="text-gray-500 font-bold mb-2 uppercase text-xs">Creator Payout Received</p>
+                <h3 class="text-4xl font-black text-white">{{ number_format($tips->where('status', 'confirmed')->sum('creator_payout_amount'), 7) }} <span class="text-lg text-gray-500">MIXED</span></h3>
             </div>
             
             <div class="card-hover rounded-2xl p-8 border border-yolixa-purple/30 bg-yolixa-purple/5 flex flex-col justify-center relative overflow-hidden">
@@ -35,9 +35,9 @@
             </div>
 
             <div class="card-hover rounded-2xl p-8 border border-gray-800 flex flex-col justify-center">
-                <p class="text-gray-500 font-bold mb-2 uppercase text-xs">Platform Fee Tracked</p>
-                <h3 class="text-4xl font-black text-white">{{ number_format($tips->where('status', 'confirmed')->sum('platform_fee'), 7) }} <span class="text-lg text-gray-500">XLM</span></h3>
-                <p class="text-xs text-gray-400 mt-2">Recorded for reporting; MVP transfers are direct wallet-to-wallet.</p>
+                <p class="text-gray-500 font-bold mb-2 uppercase text-xs">Claimable YLX Rewards</p>
+                <h3 class="text-4xl font-black text-white">{{ number_format($creator->ylx_claimable_balance ?? 0, 7) }} <span class="text-lg text-gray-500">YLX</span></h3>
+                <p class="text-xs text-gray-400 mt-2">Ledger rewards pending manual claim; not automatically transferred on-chain yet.</p>
             </div>
         </div>
 
@@ -80,7 +80,7 @@
                     <svg class="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
                 </div>
                 <h3 class="text-xl font-bold text-green-400 mb-2">Wallet Connected</h3>
-                <p class="text-gray-400 text-sm mb-4">Tips are paid directly to this Stellar testnet address.</p>
+                <p class="text-gray-400 text-sm mb-4">Tips are paid directly to this Stellar {{ strtolower(config('yolixa.network', 'testnet')) }} address.</p>
                 <p class="text-xs text-gray-300 font-mono break-all bg-gray-800/70 border border-gray-700 rounded-xl p-4">{{ $creator->public_key }}</p>
             </div>
             
@@ -90,7 +90,7 @@
         <div class="bg-gray-900/50 rounded-3xl border border-gray-800 overflow-hidden backdrop-blur-md">
             <div class="px-8 py-6 border-b border-gray-800 flex items-center justify-between">
                 <h3 class="text-xl font-bold text-white">Recent Transactions</h3>
-                <a href="https://stellar.expert/explorer/testnet/account/{{ $creator->public_key }}" target="_blank" class="text-yolixa-blue text-sm hover:underline">View on Explorer</a>
+                <a href="{{ app(\App\Services\StellarConfigurationService::class)->explorerAccountUrl($creator->public_key) }}" target="_blank" class="text-yolixa-blue text-sm hover:underline">View on Explorer</a>
             </div>
             
             <div class="overflow-x-auto">
@@ -101,6 +101,7 @@
                             <th class="px-8 py-4 text-xs font-bold text-gray-500 uppercase">Sender</th>
                             <th class="px-8 py-4 text-xs font-bold text-gray-500 uppercase">Amount</th>
                             <th class="px-8 py-4 text-xs font-bold text-gray-500 uppercase">Fee</th>
+                            <th class="px-8 py-4 text-xs font-bold text-gray-500 uppercase">Soroban</th>
                             <th class="px-8 py-4 text-xs font-bold text-gray-500 uppercase">Status</th>
                             <th class="px-8 py-4 text-xs font-bold text-gray-500 uppercase">Date</th>
                         </tr>
@@ -109,18 +110,20 @@
                         @forelse($tips as $tip)
                         <tr class="hover:bg-gray-800/10 transition-colors">
                             <td class="px-8 py-4">
-                                <a href="https://stellar.expert/explorer/testnet/tx/{{ $tip->tx_hash }}" target="_blank" class="text-yolixa-blue text-sm font-mono hover:underline">{{ substr($tip->tx_hash, 0, 10) }}...{{ substr($tip->tx_hash, -8) }}</a>
+                                <a href="{{ app(\App\Services\StellarConfigurationService::class)->explorerTxUrl($tip->tx_hash) }}" target="_blank" class="text-yolixa-blue text-sm font-mono hover:underline">{{ substr($tip->tx_hash, 0, 10) }}...{{ substr($tip->tx_hash, -8) }}</a>
                             </td>
                             <td class="px-8 py-4">
                                 <span class="text-gray-400 text-sm font-mono">{{ $tip->sender_wallet ? substr($tip->sender_wallet, 0, 6).'...'.substr($tip->sender_wallet, -4) : 'Unknown' }}</span>
                             </td>
                             <td class="px-8 py-4">
-                                <span class="text-white font-bold">{{ number_format($tip->amount, 7) }} {{ $tip->asset }}</span>
+                                <span class="text-white font-bold">{{ number_format($tip->amount, 7) }} {{ $tip->asset }}</span><br>
+                                <span class="text-gray-500 text-xs">Net {{ number_format($tip->creator_payout_amount, 7) }}</span>
                             </td>
                             <td class="px-8 py-4 text-gray-400 text-sm">
-                                Platform {{ number_format($tip->platform_fee, 7) }} XLM<br>
+                                Platform {{ number_format($tip->platform_fee, 7) }} {{ $tip->asset }}<br>
                                 Network {{ number_format($tip->network_fee, 7) }} XLM
                             </td>
+                            <td class="px-8 py-4 text-gray-400 text-sm">{{ $tip->soroban_status ?? 'disabled' }}</td>
                             <td class="px-8 py-4">
                                 <span class="px-2 py-1 rounded-full text-[10px] font-black {{ $tip->status == 'confirmed' ? 'bg-green-500/10 text-green-500' : ($tip->status == 'failed' ? 'bg-red-500/10 text-red-500' : 'bg-yellow-500/10 text-yellow-500') }}">
                                     {{ strtoupper($tip->status) }}
@@ -132,7 +135,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="6" class="px-8 py-12 text-center text-gray-500 italic">No tips received yet. Share your referral link!</td>
+                            <td colspan="7" class="px-8 py-12 text-center text-gray-500 italic">No tips received yet. Share your referral link!</td>
                         </tr>
                         @endforelse
                     </tbody>

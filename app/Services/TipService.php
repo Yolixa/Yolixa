@@ -11,24 +11,30 @@ class TipService
 {
     private StellarService $stellarService;
     private ConversionService $conversionService;
+    private SorobanTipRegistryService $sorobanTipRegistry;
 
-    public function __construct(StellarService $stellarService, ConversionService $conversionService)
+    public function __construct(
+        StellarService $stellarService,
+        ConversionService $conversionService,
+        SorobanTipRegistryService $sorobanTipRegistry
+    )
     {
         $this->stellarService = $stellarService;
         $this->conversionService = $conversionService;
+        $this->sorobanTipRegistry = $sorobanTipRegistry;
     }
 
     public function calculatePlatformFee(string $asset, float $amount): float
     {
-        if ($asset !== 'XLM') {
-            return 0;
-        }
-
-        return round($amount * (float) config('yolixa.fee_percentage', 0.015), 7);
+        return (float) $this->stellarService->calculateSplitAmounts((string) $amount)['platform_fee'];
     }
 
     public function recordTipSecurely(array $data): array
     {
+        if (empty($data['sender_key'])) {
+            return ['success' => false, 'message' => 'Invalid sender wallet.'];
+        }
+
         $txVerify = $this->stellarService->verifyTransaction(
             $data['tx_hash'], 
             $data['receiver_public_key'],
@@ -58,8 +64,10 @@ class TipService
 
             $conversion = $this->conversionService->convertToYlx($data['asset'], $data['amount']);
             $grossYlx = $conversion['converted_amount'];
-            $platformFee = $this->calculatePlatformFee($data['asset'], $data['amount']);
-            $creatorReceives = max($data['amount'] - $platformFee, 0);
+            $platformFee = $txVerify['platform_fee'];
+            $creatorReceives = $txVerify['creator_payout_amount'];
+            $reward = $this->calculateYlxReward($grossYlx);
+            $rewardStatus = $reward > 0 ? 'pending_claim' : 'not_configured';
 
             $tip = Tip::create([
                 'sender_id'             => $sender ? $sender->id : null,
@@ -67,9 +75,12 @@ class TipService
                 'tx_hash'               => $data['tx_hash'],
                 'amount'                => $data['amount'],
                 'asset'                 => $data['asset'],
+                'asset_issuer'          => $txVerify['asset_issuer'] ?? null,
                 'platform_fee'          => $platformFee,
                 'network_fee'           => $txVerify['network_fee'] ?? 0,
-                'bonus'                 => 0,
+                'bonus'                 => $reward,
+                'reward_ylx_amount'     => $reward,
+                'ylx_reward_status'     => $rewardStatus,
                 'status'                => 'confirmed',
                 'confirmed_at'          => now(),
                 'sender_wallet'         => $txVerify['sender_wallet'] ?? $data['sender_key'] ?? null,
@@ -82,14 +93,22 @@ class TipService
                 'stellar_meta'          => [
                     'ledger' => $txVerify['ledger'] ?? null,
                     'stellar_created_at' => $txVerify['created_at'] ?? null,
-                    'network' => 'testnet',
+                    'network' => config('yolixa.network', 'testnet'),
+                    'platform_wallet' => $txVerify['platform_wallet'] ?? null,
                 ],
+                'soroban_status'        => config('yolixa.soroban.enabled') ? 'pending' : 'disabled',
                 'message'               => $data['message'] ?? null,
                 'is_anonymous'          => $data['is_anonymous'] ?? false,
                 'sender_name'           => $data['sender_name'] ?? null,
             ]);
 
+            if ($reward > 0) {
+                $receiver->increment('ylx_claimable_balance', $reward);
+            }
+
             DB::commit();
+
+            $this->recordSorobanStatus($tip);
 
             return ['success' => true, 'tip' => $tip, 'payout_status' => $tip->payout_status];
 
@@ -98,5 +117,40 @@ class TipService
             Log::error('Record Tip Exception: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return ['success' => false, 'message' => 'Internal Server Error while saving tip.'];
         }
+    }
+
+    private function calculateYlxReward(float $grossYlx): float
+    {
+        $rate = (float) config('yolixa.ylx_reward_rate_percent', 0);
+        if ($rate <= 0) {
+            return 0;
+        }
+
+        return round($grossYlx * ($rate / 100), 7);
+    }
+
+    private function recordSorobanStatus(Tip $tip): void
+    {
+        $result = $this->sorobanTipRegistry->recordTip($tip);
+
+        if (($result['status'] ?? null) === 'disabled') {
+            $tip->update(['soroban_status' => 'disabled']);
+            return;
+        }
+
+        if ($result['success'] ?? false) {
+            $tip->update([
+                'soroban_status' => 'confirmed',
+                'soroban_tx_hash' => $result['tx_hash'] ?? null,
+                'soroban_recorded_at' => now(),
+                'soroban_error' => null,
+            ]);
+            return;
+        }
+
+        $tip->update([
+            'soroban_status' => $result['status'] ?? 'failed',
+            'soroban_error' => $result['message'] ?? 'Soroban registry failed.',
+        ]);
     }
 }

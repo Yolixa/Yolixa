@@ -58,6 +58,8 @@ class User extends Authenticatable
             'password' => 'hashed',
             'status' => 'boolean',
             'verified' => 'boolean',
+            'ylx_claimable_balance' => 'decimal:8',
+            'ylx_claimed_total' => 'decimal:8',
         ];
     }
 
