@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "contracts/tip_registry",
+    "contracts/tip_router",
+]
+resolver = "2"
