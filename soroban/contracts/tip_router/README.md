@@ -61,6 +61,8 @@ tip(sender, creator, token, amount, tip_id)
 
 The sender must authorize the invocation. The router rejects paused state, unsupported tokens, duplicate `tip_id`, self-tips, and non-positive amounts.
 
+`tip_id` replay protection is scoped by sender. A duplicate means the same sender reuses the same `tip_id`; two different senders may safely use the same numeric ID. This is application idempotency state and is separate from Soroban transaction/auth replay protection.
+
 ## Split Tipping
 
 ```rust
@@ -84,6 +86,10 @@ The contract emits typed events:
 
 - `TipEvent` for standard tips.
 - `SplitTipEvent` for collaborative payouts, including per-recipient gross and net amounts.
+- `FeeUpdatedEvent` for platform fee changes.
+- `TreasuryUpdatedEvent` for treasury address changes.
+- `TokenStatusChangedEvent` for token allowlist changes.
+- `PauseStatusChangedEvent` for pause and unpause changes.
 
 Events carry analytics-friendly payment data without storing large redundant payloads.
 
@@ -99,22 +105,35 @@ Stats include `tip_count`, `gross_received`, and `net_received`.
 
 ## Replay State and Receipts
 
-The router stores compact tip receipts by `tip_id`:
+The router stores compact tip receipts by `sender` and `tip_id`:
 
 ```rust
-tip_exists(tip_id)
-get_tip(tip_id)
+tip_exists(sender, tip_id)
+get_tip(sender, tip_id)
 ```
 
-This prevents duplicate payment execution while keeping persistent storage small.
+This prevents duplicate payment execution for a given sender while keeping persistent storage small.
 
 ## Security Assumptions
 
 - Admin keys are controlled by Yolixa governance or deployment operations.
+- Production admin should not be a casually-held developer wallet.
+- Mainnet should use an appropriate operational or governance security model, preferably multisig or another reviewed admin setup.
 - Only trusted Stellar Asset Contract addresses are enabled.
 - Fans authorize payments from their own wallet addresses.
 - Token transfers are performed atomically in the same Soroban transaction.
+- The 3% `MAX_FEE_BPS` cap is enforced at the contract level.
+- Fee, treasury, token allowlist, and pause changes are observable through typed events.
 - Private keys and wallet secrets must never be committed or embedded in deployment config.
+
+## Upgrade Policy
+
+This phase does not add an upgrade function. Before mainnet, Yolixa must choose and review one of two approaches:
+
+- An explicitly authorized contract upgrade path with a secure admin/governance model.
+- Immutable deployment with versioned redeployment and a documented migration/cutover process.
+
+An unrestricted upgrade mechanism must not be introduced.
 
 ## Test Commands
 

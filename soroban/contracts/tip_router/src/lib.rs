@@ -9,7 +9,10 @@ pub use types::{CreatorStats, SplitPayout, SplitRecipient, TipReceipt};
 
 use soroban_sdk::{contract, contractimpl, token::TokenClient, Address, Env, Vec};
 
-use crate::types::{SplitTipEvent, TipEvent};
+use crate::types::{
+    FeeUpdatedEvent, PauseStatusChangedEvent, SplitTipEvent, TipEvent, TokenStatusChangedEvent,
+    TreasuryUpdatedEvent,
+};
 
 const BPS_DENOMINATOR: i128 = 10_000;
 pub const MAX_FEE_BPS: u32 = 300;
@@ -46,7 +49,15 @@ impl YolixaTipRouter {
         enabled: bool,
     ) -> Result<(), Error> {
         require_admin(&env, &admin)?;
+        let previous_enabled = storage::is_token_enabled(&env, &token);
         storage::set_token_enabled(&env, &token, enabled);
+        TokenStatusChangedEvent {
+            admin,
+            token,
+            previous_enabled,
+            enabled,
+        }
+        .publish(&env);
         Ok(())
     }
 
@@ -57,25 +68,53 @@ impl YolixaTipRouter {
     pub fn set_fee(env: Env, admin: Address, new_fee_bps: u32) -> Result<(), Error> {
         require_admin(&env, &admin)?;
         validate_fee(new_fee_bps)?;
+        let previous_fee_bps = storage::get_fee_bps(&env)?;
         storage::set_fee_bps(&env, new_fee_bps);
+        FeeUpdatedEvent {
+            admin,
+            previous_fee_bps,
+            new_fee_bps,
+        }
+        .publish(&env);
         Ok(())
     }
 
     pub fn set_treasury(env: Env, admin: Address, treasury: Address) -> Result<(), Error> {
         require_admin(&env, &admin)?;
+        let previous_treasury = storage::get_treasury(&env)?;
         storage::set_treasury(&env, &treasury);
+        TreasuryUpdatedEvent {
+            admin,
+            previous_treasury,
+            new_treasury: treasury,
+        }
+        .publish(&env);
         Ok(())
     }
 
     pub fn pause(env: Env, admin: Address) -> Result<(), Error> {
         require_admin(&env, &admin)?;
+        let previous_paused = storage::is_paused(&env);
         storage::set_paused(&env, true);
+        PauseStatusChangedEvent {
+            admin,
+            previous_paused,
+            paused: true,
+        }
+        .publish(&env);
         Ok(())
     }
 
     pub fn unpause(env: Env, admin: Address) -> Result<(), Error> {
         require_admin(&env, &admin)?;
+        let previous_paused = storage::is_paused(&env);
         storage::set_paused(&env, false);
+        PauseStatusChangedEvent {
+            admin,
+            previous_paused,
+            paused: false,
+        }
+        .publish(&env);
         Ok(())
     }
 
@@ -98,7 +137,7 @@ impl YolixaTipRouter {
 
         let (platform_fee, creator_amount) = calculate_fee_split(&env, amount)?;
         ensure_token_supported(&env, &token)?;
-        ensure_new_tip(&env, tip_id)?;
+        ensure_new_tip(&env, &sender, tip_id)?;
 
         sender.require_auth();
 
@@ -145,7 +184,7 @@ impl YolixaTipRouter {
         ensure_payments_open(&env)?;
         let (platform_fee, creator_amount) = calculate_fee_split(&env, amount)?;
         ensure_token_supported(&env, &token)?;
-        ensure_new_tip(&env, tip_id)?;
+        ensure_new_tip(&env, &sender, tip_id)?;
         validate_recipients(&sender, &recipients)?;
 
         sender.require_auth();
@@ -195,12 +234,12 @@ impl YolixaTipRouter {
         storage::get_creator_stats(&env, &creator)
     }
 
-    pub fn tip_exists(env: Env, tip_id: u64) -> bool {
-        storage::tip_exists(&env, tip_id)
+    pub fn tip_exists(env: Env, sender: Address, tip_id: u64) -> bool {
+        storage::tip_exists(&env, &sender, tip_id)
     }
 
-    pub fn get_tip(env: Env, tip_id: u64) -> Option<TipReceipt> {
-        storage::get_tip(&env, tip_id)
+    pub fn get_tip(env: Env, sender: Address, tip_id: u64) -> Option<TipReceipt> {
+        storage::get_tip(&env, &sender, tip_id)
     }
 
     pub fn get_admin(env: Env) -> Result<Address, Error> {
@@ -251,8 +290,8 @@ fn ensure_token_supported(env: &Env, token: &Address) -> Result<(), Error> {
     Ok(())
 }
 
-fn ensure_new_tip(env: &Env, tip_id: u64) -> Result<(), Error> {
-    if storage::tip_exists(env, tip_id) {
+fn ensure_new_tip(env: &Env, sender: &Address, tip_id: u64) -> Result<(), Error> {
+    if storage::tip_exists(env, sender, tip_id) {
         return Err(Error::DuplicateTip);
     }
     Ok(())

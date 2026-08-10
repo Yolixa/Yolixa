@@ -75,3 +75,41 @@ pub struct SplitTipEvent {
     pub platform_fee: i128,
     pub payouts: Vec<SplitPayout>,
 }
+
+#[contractevent(topics = ["fee_updated"])]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FeeUpdatedEvent {
+    #[topic]
+    pub admin: Address,
+    pub previous_fee_bps: u32,
+    pub new_fee_bps: u32,
+}
+
+#[contractevent(topics = ["treasury_updated"])]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TreasuryUpdatedEvent {
+    #[topic]
+    pub admin: Address,
+    pub previous_treasury: Address,
+    pub new_treasury: Address,
+}
+
+#[contractevent(topics = ["token_status_changed"])]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TokenStatusChangedEvent {
+    #[topic]
+    pub admin: Address,
+    #[topic]
+    pub token: Address,
+    pub previous_enabled: bool,
+    pub enabled: bool,
+}
+
+#[contractevent(topics = ["pause_status_changed"])]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PauseStatusChangedEvent {
+    #[topic]
+    pub admin: Address,
+    pub previous_paused: bool,
+    pub paused: bool,
+}

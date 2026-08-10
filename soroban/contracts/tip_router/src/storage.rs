@@ -19,7 +19,7 @@ pub enum DataKey {
     FeeBps,
     Paused,
     Token(Address),
-    Tip(u64),
+    Tip(Address, u64),
     Creator(Address),
 }
 
@@ -102,8 +102,8 @@ pub fn is_token_enabled(env: &Env, token: &Address) -> bool {
     enabled
 }
 
-pub fn tip_exists(env: &Env, tip_id: u64) -> bool {
-    let key = DataKey::Tip(tip_id);
+pub fn tip_exists(env: &Env, sender: &Address, tip_id: u64) -> bool {
+    let key = DataKey::Tip(sender.clone(), tip_id);
     let exists = env.storage().persistent().has(&key);
     if exists {
         bump_persistent(env, &key);
@@ -112,13 +112,13 @@ pub fn tip_exists(env: &Env, tip_id: u64) -> bool {
 }
 
 pub fn put_tip(env: &Env, receipt: &TipReceipt) {
-    let key = DataKey::Tip(receipt.tip_id);
+    let key = DataKey::Tip(receipt.sender.clone(), receipt.tip_id);
     env.storage().persistent().set(&key, receipt);
     bump_persistent(env, &key);
 }
 
-pub fn get_tip(env: &Env, tip_id: u64) -> Option<TipReceipt> {
-    let key = DataKey::Tip(tip_id);
+pub fn get_tip(env: &Env, sender: &Address, tip_id: u64) -> Option<TipReceipt> {
+    let key = DataKey::Tip(sender.clone(), tip_id);
     let receipt = env.storage().persistent().get(&key);
     if receipt.is_some() {
         bump_persistent(env, &key);
