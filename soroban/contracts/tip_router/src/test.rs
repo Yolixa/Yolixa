@@ -16,8 +16,8 @@ use soroban_sdk::{
 
 use crate::{
     types::{
-        FeeUpdatedEvent, PauseStatusChangedEvent, SplitTipEvent, TipEvent,
-        TokenStatusChangedEvent, TreasuryUpdatedEvent,
+        FeeUpdatedEvent, PauseStatusChangedEvent, SplitTipEvent, TipEvent, TokenStatusChangedEvent,
+        TreasuryUpdatedEvent,
     },
     Error, SplitPayout, SplitRecipient, YolixaTipRouter, YolixaTipRouterClient, MAX_FEE_BPS,
     MAX_SPLIT_RECIPIENTS,
@@ -50,11 +50,17 @@ impl Context {
 }
 
 fn expect_error<T: Debug>(result: Result<T, Result<Error, InvokeError>>, expected: Error) {
-    assert_eq!(result, Err(Ok(expected)));
+    match result {
+        Err(Ok(actual)) => assert_eq!(actual, expected),
+        other => panic!("expected contract error {expected:?}, got {other:?}"),
+    }
 }
 
 fn expect_host_error<T: Debug>(result: Result<T, Result<Error, InvokeError>>) {
-    assert!(matches!(result, Err(Err(_))), "expected host auth/invoke error, got {result:?}");
+    assert!(
+        matches!(result, Err(Err(_))),
+        "expected host auth/invoke error, got {result:?}"
+    );
 }
 
 fn expect_any_failure<T: Debug>(result: Result<T, Result<Error, InvokeError>>) {
@@ -116,12 +122,7 @@ fn recipients_2(env: &Env, first: Address, second: Address) -> Vec<SplitRecipien
     ]
 }
 
-fn recipients_3(
-    env: &Env,
-    first: Address,
-    second: Address,
-    third: Address,
-) -> Vec<SplitRecipient> {
+fn recipients_3(env: &Env, first: Address, second: Address, third: Address) -> Vec<SplitRecipient> {
     vec![
         env,
         SplitRecipient {
@@ -217,8 +218,7 @@ fn initialize_succeeds() {
 fn initialize_twice_fails() {
     let ctx = setup(100);
     expect_error(
-        ctx.client()
-            .try_initialize(&ctx.admin, &ctx.treasury, &100),
+        ctx.client().try_initialize(&ctx.admin, &ctx.treasury, &100),
         Error::AlreadyInitialized,
     );
 }
@@ -275,13 +275,8 @@ fn pause_blocks_tips() {
     ctx.client().pause(&ctx.admin);
 
     expect_error(
-        ctx.client().try_tip(
-            &ctx.sender,
-            &ctx.creator,
-            &ctx.token,
-            &1_000_i128,
-            &1,
-        ),
+        ctx.client()
+            .try_tip(&ctx.sender, &ctx.creator, &ctx.token, &1_000_i128, &1),
         Error::Paused,
     );
 }
@@ -292,13 +287,8 @@ fn unpause_restores_tips() {
 
     ctx.client().pause(&ctx.admin);
     ctx.client().unpause(&ctx.admin);
-    ctx.client().tip(
-        &ctx.sender,
-        &ctx.creator,
-        &ctx.token,
-        &1_000_i128,
-        &1,
-    );
+    ctx.client()
+        .tip(&ctx.sender, &ctx.creator, &ctx.token, &1_000_i128, &1);
 
     assert_eq!(ctx.token_client().balance(&ctx.creator), 990);
 }
@@ -309,13 +299,8 @@ fn unsupported_token_fails() {
     let unsupported = Address::generate(&ctx.env);
 
     expect_error(
-        ctx.client().try_tip(
-            &ctx.sender,
-            &ctx.creator,
-            &unsupported,
-            &1_000_i128,
-            &1,
-        ),
+        ctx.client()
+            .try_tip(&ctx.sender, &ctx.creator, &unsupported, &1_000_i128, &1),
         Error::UnsupportedToken,
     );
 }
@@ -357,22 +342,12 @@ fn self_tip_fails() {
 fn same_sender_duplicate_tip_id_fails() {
     let ctx = setup(100);
 
-    ctx.client().tip(
-        &ctx.sender,
-        &ctx.creator,
-        &ctx.token,
-        &1_000_i128,
-        &1,
-    );
+    ctx.client()
+        .tip(&ctx.sender, &ctx.creator, &ctx.token, &1_000_i128, &1);
 
     expect_error(
-        ctx.client().try_tip(
-            &ctx.sender,
-            &ctx.creator,
-            &ctx.token,
-            &1_000_i128,
-            &1,
-        ),
+        ctx.client()
+            .try_tip(&ctx.sender, &ctx.creator, &ctx.token, &1_000_i128, &1),
         Error::DuplicateTip,
     );
 }
@@ -383,20 +358,10 @@ fn different_senders_can_reuse_same_numeric_tip_id() {
     let other_sender = Address::generate(&ctx.env);
     ctx.asset_client().mint(&other_sender, &1_000_000_i128);
 
-    ctx.client().tip(
-        &ctx.sender,
-        &ctx.creator,
-        &ctx.token,
-        &1_000_i128,
-        &7,
-    );
-    ctx.client().tip(
-        &other_sender,
-        &ctx.creator_two,
-        &ctx.token,
-        &2_000_i128,
-        &7,
-    );
+    ctx.client()
+        .tip(&ctx.sender, &ctx.creator, &ctx.token, &1_000_i128, &7);
+    ctx.client()
+        .tip(&other_sender, &ctx.creator_two, &ctx.token, &2_000_i128, &7);
 
     let first = ctx.client().get_tip(&ctx.sender, &7).unwrap();
     let second = ctx.client().get_tip(&other_sender, &7).unwrap();
@@ -415,13 +380,8 @@ fn different_senders_can_reuse_same_numeric_tip_id() {
 fn standard_tip_transfers_correct_amounts() {
     let ctx = setup(100);
 
-    ctx.client().tip(
-        &ctx.sender,
-        &ctx.creator,
-        &ctx.token,
-        &10_000_i128,
-        &1,
-    );
+    ctx.client()
+        .tip(&ctx.sender, &ctx.creator, &ctx.token, &10_000_i128, &1);
 
     assert_eq!(ctx.token_client().balance(&ctx.creator), 9_900);
     assert_eq!(ctx.token_client().balance(&ctx.treasury), 100);
@@ -431,13 +391,8 @@ fn standard_tip_transfers_correct_amounts() {
 fn fee_calculation_at_1_5_percent_works() {
     let ctx = setup(150);
 
-    ctx.client().tip(
-        &ctx.sender,
-        &ctx.creator,
-        &ctx.token,
-        &10_000_i128,
-        &1,
-    );
+    ctx.client()
+        .tip(&ctx.sender, &ctx.creator, &ctx.token, &10_000_i128, &1);
 
     assert_eq!(ctx.token_client().balance(&ctx.creator), 9_850);
     assert_eq!(ctx.token_client().balance(&ctx.treasury), 150);
@@ -458,13 +413,8 @@ fn amount_where_fee_rounds_to_zero_works() {
 fn zero_fee_configuration_works() {
     let ctx = setup(0);
 
-    ctx.client().tip(
-        &ctx.sender,
-        &ctx.creator,
-        &ctx.token,
-        &1_000_i128,
-        &1,
-    );
+    ctx.client()
+        .tip(&ctx.sender, &ctx.creator, &ctx.token, &1_000_i128, &1);
 
     assert_eq!(ctx.token_client().balance(&ctx.creator), 1_000);
     assert_eq!(ctx.token_client().balance(&ctx.treasury), 0);
@@ -491,20 +441,10 @@ fn amount_near_overflow_boundary_returns_math_overflow() {
 fn creator_stats_update() {
     let ctx = setup(100);
 
-    ctx.client().tip(
-        &ctx.sender,
-        &ctx.creator,
-        &ctx.token,
-        &1_000_i128,
-        &1,
-    );
-    ctx.client().tip(
-        &ctx.sender,
-        &ctx.creator,
-        &ctx.token,
-        &2_000_i128,
-        &2,
-    );
+    ctx.client()
+        .tip(&ctx.sender, &ctx.creator, &ctx.token, &1_000_i128, &1);
+    ctx.client()
+        .tip(&ctx.sender, &ctx.creator, &ctx.token, &2_000_i128, &2);
 
     let stats = ctx.client().get_creator_stats(&ctx.creator);
     assert_eq!(stats.tip_count, 2);
@@ -521,24 +461,14 @@ fn token_allowlisting_works() {
     assert!(!ctx.client().is_token_enabled(&ctx.token));
 
     expect_error(
-        ctx.client().try_tip(
-            &ctx.sender,
-            &ctx.creator,
-            &ctx.token,
-            &1_000_i128,
-            &1,
-        ),
+        ctx.client()
+            .try_tip(&ctx.sender, &ctx.creator, &ctx.token, &1_000_i128, &1),
         Error::UnsupportedToken,
     );
 
     ctx.client().set_token(&ctx.admin, &ctx.token, &true);
-    ctx.client().tip(
-        &ctx.sender,
-        &ctx.creator,
-        &ctx.token,
-        &1_000_i128,
-        &2,
-    );
+    ctx.client()
+        .tip(&ctx.sender, &ctx.creator, &ctx.token, &1_000_i128, &2);
 
     assert_eq!(ctx.token_client().balance(&ctx.creator), 990);
 }
@@ -547,23 +477,13 @@ fn token_allowlisting_works() {
 fn disabled_token_after_successful_use_fails() {
     let ctx = setup(100);
 
-    ctx.client().tip(
-        &ctx.sender,
-        &ctx.creator,
-        &ctx.token,
-        &1_000_i128,
-        &1,
-    );
+    ctx.client()
+        .tip(&ctx.sender, &ctx.creator, &ctx.token, &1_000_i128, &1);
     ctx.client().set_token(&ctx.admin, &ctx.token, &false);
 
     expect_error(
-        ctx.client().try_tip(
-            &ctx.sender,
-            &ctx.creator,
-            &ctx.token,
-            &1_000_i128,
-            &2,
-        ),
+        ctx.client()
+            .try_tip(&ctx.sender, &ctx.creator, &ctx.token, &1_000_i128, &2),
         Error::UnsupportedToken,
     );
 }
@@ -572,21 +492,11 @@ fn disabled_token_after_successful_use_fails() {
 fn changing_fee_affects_only_subsequent_tips() {
     let ctx = setup(100);
 
-    ctx.client().tip(
-        &ctx.sender,
-        &ctx.creator,
-        &ctx.token,
-        &10_000_i128,
-        &1,
-    );
+    ctx.client()
+        .tip(&ctx.sender, &ctx.creator, &ctx.token, &10_000_i128, &1);
     ctx.client().set_fee(&ctx.admin, &200);
-    ctx.client().tip(
-        &ctx.sender,
-        &ctx.creator,
-        &ctx.token,
-        &10_000_i128,
-        &2,
-    );
+    ctx.client()
+        .tip(&ctx.sender, &ctx.creator, &ctx.token, &10_000_i128, &2);
 
     assert_eq!(ctx.token_client().balance(&ctx.creator), 19_700);
     assert_eq!(ctx.token_client().balance(&ctx.treasury), 300);
@@ -597,21 +507,11 @@ fn changing_treasury_routes_subsequent_fees_to_new_treasury() {
     let ctx = setup(100);
     let new_treasury = Address::generate(&ctx.env);
 
-    ctx.client().tip(
-        &ctx.sender,
-        &ctx.creator,
-        &ctx.token,
-        &10_000_i128,
-        &1,
-    );
+    ctx.client()
+        .tip(&ctx.sender, &ctx.creator, &ctx.token, &10_000_i128, &1);
     ctx.client().set_treasury(&ctx.admin, &new_treasury);
-    ctx.client().tip(
-        &ctx.sender,
-        &ctx.creator,
-        &ctx.token,
-        &10_000_i128,
-        &2,
-    );
+    ctx.client()
+        .tip(&ctx.sender, &ctx.creator, &ctx.token, &10_000_i128, &2);
 
     assert_eq!(ctx.token_client().balance(&ctx.treasury), 100);
     assert_eq!(ctx.token_client().balance(&new_treasury), 100);
@@ -622,13 +522,8 @@ fn split_tip_with_2_creators_works() {
     let ctx = setup(100);
     let recipients = recipients_2(&ctx.env, ctx.creator.clone(), ctx.creator_two.clone());
 
-    ctx.client().tip_split(
-        &ctx.sender,
-        &recipients,
-        &ctx.token,
-        &10_000_i128,
-        &1,
-    );
+    ctx.client()
+        .tip_split(&ctx.sender, &recipients, &ctx.token, &10_000_i128, &1);
 
     assert_eq!(ctx.token_client().balance(&ctx.creator), 6_930);
     assert_eq!(ctx.token_client().balance(&ctx.creator_two), 2_970);
@@ -645,13 +540,8 @@ fn split_tip_with_3_creators_works() {
         ctx.creator_three.clone(),
     );
 
-    ctx.client().tip_split(
-        &ctx.sender,
-        &recipients,
-        &ctx.token,
-        &10_000_i128,
-        &1,
-    );
+    ctx.client()
+        .tip_split(&ctx.sender, &recipients, &ctx.token, &10_000_i128, &1);
 
     assert_eq!(ctx.token_client().balance(&ctx.creator), 4_900);
     assert_eq!(ctx.token_client().balance(&ctx.creator_two), 2_940);
@@ -670,13 +560,8 @@ fn single_recipient_split_at_10000_bps_works() {
         },
     ];
 
-    ctx.client().tip_split(
-        &ctx.sender,
-        &recipients,
-        &ctx.token,
-        &1_000_i128,
-        &1,
-    );
+    ctx.client()
+        .tip_split(&ctx.sender, &recipients, &ctx.token, &1_000_i128, &1);
 
     assert_eq!(ctx.token_client().balance(&ctx.creator), 990);
     assert_eq!(ctx.token_client().balance(&ctx.treasury), 10);
@@ -697,13 +582,8 @@ fn max_split_recipients_exactly_succeeds() {
         });
     }
 
-    ctx.client().tip_split(
-        &ctx.sender,
-        &recipients,
-        &ctx.token,
-        &10_000_i128,
-        &1,
-    );
+    ctx.client()
+        .tip_split(&ctx.sender, &recipients, &ctx.token, &10_000_i128, &1);
 
     for recipient in created {
         assert_eq!(ctx.token_client().balance(&recipient), 990);
@@ -727,13 +607,8 @@ fn split_percentages_not_equal_to_10000_fail() {
     ];
 
     expect_error(
-        ctx.client().try_tip_split(
-            &ctx.sender,
-            &recipients,
-            &ctx.token,
-            &1_000_i128,
-            &1,
-        ),
+        ctx.client()
+            .try_tip_split(&ctx.sender, &recipients, &ctx.token, &1_000_i128, &1),
         Error::InvalidSplit,
     );
 }
@@ -754,13 +629,8 @@ fn duplicate_split_recipient_fails() {
     ];
 
     expect_error(
-        ctx.client().try_tip_split(
-            &ctx.sender,
-            &recipients,
-            &ctx.token,
-            &1_000_i128,
-            &1,
-        ),
+        ctx.client()
+            .try_tip_split(&ctx.sender, &recipients, &ctx.token, &1_000_i128, &1),
         Error::DuplicateRecipient,
     );
 }
@@ -781,13 +651,8 @@ fn sender_included_in_recipients_fails() {
     ];
 
     expect_error(
-        ctx.client().try_tip_split(
-            &ctx.sender,
-            &recipients,
-            &ctx.token,
-            &1_000_i128,
-            &1,
-        ),
+        ctx.client()
+            .try_tip_split(&ctx.sender, &recipients, &ctx.token, &1_000_i128, &1),
         Error::SelfTip,
     );
 }
@@ -810,13 +675,8 @@ fn too_many_recipients_fails() {
     }
 
     expect_error(
-        ctx.client().try_tip_split(
-            &ctx.sender,
-            &recipients,
-            &ctx.token,
-            &1_000_i128,
-            &1,
-        ),
+        ctx.client()
+            .try_tip_split(&ctx.sender, &recipients, &ctx.token, &1_000_i128, &1),
         Error::TooManyRecipients,
     );
 }
@@ -858,13 +718,8 @@ fn split_stats_update_correctly() {
     let ctx = setup(100);
     let recipients = recipients_2(&ctx.env, ctx.creator.clone(), ctx.creator_two.clone());
 
-    ctx.client().tip_split(
-        &ctx.sender,
-        &recipients,
-        &ctx.token,
-        &10_000_i128,
-        &1,
-    );
+    ctx.client()
+        .tip_split(&ctx.sender, &recipients, &ctx.token, &10_000_i128, &1);
 
     let first = ctx.client().get_creator_stats(&ctx.creator);
     let second = ctx.client().get_creator_stats(&ctx.creator_two);
@@ -882,13 +737,8 @@ fn tip_receipts_track_sender_scoped_replay_state() {
     let ctx = setup(100);
 
     assert!(!ctx.client().tip_exists(&ctx.sender, &1));
-    ctx.client().tip(
-        &ctx.sender,
-        &ctx.creator,
-        &ctx.token,
-        &1_000_i128,
-        &1,
-    );
+    ctx.client()
+        .tip(&ctx.sender, &ctx.creator, &ctx.token, &1_000_i128, &1);
 
     let receipt = ctx.client().get_tip(&ctx.sender, &1).unwrap();
     assert!(ctx.client().tip_exists(&ctx.sender, &1));
@@ -1131,13 +981,8 @@ fn tip_split_requires_sender_authorization() {
 fn tip_auth_tree_scopes_creator_and_treasury_transfers() {
     let ctx = setup(100);
 
-    ctx.client().tip(
-        &ctx.sender,
-        &ctx.creator,
-        &ctx.token,
-        &1_000_i128,
-        &1,
-    );
+    ctx.client()
+        .tip(&ctx.sender, &ctx.creator, &ctx.token, &1_000_i128, &1);
 
     assert_eq!(
         ctx.env.auths(),
@@ -1162,13 +1007,8 @@ fn tip_split_auth_tree_scopes_all_recipient_and_treasury_transfers() {
     let ctx = setup(100);
     let recipients = recipients_2(&ctx.env, ctx.creator.clone(), ctx.creator_two.clone());
 
-    ctx.client().tip_split(
-        &ctx.sender,
-        &recipients,
-        &ctx.token,
-        &1_000_i128,
-        &1,
-    );
+    ctx.client()
+        .tip_split(&ctx.sender, &recipients, &ctx.token, &1_000_i128, &1);
 
     assert_eq!(
         ctx.env.auths(),
@@ -1192,24 +1032,10 @@ fn tip_split_auth_tree_scopes_all_recipient_and_treasury_transfers() {
 #[test]
 fn tip_event_payload_is_emitted() {
     let ctx = setup(100);
-    let before = ctx
-        .env
-        .events()
-        .all()
-        .filter_by_contract(&ctx.contract_id)
-        .events()
-        .len();
 
-    ctx.client().tip(
-        &ctx.sender,
-        &ctx.creator,
-        &ctx.token,
-        &1_000_i128,
-        &1,
-    );
+    ctx.client()
+        .tip(&ctx.sender, &ctx.creator, &ctx.token, &1_000_i128, &1);
 
-    let events = ctx.env.events().all().filter_by_contract(&ctx.contract_id);
-    let event = events.events().get(before).unwrap();
     let expected = TipEvent {
         tip_id: 1,
         sender: ctx.sender,
@@ -1221,31 +1047,20 @@ fn tip_event_payload_is_emitted() {
     }
     .to_xdr(&ctx.env, &ctx.contract_id);
 
-    assert_eq!(event, &expected);
+    assert_eq!(
+        ctx.env.events().all().filter_by_contract(&ctx.contract_id),
+        std::vec![expected]
+    );
 }
 
 #[test]
 fn split_tip_event_payload_is_emitted() {
     let ctx = setup(100);
     let recipients = recipients_2(&ctx.env, ctx.creator.clone(), ctx.creator_two.clone());
-    let before = ctx
-        .env
-        .events()
-        .all()
-        .filter_by_contract(&ctx.contract_id)
-        .events()
-        .len();
 
-    ctx.client().tip_split(
-        &ctx.sender,
-        &recipients,
-        &ctx.token,
-        &1_000_i128,
-        &1,
-    );
+    ctx.client()
+        .tip_split(&ctx.sender, &recipients, &ctx.token, &1_000_i128, &1);
 
-    let events = ctx.env.events().all().filter_by_contract(&ctx.contract_id);
-    let event = events.events().get(before).unwrap();
     let expected = SplitTipEvent {
         tip_id: 1,
         sender: ctx.sender,
@@ -1271,75 +1086,91 @@ fn split_tip_event_payload_is_emitted() {
     }
     .to_xdr(&ctx.env, &ctx.contract_id);
 
-    assert_eq!(event, &expected);
+    assert_eq!(
+        ctx.env.events().all().filter_by_contract(&ctx.contract_id),
+        std::vec![expected]
+    );
 }
 
 #[test]
 fn configuration_events_include_previous_and_new_values() {
     let ctx = setup(100);
     let new_treasury = Address::generate(&ctx.env);
-    let before = ctx
-        .env
-        .events()
-        .all()
-        .filter_by_contract(&ctx.contract_id)
-        .events()
-        .len();
 
+    // Fee
     ctx.client().set_fee(&ctx.admin, &200);
+
+    let expected_fee = FeeUpdatedEvent {
+        admin: ctx.admin.clone(),
+        previous_fee_bps: 100,
+        new_fee_bps: 200,
+    }
+    .to_xdr(&ctx.env, &ctx.contract_id);
+
+    assert_eq!(
+        ctx.env.events().all().filter_by_contract(&ctx.contract_id),
+        std::vec![expected_fee]
+    );
+
+    // Treasury
     ctx.client().set_treasury(&ctx.admin, &new_treasury);
+
+    let expected_treasury = TreasuryUpdatedEvent {
+        admin: ctx.admin.clone(),
+        previous_treasury: ctx.treasury.clone(),
+        new_treasury: new_treasury.clone(),
+    }
+    .to_xdr(&ctx.env, &ctx.contract_id);
+
+    assert_eq!(
+        ctx.env.events().all().filter_by_contract(&ctx.contract_id),
+        std::vec![expected_treasury]
+    );
+
+    // Token
     ctx.client().set_token(&ctx.admin, &ctx.token, &false);
+
+    let expected_token = TokenStatusChangedEvent {
+        admin: ctx.admin.clone(),
+        token: ctx.token.clone(),
+        previous_enabled: true,
+        enabled: false,
+    }
+    .to_xdr(&ctx.env, &ctx.contract_id);
+
+    assert_eq!(
+        ctx.env.events().all().filter_by_contract(&ctx.contract_id),
+        std::vec![expected_token]
+    );
+
+    // Pause
     ctx.client().pause(&ctx.admin);
+
+    let expected_pause = PauseStatusChangedEvent {
+        admin: ctx.admin.clone(),
+        previous_paused: false,
+        paused: true,
+    }
+    .to_xdr(&ctx.env, &ctx.contract_id);
+
+    assert_eq!(
+        ctx.env.events().all().filter_by_contract(&ctx.contract_id),
+        std::vec![expected_pause]
+    );
+
+    // Unpause
     ctx.client().unpause(&ctx.admin);
 
-    let events = ctx.env.events().all().filter_by_contract(&ctx.contract_id);
-    let emitted = events.events();
+    let expected_unpause = PauseStatusChangedEvent {
+        admin: ctx.admin.clone(),
+        previous_paused: true,
+        paused: false,
+    }
+    .to_xdr(&ctx.env, &ctx.contract_id);
 
     assert_eq!(
-        emitted.get(before).unwrap(),
-        &FeeUpdatedEvent {
-            admin: ctx.admin.clone(),
-            previous_fee_bps: 100,
-            new_fee_bps: 200,
-        }
-        .to_xdr(&ctx.env, &ctx.contract_id)
-    );
-    assert_eq!(
-        emitted.get(before + 1).unwrap(),
-        &TreasuryUpdatedEvent {
-            admin: ctx.admin.clone(),
-            previous_treasury: ctx.treasury,
-            new_treasury,
-        }
-        .to_xdr(&ctx.env, &ctx.contract_id)
-    );
-    assert_eq!(
-        emitted.get(before + 2).unwrap(),
-        &TokenStatusChangedEvent {
-            admin: ctx.admin.clone(),
-            token: ctx.token,
-            previous_enabled: true,
-            enabled: false,
-        }
-        .to_xdr(&ctx.env, &ctx.contract_id)
-    );
-    assert_eq!(
-        emitted.get(before + 3).unwrap(),
-        &PauseStatusChangedEvent {
-            admin: ctx.admin.clone(),
-            previous_paused: false,
-            paused: true,
-        }
-        .to_xdr(&ctx.env, &ctx.contract_id)
-    );
-    assert_eq!(
-        emitted.get(before + 4).unwrap(),
-        &PauseStatusChangedEvent {
-            admin: ctx.admin,
-            previous_paused: true,
-            paused: false,
-        }
-        .to_xdr(&ctx.env, &ctx.contract_id)
+        ctx.env.events().all().filter_by_contract(&ctx.contract_id),
+        std::vec![expected_unpause]
     );
 }
 
@@ -1347,10 +1178,13 @@ fn configuration_events_include_previous_and_new_values() {
 fn failed_creator_transfer_rolls_back_receipt_and_stats() {
     let ctx = setup_with_sender_balance(100, 989);
 
-    expect_any_failure(
-        ctx.client()
-            .try_tip(&ctx.sender, &ctx.creator, &ctx.token, &1_000_i128, &1),
-    );
+    expect_any_failure(ctx.client().try_tip(
+        &ctx.sender,
+        &ctx.creator,
+        &ctx.token,
+        &1_000_i128,
+        &1,
+    ));
 
     assert!(!ctx.client().tip_exists(&ctx.sender, &1));
     assert!(ctx.client().get_tip(&ctx.sender, &1).is_none());
@@ -1367,10 +1201,13 @@ fn failed_creator_transfer_rolls_back_receipt_and_stats() {
 fn failed_treasury_fee_transfer_rolls_back_creator_payment_and_state() {
     let ctx = setup_with_sender_balance(100, 990);
 
-    expect_any_failure(
-        ctx.client()
-            .try_tip(&ctx.sender, &ctx.creator, &ctx.token, &1_000_i128, &1),
-    );
+    expect_any_failure(ctx.client().try_tip(
+        &ctx.sender,
+        &ctx.creator,
+        &ctx.token,
+        &1_000_i128,
+        &1,
+    ));
 
     assert!(!ctx.client().tip_exists(&ctx.sender, &1));
     assert!(ctx.client().get_tip(&ctx.sender, &1).is_none());

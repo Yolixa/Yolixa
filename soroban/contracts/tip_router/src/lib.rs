@@ -42,12 +42,7 @@ impl YolixaTipRouter {
         Ok(())
     }
 
-    pub fn set_token(
-        env: Env,
-        admin: Address,
-        token: Address,
-        enabled: bool,
-    ) -> Result<(), Error> {
+    pub fn set_token(env: Env, admin: Address, token: Address, enabled: bool) -> Result<(), Error> {
         require_admin(&env, &admin)?;
         let previous_enabled = storage::is_token_enabled(&env, &token);
         storage::set_token_enabled(&env, &token, enabled);
