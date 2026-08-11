@@ -1,0 +1,49 @@
+name: Soroban CI
+
+on:
+  push:
+    branches:
+      - scf-v2-soroban
+  pull_request:
+    paths:
+      - "soroban/**"
+      - ".github/workflows/soroban-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  soroban:
+    name: Soroban
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: soroban
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt --component clippy --target wasm32v1-none
+          rustup default stable
+
+      - name: Install system build dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential
+
+      - name: Install Stellar CLI
+        run: cargo install --locked stellar-cli@27.1.0
+
+      - name: Check formatting
+        run: cargo fmt --check
+
+      - name: Run clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Run tests
+        run: cargo test --workspace
+
+      - name: Build contract WASM
+        run: stellar contract build --package yolixa-tip-router --locked
