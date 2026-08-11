@@ -11,6 +11,11 @@ on:
 
 permissions:
   contents: read
+  attestations: read
+
+concurrency:
+  group: soroban-ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   soroban:
@@ -23,29 +28,31 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Rust
         run: |
           rustup toolchain install stable --profile minimal --component rustfmt --component clippy --target wasm32v1-none
           rustup default stable
 
-      - name: Install system build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential libdbus-1-dev pkg-config
-
       - name: Install Stellar CLI
-        run: cargo install --locked stellar-cli@27.1.0
+        uses: stellar/stellar-cli@v27.1.0
+
+      - name: Verify toolchain
+        run: |
+          rustc --version
+          cargo --version
+          stellar --version
+          rustup target list --installed | grep '^wasm32v1-none$'
 
       - name: Check formatting
         run: cargo fmt --check
 
       - name: Run clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
 
       - name: Run tests
-        run: cargo test --workspace
+        run: cargo test --workspace --locked
 
       - name: Build contract WASM
         run: stellar contract build --package yolixa-tip-router --locked
