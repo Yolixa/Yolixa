@@ -1,12 +1,9 @@
 import {
-    Account,
-    Address,
     BASE_FEE,
-    Contract,
     TransactionBuilder,
-    nativeToScVal,
     rpc,
 } from '@stellar/stellar-sdk';
+import { Client as YolixaTipRouterClient } from '../../packages/yolixa-tip-router/src/index.ts';
 import {
     getAddress,
     getNetwork,
@@ -87,24 +84,41 @@ async function assertFreighterNetwork(networkPassphrase) {
     }
 }
 
-function buildTipTransaction(account, intent) {
-    const contract = new Contract(intent.router_contract_id);
-    const operation = contract.call(
-        'tip',
-        Address.fromString(intent.sender).toScVal(),
-        Address.fromString(intent.creator).toScVal(),
-        Address.fromString(intent.token_contract_id).toScVal(),
-        nativeToScVal(BigInt(intent.amount_atomic), { type: 'i128' }),
-        nativeToScVal(BigInt(intent.contract_tip_id), { type: 'u64' }),
-    );
-
-    return new TransactionBuilder(account, {
-        fee: BASE_FEE,
+async function buildTipTransaction(server, intent) {
+    const client = new YolixaTipRouterClient({
+        contractId: intent.router_contract_id,
+        publicKey: intent.sender,
+        rpcUrl: intent.rpc_url,
+        allowHttp: intent.rpc_url.startsWith('http://'),
+        server,
         networkPassphrase: intent.network_passphrase,
-    })
-        .addOperation(operation)
-        .setTimeout(DEFAULT_TIMEOUT_SECONDS)
-        .build();
+    });
+
+    const assembled = await client.tip({
+        sender: intent.sender,
+        creator: intent.creator,
+        token: intent.token_contract_id,
+        amount: BigInt(intent.amount_atomic),
+        tip_id: BigInt(intent.contract_tip_id),
+    }, {
+        fee: BASE_FEE,
+        timeoutInSeconds: DEFAULT_TIMEOUT_SECONDS,
+        restore: false,
+    });
+
+    if (rpc.Api.isSimulationError(assembled.simulation)) {
+        throw new Error(assembled.simulation.error || 'Soroban simulation failed.');
+    }
+
+    if (rpc.Api.isSimulationRestore(assembled.simulation)) {
+        throw new Error('Router state requires restoration before this tip can be sent.');
+    }
+
+    if (!assembled.built) {
+        throw new Error('Soroban transaction was not prepared.');
+    }
+
+    return assembled.built;
 }
 
 async function waitForFinalTransaction(server, hash, onProgress) {
@@ -178,19 +192,7 @@ export async function sendSorobanTip({ amount, receiverId, receiver, csrf, onPro
         });
 
         onProgress?.('Simulating transaction...');
-        const account = await server.getAccount(intent.sender);
-        const transaction = buildTipTransaction(account, intent);
-        const simulation = await server.simulateTransaction(transaction);
-
-        if (rpc.Api.isSimulationError(simulation)) {
-            throw new Error(simulation.error || 'Soroban simulation failed.');
-        }
-
-        if (rpc.Api.isSimulationRestore(simulation)) {
-            throw new Error('Router state requires restoration before this tip can be sent.');
-        }
-
-        const prepared = rpc.assembleTransaction(transaction, simulation).build();
+        const prepared = await buildTipTransaction(server, intent);
 
         onProgress?.('Awaiting wallet approval...');
         const signed = await signTransaction(prepared.toXDR(), {
