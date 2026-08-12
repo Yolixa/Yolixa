@@ -1,23 +1,86 @@
-name: Soroban CI
+name: Phase 2 CI
 
 on:
   push:
     branches:
-      - scf-v2-soroban
+      - scf-v2-phase-2-integration
   pull_request:
     paths:
+      - "app/**"
+      - "bootstrap/**"
+      - "config/**"
+      - "database/**"
+      - "packages/**"
+      - "resources/**"
+      - "routes/**"
       - "soroban/**"
+      - "tests/**"
+      - "composer.json"
+      - "composer.lock"
+      - "package.json"
+      - "package-lock.json"
+      - "phpunit.xml"
+      - "vite.config.js"
       - ".github/workflows/soroban-ci.yml"
 
 permissions:
   contents: read
-  attestations: read
 
 concurrency:
-  group: soroban-ci-${{ github.ref }}
+  group: phase-2-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  application:
+    name: Application
+    runs-on: ubuntu-latest
+
+    env:
+      APP_ENV: testing
+      APP_KEY: base64:MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI=
+      BCRYPT_ROUNDS: 4
+      CACHE_STORE: array
+      DB_CONNECTION: sqlite
+      DB_DATABASE: database/database.sqlite
+      MAIL_MAILER: array
+      QUEUE_CONNECTION: sync
+      SESSION_DRIVER: array
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: bcmath, gmp, sodium, sqlite3, pdo_sqlite
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare SQLite database
+        run: |
+          cp .env.example .env
+          mkdir -p database
+          touch database/database.sqlite
+
+      - name: Run Laravel tests
+        run: php artisan test
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
   soroban:
     name: Soroban
     runs-on: ubuntu-latest
