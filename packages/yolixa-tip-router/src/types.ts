@@ -145,7 +145,7 @@ export interface TokenStatusChangedEventEvent {
 /**
  * Union: DataKey
  */
- export type DataKey =
+export type DataKey =
   { tag: "Admin"; values: void } |
   { tag: "Treasury"; values: void } |
   { tag: "FeeBps"; values: void } |
@@ -153,5 +153,4 @@ export interface TokenStatusChangedEventEvent {
   { tag: "Token"; values: readonly [string] } |
   { tag: "Tip"; values: readonly [string, bigint] } |
   { tag: "Creator"; values: readonly [string] };
-    export type ContractEvent = TipEventEvent | SplitTipEventEvent | FeeUpdatedEventEvent | TreasuryUpdatedEventEvent | PauseStatusChangedEventEvent | TokenStatusChangedEventEvent;
-    
+export type ContractEvent = TipEventEvent | SplitTipEventEvent | FeeUpdatedEventEvent | TreasuryUpdatedEventEvent | PauseStatusChangedEventEvent | TokenStatusChangedEventEvent;
