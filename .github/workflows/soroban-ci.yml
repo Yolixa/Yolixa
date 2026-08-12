@@ -71,6 +71,12 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
 
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
       - name: Prepare SQLite database
         run: |
           cp .env.example .env
@@ -79,12 +85,6 @@ jobs:
 
       - name: Run Laravel tests
         run: php artisan test
-
-      - name: Install npm dependencies
-        run: npm ci
-
-      - name: Build frontend
-        run: npm run build
 
   soroban:
     name: Soroban

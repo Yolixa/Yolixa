@@ -128,7 +128,7 @@ Local results from this workspace:
 ```text
 php artisan test
 Tests: 50 passed (165 assertions)
-Duration: 3.11s
+Duration: 3.16s
 ```
 
 Generated bindings:
@@ -147,7 +147,7 @@ Frontend build:
 
 ```text
 npx -y node@22 "$(npm root -g)/npm/bin/npm-cli.js" run build
-success, 261 modules transformed, built in 4.96s
+success, 261 modules transformed, built in 4.93s
 ```
 
 Dependency validation:
