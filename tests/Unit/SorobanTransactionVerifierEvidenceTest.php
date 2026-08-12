@@ -14,8 +14,11 @@ use Tests\TestCase;
 class SorobanTransactionVerifierEvidenceTest extends TestCase
 {
     private string $router;
+
     private string $token;
+
     private string $sender;
+
     private string $creator;
 
     protected function setUp(): void
@@ -51,6 +54,22 @@ class SorobanTransactionVerifierEvidenceTest extends TestCase
         $this->assertFalse($this->verifier()->verifyEvidence($this->intent(), $evidence)['success']);
     }
 
+    public function test_evidence_rejects_wrong_router_function_token_amount_and_tip_id(): void
+    {
+        foreach ([
+            ['router_contract_id', $this->contractId()],
+            ['function', 'tip_split'],
+            ['token_contract_id', $this->contractId()],
+            ['amount_atomic', '9999999'],
+            ['contract_tip_id', '43'],
+        ] as [$key, $value]) {
+            $evidence = $this->evidence();
+            $evidence[$key] = $value;
+
+            $this->assertFalse($this->verifier()->verifyEvidence($this->intent(), $evidence)['success'], $key);
+        }
+    }
+
     public function test_evidence_rejects_mismatched_creator_token_and_amount(): void
     {
         foreach ([
@@ -73,9 +92,48 @@ class SorobanTransactionVerifierEvidenceTest extends TestCase
         $this->assertFalse($this->verifier()->verifyEvidence($this->intent(), $evidence)['success']);
     }
 
+    public function test_evidence_rejects_missing_receipt_and_tip_exists(): void
+    {
+        $missingReceipt = $this->evidence();
+        unset($missingReceipt['receipt']);
+        $this->assertFalse($this->verifier()->verifyEvidence($this->intent(), $missingReceipt)['success']);
+
+        $missingExists = $this->evidence();
+        $missingExists['tip_exists'] = false;
+        $this->assertFalse($this->verifier()->verifyEvidence($this->intent(), $missingExists)['success']);
+    }
+
+    public function test_evidence_rejects_mismatched_creator_stats(): void
+    {
+        foreach ([
+            ['tip_count', '0'],
+            ['gross_received', '9999999'],
+            ['net_received', '9849999'],
+        ] as [$key, $value]) {
+            $evidence = $this->evidence();
+            $evidence['creator_stats'][$key] = $value;
+
+            $this->assertFalse($this->verifier()->verifyEvidence($this->intent(), $evidence)['success'], $key);
+        }
+    }
+
+    public function test_evidence_rejects_mismatched_router_config(): void
+    {
+        foreach ([
+            ['fee_bps', '151'],
+            ['xlm_enabled', false],
+            ['paused', true],
+        ] as [$key, $value]) {
+            $evidence = $this->evidence();
+            $evidence['router_config'][$key] = $value;
+
+            $this->assertFalse($this->verifier()->verifyEvidence($this->intent(), $evidence)['success'], $key);
+        }
+    }
+
     private function verifier(): SorobanTransactionVerifier
     {
-        return new SorobanTransactionVerifier(Mockery::mock(JsonSorobanRpcClient::class), new XlmAmount());
+        return new SorobanTransactionVerifier(Mockery::mock(JsonSorobanRpcClient::class), new XlmAmount);
     }
 
     private function intent(): TipIntent
@@ -110,12 +168,19 @@ class SorobanTransactionVerifierEvidenceTest extends TestCase
             'token_contract_id' => $this->token,
             'amount_atomic' => '10000000',
             'contract_tip_id' => '42',
+            'tip_exists' => true,
             'tip_event' => $proof,
             'receipt' => $proof,
             'creator_stats' => [
                 'tip_count' => '1',
                 'gross_received' => '10000000',
                 'net_received' => '9850000',
+            ],
+            'router_config' => [
+                'fee_bps' => '150',
+                'treasury' => KeyPair::random()->getAccountId(),
+                'paused' => false,
+                'xlm_enabled' => true,
             ],
         ];
     }

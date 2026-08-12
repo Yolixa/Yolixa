@@ -24,8 +24,8 @@ return [
 
     'platform_public_key' => env('YOLIXA_PLATFORM_WALLET_PUBLIC', env('YOLIXA_PLATFORM_PUBLIC_KEY')),
     'fee_percentage' => env('YOLIXA_PLATFORM_FEE_PERCENT', env('YOLIXA_FEE_PERCENTAGE', 0.015)),
-    'min_payment_amount' => env('YOLIXA_MIN_PAYMENT_AMOUNT', 0.0000001),
-    'max_payment_amount' => env('YOLIXA_MAX_PAYMENT_AMOUNT', 1000),
+    'min_payment_amount' => env('YOLIXA_MIN_PAYMENT_AMOUNT', '0.0000001'),
+    'max_payment_amount' => env('YOLIXA_MAX_PAYMENT_AMOUNT', '1000'),
     'wallet_challenge_ttl_seconds' => env('YOLIXA_WALLET_CHALLENGE_TTL_SECONDS', 300),
     'tip_execution_mode' => env('YOLIXA_TIP_EXECUTION_MODE', 'soroban'),
 
@@ -90,6 +90,7 @@ return [
         'xlm_token_contract_id' => env('SOROBAN_XLM_TOKEN_CONTRACT_ID'),
         'tip_intent_ttl_minutes' => env('SOROBAN_TIP_INTENT_TTL_MINUTES', 30),
         'fee_bps' => env('SOROBAN_TIP_ROUTER_FEE_BPS', 150),
+        'verifier_source_account' => env('SOROBAN_VERIFIER_SOURCE_ACCOUNT'),
 
         // Legacy receipt-only registry. The Phase 2 router path does not use these.
         'tip_registry_contract_id' => env('SOROBAN_TIP_REGISTRY_CONTRACT_ID'),

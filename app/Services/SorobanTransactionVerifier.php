@@ -10,8 +10,9 @@ use Soneso\StellarSDK\InvokeContractHostFunction;
 use Soneso\StellarSDK\InvokeHostFunctionOperation;
 use Soneso\StellarSDK\Soroban\Address as SorobanAddress;
 use Soneso\StellarSDK\Transaction;
-use Soneso\StellarSDK\Xdr\XdrLedgerEntryChange;
+use Soneso\StellarSDK\Xdr\XdrContractEvent;
 use Soneso\StellarSDK\Xdr\XdrSCVal;
+use Soneso\StellarSDK\Xdr\XdrTransactionEvent;
 use Soneso\StellarSDK\Xdr\XdrTransactionMeta;
 use Throwable;
 
@@ -20,8 +21,7 @@ class SorobanTransactionVerifier
     public function __construct(
         private JsonSorobanRpcClient $rpc,
         private XlmAmount $amounts
-    ) {
-    }
+    ) {}
 
     public function verify(TipIntent $intent, string $txHash): array
     {
@@ -55,12 +55,14 @@ class SorobanTransactionVerifier
 
             $metaXdr = $tx['resultMetaXdr'] ?? $tx['result_meta_xdr'] ?? null;
             if (is_string($metaXdr) && $metaXdr !== '') {
-                $evidence = array_merge($evidence, $this->parseMetaEvidence($metaXdr, $intent));
+                $evidence = array_merge($evidence, $this->parseEventEvidence($metaXdr));
             }
+
+            $evidence = array_merge($evidence, $this->readRouterEvidence($intent));
 
             return $this->verifyEvidence($intent, $evidence);
         } catch (Throwable $e) {
-            Log::channel('security')->warning('Soroban tip verification failed: ' . $e->getMessage(), [
+            Log::channel('security')->warning('Soroban tip verification failed: '.$e->getMessage(), [
                 'intent_id' => $intent->id,
                 'tx_hash' => $txHash,
             ]);
@@ -76,13 +78,14 @@ class SorobanTransactionVerifier
         }
 
         $expectedRouter = (string) config('yolixa.soroban.tip_router_contract_id');
+        $expectedToken = (string) config('yolixa.soroban.xlm_token_contract_id');
         $expectedFee = $this->amounts->splitFee($intent->amount_atomic, (int) config('yolixa.soroban.fee_bps', 150));
         $expected = [
             'router_contract_id' => $expectedRouter,
             'function' => 'tip',
             'sender' => $intent->sender_wallet,
             'creator' => $intent->receiver_wallet,
-            'token_contract_id' => $intent->token_contract_id,
+            'token_contract_id' => $expectedToken,
             'amount_atomic' => $intent->amount_atomic,
             'contract_tip_id' => (string) $intent->contract_tip_id,
         ];
@@ -93,9 +96,39 @@ class SorobanTransactionVerifier
             }
         }
 
-        foreach (['tip_event', 'receipt'] as $proofKey) {
+        if ((string) $intent->token_contract_id !== $expectedToken) {
+            return ['success' => false, 'message' => 'Tip intent token is not the configured XLM SAC.'];
+        }
+
+        if (($evidence['tip_exists'] ?? null) !== true) {
+            return ['success' => false, 'message' => 'Router tip_exists proof was not found.'];
+        }
+
+        if (($evidence['router_config']['fee_bps'] ?? null) !== null
+            && (string) $evidence['router_config']['fee_bps'] !== (string) config('yolixa.soroban.fee_bps', 150)
+        ) {
+            return ['success' => false, 'message' => 'Router fee configuration does not match Yolixa config.'];
+        }
+
+        if (($evidence['router_config']['xlm_enabled'] ?? null) !== null
+            && $evidence['router_config']['xlm_enabled'] !== true
+        ) {
+            return ['success' => false, 'message' => 'Configured XLM SAC is not enabled on the router.'];
+        }
+
+        if (($evidence['router_config']['paused'] ?? null) !== null
+            && $evidence['router_config']['paused'] !== false
+        ) {
+            return ['success' => false, 'message' => 'Router is paused.'];
+        }
+
+        if (($evidence['tip_event'] ?? null) !== null && ! is_array($evidence['tip_event'])) {
+            return ['success' => false, 'message' => 'Router tip_event proof is malformed.'];
+        }
+
+        foreach (array_filter(['tip_event', 'receipt'], fn ($proofKey) => isset($evidence[$proofKey])) as $proofKey) {
             $proof = $evidence[$proofKey] ?? null;
-            if (!is_array($proof)) {
+            if (! is_array($proof)) {
                 return ['success' => false, 'message' => "Router {$proofKey} proof was not found."];
             }
 
@@ -114,8 +147,12 @@ class SorobanTransactionVerifier
             }
         }
 
+        if (! isset($evidence['receipt'])) {
+            return ['success' => false, 'message' => 'Router receipt proof was not found.'];
+        }
+
         $stats = $evidence['creator_stats'] ?? null;
-        if (!is_array($stats) || (int) ($stats['tip_count'] ?? 0) < 1) {
+        if (! is_array($stats) || (int) ($stats['tip_count'] ?? 0) < 1) {
             return ['success' => false, 'message' => 'Creator stats proof was not found on-chain.'];
         }
 
@@ -136,10 +173,67 @@ class SorobanTransactionVerifier
             'creator_amount' => $expectedFee['creator_amount'],
             'platform_fee' => $expectedFee['platform_fee'],
             'router_contract_id' => $expectedRouter,
-            'token_contract_id' => $intent->token_contract_id,
+            'token_contract_id' => $expectedToken,
             'contract_tip_id' => (string) $intent->contract_tip_id,
             'receipt' => $evidence['receipt'],
             'creator_stats' => $stats,
+            'tip_exists' => true,
+            'router_config' => $evidence['router_config'] ?? [],
+        ];
+    }
+
+    private function readRouterEvidence(TipIntent $intent): array
+    {
+        $sourceAccount = (string) config('yolixa.soroban.verifier_source_account', '') ?: $intent->sender_wallet;
+        $sender = $this->rpc->addressArgument($intent->sender_wallet);
+        $creator = $this->rpc->addressArgument($intent->receiver_wallet);
+        $token = $this->rpc->addressArgument((string) config('yolixa.soroban.xlm_token_contract_id'));
+        $tipId = $this->rpc->u64Argument((string) $intent->contract_tip_id);
+
+        $tipExists = $this->rpc->callContractRead('tip_exists', [$sender, $tipId], $sourceAccount);
+        $receipt = $this->rpc->callContractRead('get_tip', [$sender, $tipId], $sourceAccount);
+        $creatorStats = $this->rpc->callContractRead('get_creator_stats', [$creator], $sourceAccount);
+
+        return [
+            'tip_exists' => $tipExists === true,
+            'receipt' => $this->normalizeReceipt($receipt),
+            'creator_stats' => $this->normalizeCreatorStats($creatorStats),
+            'router_config' => [
+                'fee_bps' => $this->rpc->callContractRead('get_fee_bps', [], $sourceAccount),
+                'treasury' => $this->rpc->callContractRead('get_treasury', [], $sourceAccount),
+                'paused' => $this->rpc->callContractRead('is_paused', [], $sourceAccount),
+                'xlm_enabled' => $this->rpc->callContractRead('is_token_enabled', [$token], $sourceAccount),
+            ],
+        ];
+    }
+
+    private function normalizeReceipt(mixed $receipt): array
+    {
+        if (! is_array($receipt)) {
+            return [];
+        }
+
+        return [
+            'contract_tip_id' => (string) ($receipt['tip_id'] ?? $receipt['contract_tip_id'] ?? ''),
+            'sender' => (string) ($receipt['sender'] ?? ''),
+            'creator' => (string) ($receipt['creator'] ?? ''),
+            'token_contract_id' => (string) ($receipt['token'] ?? $receipt['token_contract_id'] ?? ''),
+            'gross_amount' => (string) ($receipt['gross_amount'] ?? ''),
+            'creator_amount' => (string) ($receipt['creator_amount'] ?? ''),
+            'platform_fee' => (string) ($receipt['platform_fee'] ?? ''),
+        ];
+    }
+
+    private function normalizeCreatorStats(mixed $stats): array
+    {
+        if (! is_array($stats)) {
+            return [];
+        }
+
+        return [
+            'tip_count' => (string) ($stats['tip_count'] ?? '0'),
+            'gross_received' => (string) ($stats['gross_received'] ?? '0'),
+            'net_received' => (string) ($stats['net_received'] ?? '0'),
         ];
     }
 
@@ -148,17 +242,17 @@ class SorobanTransactionVerifier
         $abstract = AbstractTransaction::fromEnvelopeBase64XdrString($envelopeXdr);
         $transaction = $abstract instanceof Transaction ? $abstract : null;
 
-        if (!$transaction) {
+        if (! $transaction) {
             return [];
         }
 
         foreach ($transaction->getOperations() as $operation) {
-            if (!$operation instanceof InvokeHostFunctionOperation) {
+            if (! $operation instanceof InvokeHostFunctionOperation) {
                 continue;
             }
 
             $function = $operation->getFunction();
-            if (!$function instanceof InvokeContractHostFunction || $function->getFunctionName() !== 'tip') {
+            if (! $function instanceof InvokeContractHostFunction || $function->getFunctionName() !== 'tip') {
                 continue;
             }
 
@@ -168,7 +262,7 @@ class SorobanTransactionVerifier
             }
 
             return [
-                'router_contract_id' => StrKey::encodeContractIdHex($function->getContractId()),
+                'router_contract_id' => $this->normalizeContractId($function->getContractId()),
                 'function' => $function->getFunctionName(),
                 'sender' => $this->scValToAddress($arguments[0]),
                 'creator' => $this->scValToAddress($arguments[1]),
@@ -181,88 +275,70 @@ class SorobanTransactionVerifier
         return [];
     }
 
-    private function parseMetaEvidence(string $metaXdr, TipIntent $intent): array
+    private function parseEventEvidence(string $metaXdr): array
     {
         $meta = XdrTransactionMeta::fromBase64Xdr($metaXdr);
-        $sorobanMeta = $meta->getV3()?->getSorobanMeta();
         $evidence = [];
 
-        if (!$sorobanMeta) {
-            return $evidence;
-        }
-
-        foreach ($sorobanMeta->getEvents() as $event) {
-            $contractId = $event->hash ? StrKey::encodeContractId($event->hash) : null;
-            if ($contractId !== config('yolixa.soroban.tip_router_contract_id')) {
-                continue;
-            }
-
-            $body = $event->body->v0;
-            if (!$body) {
-                continue;
-            }
-
-            $topics = array_map(fn (XdrSCVal $topic) => $this->scValToNative($topic), $body->getTopics());
-            if (($topics[0] ?? null) !== 'tip') {
-                continue;
-            }
-
-            $data = $this->scValToMap($body->getData());
-            $evidence['tip_event'] = [
-                'contract_tip_id' => (string) ($topics[1] ?? ''),
-                'sender' => (string) ($topics[2] ?? ''),
-                'creator' => (string) ($topics[3] ?? ''),
-                'token_contract_id' => (string) ($data['token'] ?? ''),
-                'gross_amount' => (string) ($data['gross_amount'] ?? ''),
-                'creator_amount' => (string) ($data['creator_amount'] ?? ''),
-                'platform_fee' => (string) ($data['platform_fee'] ?? ''),
-            ];
-        }
-
-        foreach ($meta->getV3()->getTxChangesAfter() as $change) {
-            $ledgerEntry = $this->ledgerEntryFromChange($change);
-            $contractData = $ledgerEntry?->getData()->getContractData();
-            if (!$contractData) {
-                continue;
-            }
-
-            if ($this->scAddressToString($contractData->getContract()) !== config('yolixa.soroban.tip_router_contract_id')) {
-                continue;
-            }
-
-            $key = $this->scValToNative($contractData->getKey());
-            $value = $this->scValToMap($contractData->getBody()->getData()?->getVal());
-
-            if (($key[0] ?? null) === 'Tip'
-                && ($key[1] ?? null) === $intent->sender_wallet
-                && (string) ($key[2] ?? '') === (string) $intent->contract_tip_id
-            ) {
-                $evidence['receipt'] = [
-                    'contract_tip_id' => (string) ($value['tip_id'] ?? ''),
-                    'sender' => (string) ($value['sender'] ?? ''),
-                    'creator' => (string) ($value['creator'] ?? ''),
-                    'token_contract_id' => (string) ($value['token'] ?? ''),
-                    'gross_amount' => (string) ($value['gross_amount'] ?? ''),
-                    'creator_amount' => (string) ($value['creator_amount'] ?? ''),
-                    'platform_fee' => (string) ($value['platform_fee'] ?? ''),
-                ];
-            }
-
-            if (($key[0] ?? null) === 'Creator' && ($key[1] ?? null) === $intent->receiver_wallet) {
-                $evidence['creator_stats'] = [
-                    'tip_count' => (string) ($value['tip_count'] ?? '0'),
-                    'gross_received' => (string) ($value['gross_received'] ?? '0'),
-                    'net_received' => (string) ($value['net_received'] ?? '0'),
-                ];
+        foreach ($this->contractEventsFromMeta($meta) as $event) {
+            $eventProof = $this->tipEventProof($event);
+            if ($eventProof !== []) {
+                $evidence['tip_event'] = $eventProof;
             }
         }
 
         return $evidence;
     }
 
-    private function ledgerEntryFromChange(XdrLedgerEntryChange $change)
+    private function contractEventsFromMeta(XdrTransactionMeta $meta): array
     {
-        return $change->getCreated() ?? $change->getUpdated() ?? $change->getState();
+        $events = [];
+
+        foreach ($meta->getV3()?->getSorobanMeta()?->getEvents() ?? [] as $event) {
+            $events[] = $event;
+        }
+
+        foreach ($meta->getV4()?->getEvents() ?? [] as $transactionEvent) {
+            if ($transactionEvent instanceof XdrTransactionEvent) {
+                $events[] = $transactionEvent->getEvent();
+            }
+        }
+
+        foreach ($meta->getV4()?->getSorobanMeta()?->getEvents() ?? [] as $event) {
+            $events[] = $event;
+        }
+
+        return $events;
+    }
+
+    private function tipEventProof(XdrContractEvent $event): array
+    {
+        $contractId = $event->hash ? StrKey::encodeContractId($event->hash) : null;
+        if ($contractId !== config('yolixa.soroban.tip_router_contract_id')) {
+            return [];
+        }
+
+        $body = $event->body->v0;
+        if (! $body) {
+            return [];
+        }
+
+        $topics = array_map(fn (XdrSCVal $topic) => $this->scValToNative($topic), $body->getTopics());
+        if (($topics[0] ?? null) !== 'tip') {
+            return [];
+        }
+
+        $data = $this->scValToMap($body->getData());
+
+        return [
+            'contract_tip_id' => (string) ($topics[1] ?? ''),
+            'sender' => (string) ($topics[2] ?? ''),
+            'creator' => (string) ($topics[3] ?? ''),
+            'token_contract_id' => (string) ($data['token'] ?? ''),
+            'gross_amount' => (string) ($data['gross_amount'] ?? ''),
+            'creator_amount' => (string) ($data['creator_amount'] ?? ''),
+            'platform_fee' => (string) ($data['platform_fee'] ?? ''),
+        ];
     }
 
     private function scValToNative(XdrSCVal $value): mixed
@@ -283,7 +359,7 @@ class SorobanTransactionVerifier
             return $value->getU32();
         }
 
-        if ($value->getU64() !== null || $value->getI64() !== null || $value->getI128() !== null) {
+        if ($value->getU64() !== null || $value->getI64() !== null || $value->getU128() !== null || $value->getI128() !== null) {
             return $this->scValToIntegerString($value);
         }
 
@@ -304,7 +380,7 @@ class SorobanTransactionVerifier
 
     private function scValToMap(?XdrSCVal $value): array
     {
-        if (!$value || $value->getMap() === null) {
+        if (! $value || $value->getMap() === null) {
             return [];
         }
 
@@ -343,6 +419,17 @@ class SorobanTransactionVerifier
         return null;
     }
 
+    private function normalizeContractId(string $contractId): string
+    {
+        if (str_starts_with($contractId, 'C')) {
+            StrKey::decodeContractId($contractId);
+
+            return $contractId;
+        }
+
+        return StrKey::encodeContractIdHex($contractId);
+    }
+
     private function scValToIntegerString(XdrSCVal $value): string
     {
         if ($value->getU64() !== null) {
@@ -359,13 +446,20 @@ class SorobanTransactionVerifier
 
         if ($value->getI128() !== null) {
             $parts = $value->getI128();
-            if ($parts->getHi() !== 0) {
-                return '';
+            if ($parts->getHi() === 0 && $parts->getLo() >= 0) {
+                return (string) $parts->getLo();
             }
-
-            return (string) $parts->getLo();
         }
 
-        return '';
+        if ($value->getU128() !== null) {
+            $parts = $value->getU128();
+            if ($parts->getHi() === 0 && $parts->getLo() >= 0) {
+                return (string) $parts->getLo();
+            }
+        }
+
+        $bigInt = $value->toBigInt();
+
+        return $bigInt !== null ? gmp_strval($bigInt) : '';
     }
 }
