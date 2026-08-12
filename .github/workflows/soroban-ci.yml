@@ -45,6 +45,11 @@ jobs:
       MAIL_MAILER: array
       QUEUE_CONNECTION: sync
       SESSION_DRIVER: array
+      STELLAR_HORIZON: https://horizon-testnet.stellar.org
+      STELLAR_PASSPHRASE: Test SDF Network ; September 2015
+      STELLAR_TESTNET_HORIZON_URL: https://horizon-testnet.stellar.org
+      STELLAR_TESTNET_NETWORK_PASSPHRASE: Test SDF Network ; September 2015
+      YOLIXA_NETWORK: testnet
 
     steps:
       - name: Checkout
@@ -99,7 +104,28 @@ jobs:
           rustup default stable
 
       - name: Install Stellar CLI
-        uses: stellar/stellar-cli@v27.1.0
+        run: |
+          set -euo pipefail
+          version="27.1.0"
+          base_url="https://github.com/stellar/stellar-cli/releases/download/v${version}"
+          mkdir -p "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+          archive="$RUNNER_TEMP/stellar-cli.tar.gz"
+          if curl -fL --retry 12 --retry-delay 10 --retry-all-errors --connect-timeout 30 --max-time 600 \
+            -o "$archive" \
+            "$base_url/stellar-cli-${version}-x86_64-unknown-linux-gnu.tar.gz"; then
+            tar -xzf "$archive" -C "$HOME/.local/bin"
+            chmod +x "$HOME/.local/bin/stellar"
+          else
+            deb="$RUNNER_TEMP/stellar-cli.deb"
+            curl -fL --retry 12 --retry-delay 10 --retry-all-errors --connect-timeout 30 --max-time 600 \
+              -o "$deb" \
+              "$base_url/stellar-cli_${version}_amd64.deb"
+            sudo dpkg -i "$deb"
+          fi
+
+          stellar --version
 
       - name: Verify toolchain
         run: |
