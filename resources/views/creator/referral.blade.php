@@ -1,6 +1,7 @@
 @extends('layout.app')
 
 @section('content')
+@php($tipExecutionMode = config('yolixa.tip_execution_mode', 'soroban'))
 <section class="min-h-screen flex items-center justify-center hero-bg pt-20 pb-10">
     <div class="max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8">
         <div class="card-hover rounded-2xl p-8 md:p-12 border border-yolixa-purple/20 bg-gray-900/80 backdrop-blur-lg">
@@ -9,7 +10,13 @@
                     <span class="text-3xl font-bold text-white">{{ strtoupper(substr($creator->name, 0, 1)) }}</span>
                 </div>
                 <h1 class="text-4xl font-black mb-2 gradient-text">{{ $creator->name }}</h1>
-                <p class="text-gray-400 text-lg">Support this creator by sending a Web3 tip.</p>
+                <p class="text-gray-400 text-lg">
+                    @if($tipExecutionMode === 'soroban')
+                        Payment executed by YolixaTipRouter on Stellar Testnet.
+                    @else
+                        Support this creator by sending a Web3 tip.
+                    @endif
+                </p>
                 <div class="mt-4 flex items-center justify-center gap-2">
                     <span class="text-xs bg-gray-800 px-3 py-1 rounded-full text-gray-400 border border-gray-700">
                         {{ substr($creator->public_key, 0, 8) }}...{{ substr($creator->public_key, -8) }}
@@ -32,7 +39,7 @@
                                 <img src="{{ asset('assets/images/stellar-xlm-logo.png') }}" class="w-6 h-6" alt="XLM">
                                 <span>XLM on {{ strtoupper(config('yolixa.network', 'testnet')) }}</span>
                             </button>
-                            @if(config('yolixa.assets.USDC.enabled') && config('yolixa.assets.USDC.issuer'))
+                            @if($tipExecutionMode === 'classic' && config('yolixa.assets.USDC.enabled') && config('yolixa.assets.USDC.issuer'))
                             <button onclick="selectAsset('USDC')" id="assetUSDC" class="asset-btn flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-gray-700 bg-gray-800 text-white hover:border-yolixa-purple transition-all">
                                 <img src="{{ asset('assets/images/usd-coin-usdc-logo.png') }}" class="w-6 h-6" alt="USDC">
                                 <span>USDC on {{ strtoupper(config('yolixa.network', 'testnet')) }}</span>
@@ -75,7 +82,11 @@
                     </button>
 
                     <p class="text-center text-xs text-gray-500 mt-4 leading-relaxed" id="feeDisclaimer">
-                        * The Stellar transaction pays the creator net amount and platform fee in the same signed transaction.
+                        @if($tipExecutionMode === 'soroban')
+                            * The smart contract splits your XLM tip atomically between creator and Yolixa treasury.
+                        @else
+                            * The Stellar transaction pays the creator net amount and platform fee in the same signed transaction.
+                        @endif
                     </p>
                 </div>
 
@@ -100,7 +111,13 @@
                                 <div class="mt-1 w-5 h-5 bg-yolixa-purple/20 rounded-full flex items-center justify-center flex-shrink-0">
                                     <svg class="w-3 h-3 text-yolixa-purple" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
                                 </div>
-                                <span class="text-yolixa-purple text-sm font-bold">Transparent testnet transaction proof is recorded.</span>
+                                <span class="text-yolixa-purple text-sm font-bold">
+                                    @if($tipExecutionMode === 'soroban')
+                                        Router receipt and creator stats are verified on-chain.
+                                    @else
+                                        Transparent testnet transaction proof is recorded.
+                                    @endif
+                                </span>
                             </li>
                         </ul>
                     </div>
@@ -130,7 +147,8 @@
         <h2 class="text-3xl font-bold text-white mb-2">Tip Sent!</h2>
         <p class="text-gray-400 mb-4">Your tip was confirmed on Stellar and recorded in Yolixa.</p>
         <a id="successExplorerLink" href="#" target="_blank" rel="noopener noreferrer" class="hidden block text-yolixa-blue text-sm hover:underline mb-6">View Stellar transaction</a>
-        <p id="successSorobanStatus" class="text-xs text-gray-500 mb-6"></p>
+        <p id="successSorobanStatus" class="text-xs text-gray-500 mb-4"></p>
+        <div id="successProofDetails" class="hidden text-left text-xs bg-gray-800/70 border border-gray-700 rounded-lg p-3 mb-6 space-y-2"></div>
         <button onclick="location.reload()" class="w-full gradient-bg py-3 rounded-lg font-bold">Awesome!</button>
     </div>
 </div>
@@ -150,6 +168,7 @@
 
 <script>
     let selectedAsset = 'XLM';
+    const tipExecutionMode = "{{ $tipExecutionMode }}";
 
     function selectAsset(asset) {
         selectedAsset = asset;
@@ -205,6 +224,7 @@
     async function sendTip() {
         const amount = document.getElementById('tipAmount').value;
         const receiver = "{{ $creator->public_key }}";
+        const receiverId = "{{ $creator->id }}";
         const btn = document.getElementById('sendTipBtn');
 
         if (!amount || amount <= 0) {
@@ -230,6 +250,28 @@
         btn.innerText = 'Initializing...';
 
         try {
+            if (tipExecutionMode === 'soroban') {
+                if (connectedWallet !== 'freighter') {
+                    throw new Error('Phase 2 Soroban tipping supports Freighter only.');
+                }
+
+                if (!window.YolixaSorobanTip?.sendTip) {
+                    throw new Error('Soroban tip client is not loaded. Please refresh and try again.');
+                }
+
+                const result = await window.YolixaSorobanTip.sendTip({
+                    amount,
+                    receiver,
+                    receiverId,
+                    csrf: '{{ csrf_token() }}',
+                    onProgress: (status) => { btn.innerText = status; },
+                });
+
+                showSorobanSuccess(result);
+                toastr.success('Tip verified on-chain.');
+                return;
+            }
+
             let txHash = null;
 
             if (connectedWallet === 'freighter') {
@@ -253,6 +295,8 @@
                     link.classList.remove('hidden');
                 }
                 document.getElementById('successSorobanStatus').innerText = `Soroban receipt: ${tip.soroban_status || 'disabled'}`;
+                document.getElementById('successProofDetails').classList.add('hidden');
+                document.getElementById('successProofDetails').innerHTML = '';
                 document.getElementById('successModal').classList.remove('hidden');
                 document.getElementById('successModal').classList.add('flex');
             }
@@ -264,6 +308,49 @@
             btn.disabled = false;
             btn.innerText = 'Send Tip Now';
         }
+    }
+
+    function showSorobanSuccess(result) {
+        const txHash = result.txHash;
+        const proof = result.confirmation?.proof || {};
+        const explorerTemplate = window.config?.STELLAR_EXPLORER_TX_URL || '';
+
+        if (explorerTemplate && txHash) {
+            const link = document.getElementById('successExplorerLink');
+            link.href = explorerTemplate.replace('{hash}', txHash);
+            link.classList.remove('hidden');
+        }
+
+        document.getElementById('successSorobanStatus').innerText = 'Payment executed by YolixaTipRouter on Stellar Testnet. Verified on-chain.';
+        const details = document.getElementById('successProofDetails');
+        details.innerHTML = [
+            ['Network', proof.network || 'testnet'],
+            ['Tx hash', txHash],
+            ['Router', abbreviate(proof.router_contract_id || '')],
+            ['Contract tip ID', proof.contract_tip_id || result.intent?.contract_tip_id || ''],
+            ['Creator payout', `${proof.creator_payout || result.intent?.creator_payout || '-'} XLM`],
+            ['Platform fee', `${proof.platform_fee || result.intent?.platform_fee || '-'} XLM`],
+            ['Status', 'Verified on-chain'],
+        ].map(([label, value]) => (
+            `<div class="flex justify-between gap-3"><span class="text-gray-400">${escapeHtml(label)}</span><span class="text-white text-right break-all">${escapeHtml(value)}</span></div>`
+        )).join('');
+        details.classList.remove('hidden');
+        document.getElementById('successModal').classList.remove('hidden');
+        document.getElementById('successModal').classList.add('flex');
+    }
+
+    function abbreviate(value) {
+        return value && value.length > 16 ? `${value.slice(0, 8)}...${value.slice(-8)}` : value;
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;',
+        }[char]));
     }
 
     async function processFreighterTip(amount, destination, assetCode) {

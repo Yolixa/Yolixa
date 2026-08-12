@@ -12,6 +12,13 @@ class TipValidationTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config(['yolixa.tip_execution_mode' => 'classic']);
+    }
+
     public function test_sender_key_is_required_when_recording_tip(): void
     {
         $creator = $this->creator();

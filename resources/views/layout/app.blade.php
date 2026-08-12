@@ -243,15 +243,21 @@
     <script>
         window.config = {
             YOLIXA_NETWORK: "{{ config('yolixa.network') }}",
+            YOLIXA_TIP_EXECUTION_MODE: "{{ config('yolixa.tip_execution_mode') }}",
             STELLAR_HORIZON: "{{ app(\App\Services\StellarConfigurationService::class)->horizonUrl() }}",
             STELLAR_PASSPHRASE: "{{ app(\App\Services\StellarConfigurationService::class)->passphrase() }}",
             STELLAR_NETWORK_LABEL: "{{ app(\App\Services\StellarConfigurationService::class)->networkLabel() }}",
             STELLAR_EXPLORER_TX_URL: "{{ app(\App\Services\StellarConfigurationService::class)->explorerTxUrl() }}",
             STELLAR_EXPLORER_ACCOUNT_URL: "{{ app(\App\Services\StellarConfigurationService::class)->explorerAccountUrl() }}",
+            SOROBAN_RPC_URL: "{{ config('yolixa.soroban.rpc_url') }}",
+            SOROBAN_TIP_ROUTER_CONTRACT_ID: "{{ config('yolixa.soroban.tip_router_contract_id') }}",
+            SOROBAN_XLM_TOKEN_CONTRACT_ID: "{{ config('yolixa.soroban.xlm_token_contract_id') }}",
             YLX_ASSET_CODE: "{{ env('YLX_ASSET_CODE', 'YLX') }}",
             YLX_ISSUER_PUBLIC: "{{ env('YLX_ISSUER_PUBLIC') }}"
         };
     </script>
+
+    @vite(['resources/js/app.js'])
 
     <script>
         const mobileMenuBtn = document.getElementById('mobile-menu-btn');

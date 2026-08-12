@@ -27,6 +27,7 @@ return [
     'min_payment_amount' => env('YOLIXA_MIN_PAYMENT_AMOUNT', 0.0000001),
     'max_payment_amount' => env('YOLIXA_MAX_PAYMENT_AMOUNT', 1000),
     'wallet_challenge_ttl_seconds' => env('YOLIXA_WALLET_CHALLENGE_TTL_SECONDS', 300),
+    'tip_execution_mode' => env('YOLIXA_TIP_EXECUTION_MODE', 'soroban'),
 
     'enabled_wallets' => array_values(array_filter(array_map(
         'trim',
@@ -83,8 +84,14 @@ return [
     ],
 
     'soroban' => [
-        'enabled' => filter_var(env('SOROBAN_ENABLED', false), FILTER_VALIDATE_BOOL),
+        'enabled' => filter_var(env('SOROBAN_ENABLED', true), FILTER_VALIDATE_BOOL),
         'rpc_url' => env('SOROBAN_RPC_URL', 'https://soroban-testnet.stellar.org'),
+        'tip_router_contract_id' => env('SOROBAN_TIP_ROUTER_CONTRACT_ID'),
+        'xlm_token_contract_id' => env('SOROBAN_XLM_TOKEN_CONTRACT_ID'),
+        'tip_intent_ttl_minutes' => env('SOROBAN_TIP_INTENT_TTL_MINUTES', 30),
+        'fee_bps' => env('SOROBAN_TIP_ROUTER_FEE_BPS', 150),
+
+        // Legacy receipt-only registry. The Phase 2 router path does not use these.
         'tip_registry_contract_id' => env('SOROBAN_TIP_REGISTRY_CONTRACT_ID'),
         'platform_signer_public' => env('SOROBAN_PLATFORM_SIGNER_PUBLIC'),
         'platform_signer_secret' => env('SOROBAN_PLATFORM_SIGNER_SECRET'),
