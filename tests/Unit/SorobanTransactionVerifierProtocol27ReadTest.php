@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Models\TipIntent;
 use App\Services\JsonSorobanRpcClient;
+use App\Services\SorobanRpcException;
 use App\Services\SorobanTransactionVerifier;
 use App\Services\XlmAmount;
 use Mockery;
@@ -28,6 +29,8 @@ class SorobanTransactionVerifierProtocol27ReadTest extends TestCase
 
     private string $creator;
 
+    private string $treasury;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -36,11 +39,13 @@ class SorobanTransactionVerifierProtocol27ReadTest extends TestCase
         $this->token = StrKey::encodeContractId(random_bytes(32));
         $this->sender = KeyPair::random()->getAccountId();
         $this->creator = KeyPair::random()->getAccountId();
+        $this->treasury = KeyPair::random()->getAccountId();
 
         config([
             'yolixa.soroban.tip_router_contract_id' => $this->router,
             'yolixa.soroban.xlm_token_contract_id' => $this->token,
             'yolixa.soroban.fee_bps' => 150,
+            'yolixa.platform_public_key' => $this->treasury,
         ]);
     }
 
@@ -83,6 +88,42 @@ class SorobanTransactionVerifierProtocol27ReadTest extends TestCase
             $this->assertTrue($result['retryable']);
             $this->assertSame(strtolower($status), $result['status']);
         }
+    }
+
+    public function test_temporary_get_transaction_rpc_failure_is_retryable(): void
+    {
+        $rpc = Mockery::mock(JsonSorobanRpcClient::class);
+        $rpc->shouldReceive('getTransaction')->once()->andThrow(SorobanRpcException::forHttpStatus(503));
+        $rpc->shouldNotReceive('callContractRead');
+
+        $result = (new SorobanTransactionVerifier($rpc, new XlmAmount))
+            ->verify($this->intent(), str_repeat('c', 64));
+
+        $this->assertFalse($result['success']);
+        $this->assertTrue($result['retryable']);
+    }
+
+    public function test_temporary_router_read_rpc_failure_is_retryable(): void
+    {
+        $rpc = Mockery::mock(JsonSorobanRpcClient::class);
+        $rpc->shouldReceive('getTransaction')->once()->andReturn([
+            'status' => 'SUCCESS',
+            'ledger' => 123456,
+            'feeCharged' => '12345',
+            'envelopeXdr' => $this->envelopeXdr(),
+        ]);
+
+        $rpc->shouldReceive('addressArgument')->andReturnUsing(
+            fn (string $address) => SorobanAddress::fromAnyId($address)->toXdrSCVal()
+        );
+        $rpc->shouldReceive('u64Argument')->andReturnUsing(fn (string $value) => XdrSCVal::forU64((int) $value));
+        $rpc->shouldReceive('callContractRead')->once()->andThrow(SorobanRpcException::forHttpStatus(429));
+
+        $result = (new SorobanTransactionVerifier($rpc, new XlmAmount))
+            ->verify($this->intent(), str_repeat('d', 64));
+
+        $this->assertFalse($result['success']);
+        $this->assertTrue($result['retryable']);
     }
 
     public function test_wrong_function_in_real_xdr_is_rejected(): void
@@ -170,7 +211,7 @@ class SorobanTransactionVerifierProtocol27ReadTest extends TestCase
                 'net_received' => '9850000',
             ],
             'get_fee_bps' => '150',
-            'get_treasury' => KeyPair::random()->getAccountId(),
+            'get_treasury' => $this->treasury,
             'is_paused' => false,
             'is_token_enabled' => true,
         ], $overrides);

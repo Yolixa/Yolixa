@@ -15,6 +15,7 @@ class SorobanTipIntentTest extends TestCase
 
     private string $router;
     private string $token;
+    private string $treasury;
 
     protected function setUp(): void
     {
@@ -22,6 +23,7 @@ class SorobanTipIntentTest extends TestCase
 
         $this->router = StrKey::encodeContractId(random_bytes(32));
         $this->token = StrKey::encodeContractId(random_bytes(32));
+        $this->treasury = KeyPair::random()->getAccountId();
 
         config([
             'yolixa.tip_execution_mode' => 'soroban',
@@ -29,6 +31,7 @@ class SorobanTipIntentTest extends TestCase
             'yolixa.soroban.tip_router_contract_id' => $this->router,
             'yolixa.soroban.xlm_token_contract_id' => $this->token,
             'yolixa.soroban.rpc_url' => 'https://soroban-testnet.stellar.org',
+            'yolixa.platform_public_key' => $this->treasury,
             'yolixa.network' => 'testnet',
             'yolixa.stellar_passphrases.testnet' => 'Test SDF Network ; September 2015',
         ]);
@@ -80,6 +83,21 @@ class SorobanTipIntentTest extends TestCase
         $this->assertSame($first->json('intent_id'), $second->json('intent_id'));
         $this->assertSame($first->json('contract_tip_id'), $second->json('contract_tip_id'));
         $this->assertCount(1, TipIntent::all());
+    }
+
+    public function test_missing_treasury_public_key_rejects_soroban_intent(): void
+    {
+        config(['yolixa.platform_public_key' => null]);
+
+        $fan = $this->fan();
+        $creator = $this->creator();
+
+        $this->actingAs($fan)->postJson('/api/soroban/tip/intent', [
+            'receiver_id' => $creator->id,
+            'amount' => '1.0000000',
+            'asset' => 'XLM',
+            'sender' => $fan->public_key,
+        ])->assertStatus(422);
     }
 
     public function test_wallet_session_mismatch_is_blocked(): void

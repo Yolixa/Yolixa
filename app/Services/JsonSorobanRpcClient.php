@@ -67,18 +67,19 @@ class JsonSorobanRpcClient
             ]);
 
         if (! $response->successful()) {
-            throw new RuntimeException('Soroban RPC is unavailable.');
+            throw SorobanRpcException::forHttpStatus($response->status());
         }
 
         $payload = $response->json();
 
         if (! is_array($payload)) {
-            throw new RuntimeException('Soroban RPC returned an invalid response.');
+            throw SorobanRpcException::transient('Soroban RPC returned an invalid response.');
         }
 
         if (isset($payload['error'])) {
             $message = $payload['error']['message'] ?? 'Soroban RPC rejected the request.';
-            throw new RuntimeException($message);
+            $code = isset($payload['error']['code']) ? (int) $payload['error']['code'] : null;
+            throw SorobanRpcException::forRpcError($message, $code);
         }
 
         return $payload['result'] ?? [];

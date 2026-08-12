@@ -17,6 +17,7 @@ class SorobanTipConfirmationTest extends TestCase
 
     private string $router;
     private string $token;
+    private string $treasury;
 
     protected function setUp(): void
     {
@@ -24,6 +25,7 @@ class SorobanTipConfirmationTest extends TestCase
 
         $this->router = StrKey::encodeContractId(random_bytes(32));
         $this->token = StrKey::encodeContractId(random_bytes(32));
+        $this->treasury = KeyPair::random()->getAccountId();
 
         config([
             'yolixa.tip_execution_mode' => 'soroban',
@@ -31,9 +33,93 @@ class SorobanTipConfirmationTest extends TestCase
             'yolixa.soroban.tip_router_contract_id' => $this->router,
             'yolixa.soroban.xlm_token_contract_id' => $this->token,
             'yolixa.soroban.rpc_url' => 'https://soroban-testnet.stellar.org',
+            'yolixa.platform_public_key' => $this->treasury,
             'yolixa.network' => 'testnet',
             'yolixa.stellar_passphrases.testnet' => 'Test SDF Network ; September 2015',
         ]);
+    }
+
+    public function test_submission_persists_hash_without_creating_tip(): void
+    {
+        [$fan, , $intent] = $this->intent();
+        $hash = str_repeat('a', 64);
+
+        $this->actingAs($fan)->postJson('/api/soroban/tip/submitted', [
+            'intent_id' => $intent->id,
+            'tx_hash' => $hash,
+        ])->assertStatus(202)
+            ->assertJsonPath('intent.status', 'submitted')
+            ->assertJsonPath('intent.tx_hash', $hash);
+
+        $this->assertCount(0, Tip::all());
+        $this->assertSame('submitted', $intent->refresh()->status);
+        $this->assertSame($hash, $intent->tx_hash);
+    }
+
+    public function test_submission_is_idempotent_for_same_hash_and_rejects_replacement(): void
+    {
+        [$fan, , $intent] = $this->intent();
+        $hash = str_repeat('a', 64);
+
+        $this->actingAs($fan)->postJson('/api/soroban/tip/submitted', [
+            'intent_id' => $intent->id,
+            'tx_hash' => strtoupper($hash),
+        ])->assertStatus(202);
+
+        $this->actingAs($fan)->postJson('/api/soroban/tip/submitted', [
+            'intent_id' => $intent->id,
+            'tx_hash' => $hash,
+        ])->assertStatus(202);
+
+        $this->actingAs($fan)->postJson('/api/soroban/tip/submitted', [
+            'intent_id' => $intent->id,
+            'tx_hash' => str_repeat('b', 64),
+        ])->assertStatus(422);
+
+        $this->assertCount(0, Tip::all());
+        $this->assertSame($hash, $intent->refresh()->tx_hash);
+        $this->assertSame('submitted', $intent->status);
+    }
+
+    public function test_submission_rejects_wallet_mismatch(): void
+    {
+        [, , $intent] = $this->intent();
+        $otherFan = $this->fan();
+
+        $this->actingAs($otherFan)->postJson('/api/soroban/tip/submitted', [
+            'intent_id' => $intent->id,
+            'tx_hash' => str_repeat('c', 64),
+        ])->assertStatus(422);
+
+        $this->assertNull($intent->refresh()->tx_hash);
+        $this->assertSame('pending', $intent->status);
+    }
+
+    public function test_submission_does_not_mutate_confirmed_intent_or_create_tip(): void
+    {
+        [$fan, , $intent] = $this->intent();
+        $hash = str_repeat('d', 64);
+        $intent->update([
+            'status' => 'confirmed',
+            'tx_hash' => $hash,
+            'confirmed_at' => now(),
+        ]);
+
+        $this->actingAs($fan)->postJson('/api/soroban/tip/submitted', [
+            'intent_id' => $intent->id,
+            'tx_hash' => $hash,
+        ])->assertOk()
+            ->assertJsonPath('already_confirmed', true)
+            ->assertJsonPath('intent.status', 'confirmed');
+
+        $this->actingAs($fan)->postJson('/api/soroban/tip/submitted', [
+            'intent_id' => $intent->id,
+            'tx_hash' => str_repeat('e', 64),
+        ])->assertStatus(422);
+
+        $this->assertCount(0, Tip::all());
+        $this->assertSame($hash, $intent->refresh()->tx_hash);
+        $this->assertSame('confirmed', $intent->status);
     }
 
     public function test_successful_confirmation_records_one_confirmed_tip(): void
@@ -91,6 +177,54 @@ class SorobanTipConfirmationTest extends TestCase
 
         $this->assertCount(0, Tip::all());
         $this->assertSame('failed', $intent->refresh()->status);
+    }
+
+    public function test_retryable_verification_keeps_intent_submitted_without_tip(): void
+    {
+        [$fan, , $intent] = $this->intent();
+
+        $this->mock(SorobanTransactionVerifier::class, function ($mock) {
+            $mock->shouldReceive('verify')->once()->andReturn([
+                'success' => false,
+                'retryable' => true,
+                'message' => 'Soroban RPC is temporarily unavailable. Confirmation can be retried safely.',
+            ]);
+        });
+
+        $response = $this->actingAs($fan)->postJson('/api/soroban/tip/confirm', [
+            'intent_id' => $intent->id,
+            'tx_hash' => str_repeat('f', 64),
+        ]);
+
+        $response->assertStatus(202)
+            ->assertJsonPath('retryable', true);
+
+        $this->assertCount(0, Tip::all());
+        $this->assertSame('submitted', $intent->refresh()->status);
+        $this->assertSame(str_repeat('f', 64), $intent->tx_hash);
+    }
+
+    public function test_confirmation_rejects_replacing_submitted_hash(): void
+    {
+        [$fan, , $intent] = $this->intent();
+        $hash = str_repeat('1', 64);
+        $intent->update([
+            'status' => 'submitted',
+            'tx_hash' => $hash,
+        ]);
+
+        $this->mock(SorobanTransactionVerifier::class, function ($mock) {
+            $mock->shouldNotReceive('verify');
+        });
+
+        $this->actingAs($fan)->postJson('/api/soroban/tip/confirm', [
+            'intent_id' => $intent->id,
+            'tx_hash' => str_repeat('2', 64),
+        ])->assertStatus(422);
+
+        $this->assertCount(0, Tip::all());
+        $this->assertSame($hash, $intent->refresh()->tx_hash);
+        $this->assertSame('submitted', $intent->status);
     }
 
     public function test_confirmation_rejects_wallet_mismatch(): void

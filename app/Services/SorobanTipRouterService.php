@@ -62,6 +62,10 @@ class SorobanTipRouterService
                 throw new InvalidArgumentException("Soroban {$key} is not configured.");
             }
         }
+
+        if (!$this->stellarConfiguration->isValidPublicKey(config('yolixa.platform_public_key'))) {
+            throw new InvalidArgumentException('YOLIXA_PLATFORM_WALLET_PUBLIC must be configured with the expected treasury public address.');
+        }
     }
 
     public function createIntent(User $fan, array $payload): TipIntent
@@ -163,35 +167,21 @@ class SorobanTipRouterService
 
     public function confirm(User $fan, int $intentId, string $txHash): array
     {
-        $this->assertConfigured();
-
-        if (!preg_match('/^[A-Fa-f0-9]{64}$/', $txHash)) {
-            throw new InvalidArgumentException('Invalid transaction hash.');
-        }
+        $this->submitted($fan, $intentId, $txHash);
 
         $intent = TipIntent::with('receiver')->findOrFail($intentId);
-
-        if ($intent->sender_wallet !== $fan->public_key) {
-            throw new InvalidArgumentException('Connected wallet does not match this tip intent.');
-        }
 
         if ($intent->status === 'confirmed') {
             $tip = Tip::where('tip_intent_id', $intent->id)->first();
             return ['success' => true, 'tip' => $tip, 'intent' => $intent, 'already_confirmed' => true];
         }
 
-        if ($intent->expires_at && $intent->expires_at->isPast()) {
+        if (!$intent->tx_hash && $intent->expires_at && $intent->expires_at->isPast()) {
             $intent->update(['status' => 'expired', 'failure_reason' => 'Intent expired before confirmation.']);
             throw new InvalidArgumentException('This tip intent expired. Please start a new Soroban tip.');
         }
 
-        $intent->update([
-            'status' => 'submitted',
-            'tx_hash' => $txHash,
-            'failure_reason' => null,
-        ]);
-
-        $verification = $this->verifier->verify($intent, $txHash);
+        $verification = $this->verifier->verify($intent, (string) $intent->tx_hash);
         if (!($verification['success'] ?? false)) {
             $intent->update([
                 'status' => ($verification['retryable'] ?? false) ? 'submitted' : 'failed',
@@ -207,6 +197,52 @@ class SorobanTipRouterService
         }
 
         return $this->recordConfirmedTip($intent->refresh(), $verification);
+    }
+
+    public function submitted(User $fan, int $intentId, string $txHash): array
+    {
+        $this->assertConfigured();
+
+        $txHash = $this->normalizeTxHash($txHash);
+
+        return DB::transaction(function () use ($fan, $intentId, $txHash) {
+            $intent = TipIntent::query()->lockForUpdate()->findOrFail($intentId);
+
+            if ($intent->sender_wallet !== $fan->public_key) {
+                throw new InvalidArgumentException('Connected wallet does not match this tip intent.');
+            }
+
+            $this->assertTxHashIsUsableForIntent($intent, $txHash);
+
+            if ($intent->status === 'confirmed') {
+                return [
+                    'success' => true,
+                    'intent' => $intent,
+                    'already_confirmed' => true,
+                    'submitted' => false,
+                ];
+            }
+
+            if (!$intent->tx_hash && $intent->expires_at && $intent->expires_at->isPast()) {
+                $intent->update(['status' => 'expired', 'failure_reason' => 'Intent expired before submission.']);
+                throw new InvalidArgumentException('This tip intent expired. Please start a new Soroban tip.');
+            }
+
+            if (!$intent->tx_hash) {
+                $intent->update([
+                    'status' => 'submitted',
+                    'tx_hash' => $txHash,
+                    'failure_reason' => null,
+                ]);
+            }
+
+            return [
+                'success' => true,
+                'intent' => $intent->refresh(),
+                'already_confirmed' => false,
+                'submitted' => true,
+            ];
+        });
     }
 
     private function recordConfirmedTip(TipIntent $intent, array $verification): array
@@ -293,6 +329,33 @@ class SorobanTipRouterService
         }
 
         return round($grossYlx * ($rate / 100), 7);
+    }
+
+    private function normalizeTxHash(string $txHash): string
+    {
+        $txHash = strtolower(trim($txHash));
+
+        if (!preg_match('/^[a-f0-9]{64}$/', $txHash)) {
+            throw new InvalidArgumentException('Invalid transaction hash.');
+        }
+
+        return $txHash;
+    }
+
+    private function assertTxHashIsUsableForIntent(TipIntent $intent, string $txHash): void
+    {
+        if ($intent->tx_hash && !hash_equals(strtolower((string) $intent->tx_hash), $txHash)) {
+            throw new InvalidArgumentException('A different Soroban transaction hash is already submitted for this tip intent.');
+        }
+
+        $usedByAnotherIntent = TipIntent::query()
+            ->whereRaw('LOWER(tx_hash) = ?', [$txHash])
+            ->where('id', '!=', $intent->id)
+            ->exists();
+
+        if ($usedByAnotherIntent) {
+            throw new InvalidArgumentException('This Soroban transaction hash is already attached to another tip intent.');
+        }
     }
 
     private function isValidContractId(?string $contractId): bool

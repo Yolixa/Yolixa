@@ -96,4 +96,40 @@ class SorobanTipController extends Controller
             return response()->json(['success' => false, 'message' => 'Could not confirm Soroban tip.'], 500);
         }
     }
+
+    public function submitted(Request $request)
+    {
+        $request->validate([
+            'intent_id' => 'required|integer|exists:tip_intents,id',
+            'tx_hash' => 'required|string|max:120',
+        ]);
+
+        $fan = Auth::user();
+        if (!$fan) {
+            return response()->json(['success' => false, 'message' => 'Wallet authentication session expired.'], 401);
+        }
+
+        try {
+            $result = $this->tips->submitted($fan, (int) $request->intent_id, trim((string) $request->tx_hash));
+            $intent = $result['intent'];
+
+            return response()->json([
+                'success' => true,
+                'intent' => [
+                    'id' => $intent->id,
+                    'status' => $intent->status,
+                    'tx_hash' => $intent->tx_hash,
+                ],
+                'already_confirmed' => (bool) ($result['already_confirmed'] ?? false),
+            ], ($result['already_confirmed'] ?? false) ? 200 : 202);
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (InvalidArgumentException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        } catch (\Throwable $e) {
+            Log::channel('security')->error('Soroban tip submission failed: ' . $e->getMessage());
+
+            return response()->json(['success' => false, 'message' => 'Could not record submitted Soroban tip.'], 500);
+        }
+    }
 }

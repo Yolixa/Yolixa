@@ -21,6 +21,8 @@ class SorobanTransactionVerifierEvidenceTest extends TestCase
 
     private string $creator;
 
+    private string $treasury;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -29,11 +31,13 @@ class SorobanTransactionVerifierEvidenceTest extends TestCase
         $this->token = $this->contractId();
         $this->sender = KeyPair::random()->getAccountId();
         $this->creator = KeyPair::random()->getAccountId();
+        $this->treasury = KeyPair::random()->getAccountId();
 
         config([
             'yolixa.soroban.tip_router_contract_id' => $this->router,
             'yolixa.soroban.xlm_token_contract_id' => $this->token,
             'yolixa.soroban.fee_bps' => 150,
+            'yolixa.platform_public_key' => $this->treasury,
         ]);
     }
 
@@ -131,6 +135,29 @@ class SorobanTransactionVerifierEvidenceTest extends TestCase
         }
     }
 
+    public function test_evidence_rejects_wrong_treasury(): void
+    {
+        $evidence = $this->evidence();
+        $evidence['router_config']['treasury'] = KeyPair::random()->getAccountId();
+
+        $this->assertFalse($this->verifier()->verifyEvidence($this->intent(), $evidence)['success']);
+    }
+
+    public function test_evidence_rejects_missing_expected_treasury(): void
+    {
+        config(['yolixa.platform_public_key' => null]);
+
+        $this->assertFalse($this->verifier()->verifyEvidence($this->intent(), $this->evidence())['success']);
+    }
+
+    public function test_evidence_rejects_missing_router_treasury_proof(): void
+    {
+        $evidence = $this->evidence();
+        unset($evidence['router_config']['treasury']);
+
+        $this->assertFalse($this->verifier()->verifyEvidence($this->intent(), $evidence)['success']);
+    }
+
     private function verifier(): SorobanTransactionVerifier
     {
         return new SorobanTransactionVerifier(Mockery::mock(JsonSorobanRpcClient::class), new XlmAmount);
@@ -178,7 +205,7 @@ class SorobanTransactionVerifierEvidenceTest extends TestCase
             ],
             'router_config' => [
                 'fee_bps' => '150',
-                'treasury' => KeyPair::random()->getAccountId(),
+                'treasury' => $this->treasury,
                 'paused' => false,
                 'xlm_enabled' => true,
             ],

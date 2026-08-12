@@ -43,6 +43,7 @@ Route::prefix('api/tip')->middleware('throttle:tip-api')->group(function() {
 Route::prefix('api/soroban')->middleware('throttle:tip-api')->group(function () {
     Route::get('/config', [SorobanTipController::class, 'config']);
     Route::post('/tip/intent', [SorobanTipController::class, 'intent'])->middleware('auth');
+    Route::post('/tip/submitted', [SorobanTipController::class, 'submitted'])->middleware('auth');
     Route::post('/tip/confirm', [SorobanTipController::class, 'confirm'])->middleware('auth');
 });
 

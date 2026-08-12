@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Models\TipIntent;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Log;
 use Soneso\StellarSDK\AbstractTransaction;
+use Soneso\StellarSDK\Crypto\KeyPair;
 use Soneso\StellarSDK\Crypto\StrKey;
 use Soneso\StellarSDK\InvokeContractHostFunction;
 use Soneso\StellarSDK\InvokeHostFunctionOperation;
@@ -62,10 +64,21 @@ class SorobanTransactionVerifier
 
             return $this->verifyEvidence($intent, $evidence);
         } catch (Throwable $e) {
+            $retryable = $this->isRetryableRpcFailure($e);
+
             Log::channel('security')->warning('Soroban tip verification failed: '.$e->getMessage(), [
                 'intent_id' => $intent->id,
                 'tx_hash' => $txHash,
+                'retryable' => $retryable,
             ]);
+
+            if ($retryable) {
+                return [
+                    'success' => false,
+                    'retryable' => true,
+                    'message' => 'Soroban RPC is temporarily unavailable. Confirmation can be retried safely.',
+                ];
+            }
 
             return ['success' => false, 'message' => 'Could not verify Soroban transaction proof.'];
         }
@@ -79,6 +92,11 @@ class SorobanTransactionVerifier
 
         $expectedRouter = (string) config('yolixa.soroban.tip_router_contract_id');
         $expectedToken = (string) config('yolixa.soroban.xlm_token_contract_id');
+        $expectedTreasury = $this->expectedTreasuryPublicKey();
+        if ($expectedTreasury === null) {
+            return ['success' => false, 'message' => 'Expected Yolixa treasury public address is not configured.'];
+        }
+
         $expectedFee = $this->amounts->splitFee($intent->amount_atomic, (int) config('yolixa.soroban.fee_bps', 150));
         $expected = [
             'router_contract_id' => $expectedRouter,
@@ -98,6 +116,15 @@ class SorobanTransactionVerifier
 
         if ((string) $intent->token_contract_id !== $expectedToken) {
             return ['success' => false, 'message' => 'Tip intent token is not the configured XLM SAC.'];
+        }
+
+        $routerTreasury = $evidence['router_config']['treasury'] ?? null;
+        if (!$this->isValidPublicKey($routerTreasury)) {
+            return ['success' => false, 'message' => 'Router treasury proof was not found.'];
+        }
+
+        if ($routerTreasury !== $expectedTreasury) {
+            return ['success' => false, 'message' => 'Router treasury does not match Yolixa config.'];
         }
 
         if (($evidence['tip_exists'] ?? null) !== true) {
@@ -180,6 +207,81 @@ class SorobanTransactionVerifier
             'tip_exists' => true,
             'router_config' => $evidence['router_config'] ?? [],
         ];
+    }
+
+    private function isRetryableRpcFailure(Throwable $e): bool
+    {
+        if ($e instanceof ConnectionException) {
+            return true;
+        }
+
+        if ($e instanceof SorobanRpcException) {
+            return $e->retryable();
+        }
+
+        $code = (int) $e->getCode();
+        if ($code === 429 || ($code >= 500 && $code <= 599)) {
+            return true;
+        }
+
+        $message = strtolower($e->getMessage());
+        foreach ([
+            'timed out',
+            'timeout',
+            'connection refused',
+            'connection reset',
+            'connection aborted',
+            'could not connect',
+            'failed to connect',
+            'could not resolve host',
+            'temporary failure',
+            'temporarily unavailable',
+            'service unavailable',
+            'too many requests',
+            'rate limit',
+            'http 429',
+            'http 500',
+            'http 502',
+            'http 503',
+            'http 504',
+            'rpc is unavailable',
+            'rpc unavailable',
+            'curl error 6',
+            'curl error 7',
+            'curl error 28',
+            'simulation request failed',
+            'simulate transaction request failed',
+            'read simulation failed',
+            'read-only simulation failed',
+        ] as $retryableNeedle) {
+            if (str_contains($message, $retryableNeedle)) {
+                return true;
+            }
+        }
+
+        return $e->getPrevious() ? $this->isRetryableRpcFailure($e->getPrevious()) : false;
+    }
+
+    private function expectedTreasuryPublicKey(): ?string
+    {
+        $treasury = (string) config('yolixa.platform_public_key', '');
+
+        return $this->isValidPublicKey($treasury) ? $treasury : null;
+    }
+
+    private function isValidPublicKey(mixed $publicKey): bool
+    {
+        if (!is_string($publicKey) || !str_starts_with($publicKey, 'G') || strlen($publicKey) !== 56) {
+            return false;
+        }
+
+        try {
+            KeyPair::fromAccountId($publicKey);
+
+            return true;
+        } catch (Throwable) {
+            return false;
+        }
     }
 
     private function readRouterEvidence(TipIntent $intent): array

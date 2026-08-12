@@ -221,6 +221,16 @@ export async function sendSorobanTip({ amount, receiverId, receiver, csrf, onPro
         }
 
         const txHash = sent.hash;
+        if (!txHash) {
+            throw new Error('Soroban RPC accepted the transaction without returning a hash.');
+        }
+
+        onProgress?.('Recording submitted transaction...');
+        await postJson('/api/soroban/tip/submitted', {
+            intent_id: intent.intent_id,
+            tx_hash: txHash,
+        }, csrf);
+
         await waitForFinalTransaction(server, txHash, onProgress);
 
         onProgress?.('Recording proof...');
