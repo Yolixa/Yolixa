@@ -204,8 +204,9 @@ class SorobanTipRouterService
         $this->assertConfigured();
 
         $txHash = $this->normalizeTxHash($txHash);
+        $expired = false;
 
-        return DB::transaction(function () use ($fan, $intentId, $txHash) {
+        $result = DB::transaction(function () use ($fan, $intentId, $txHash, &$expired) {
             $intent = TipIntent::query()->lockForUpdate()->findOrFail($intentId);
 
             if ($intent->sender_wallet !== $fan->public_key) {
@@ -225,7 +226,14 @@ class SorobanTipRouterService
 
             if (!$intent->tx_hash && $intent->expires_at && $intent->expires_at->isPast()) {
                 $intent->update(['status' => 'expired', 'failure_reason' => 'Intent expired before submission.']);
-                throw new InvalidArgumentException('This tip intent expired. Please start a new Soroban tip.');
+                $expired = true;
+
+                return [
+                    'success' => false,
+                    'intent' => $intent->refresh(),
+                    'expired' => true,
+                    'submitted' => false,
+                ];
             }
 
             if (!$intent->tx_hash) {
@@ -243,6 +251,12 @@ class SorobanTipRouterService
                 'submitted' => true,
             ];
         });
+
+        if ($expired) {
+            throw new InvalidArgumentException('This tip intent expired. Please start a new Soroban tip.');
+        }
+
+        return $result;
     }
 
     private function recordConfirmedTip(TipIntent $intent, array $verification): array

@@ -150,6 +150,28 @@ class SorobanTipIntentTest extends TestCase
         ])->assertStatus(422);
     }
 
+    public function test_soroban_intent_rejects_malformed_amounts_and_configured_limits(): void
+    {
+        config([
+            'yolixa.min_payment_amount' => '1',
+            'yolixa.max_payment_amount' => '2',
+        ]);
+
+        $fan = $this->fan();
+        $creator = $this->creator();
+
+        foreach (['abc', '-1', '0.9999999', '2.0000001'] as $amount) {
+            $this->actingAs($fan)->postJson('/api/soroban/tip/intent', [
+                'receiver_id' => $creator->id,
+                'amount' => $amount,
+                'asset' => 'XLM',
+                'sender' => $fan->public_key,
+            ])->assertStatus(422);
+        }
+
+        $this->assertCount(0, TipIntent::all());
+    }
+
     public function test_classic_endpoint_is_only_available_in_classic_mode(): void
     {
         $this->postJson('/api/tip/build-xdr', [])->assertStatus(409);

@@ -1,64 +1,114 @@
 # SCF V2 Phase 2 Evidence
 
-Date: 2026-08-12
+Last updated: 2026-08-27
+
+This document separates implemented repository evidence from public Testnet evidence. Do not fill in contract IDs, addresses, transaction hashes, ledgers, creator names, or usage claims unless they come from a real deployment or a real browser wallet run.
 
 ## Scope
 
-Phase 2 integrates the Phase 1 `YolixaTipRouter` Soroban contract into the Laravel tipping flow. The intended on-chain path is:
+Phase 2 integrates the `YolixaTipRouter` Soroban contract into the Laravel creator tipping flow on Stellar Testnet.
 
 ```text
-fan -> YolixaTipRouter -> creator net payout + Yolixa treasury platform fee
+Fan wallet
+    |
+    | authorizes Soroban invocation
+    v
+YolixaTipRouter
+    |
+    +----> Creator: net payout
+    |
+    +----> Yolixa treasury: platform fee
 ```
 
-The router does not custody funds; it transfers the creator payout and platform fee atomically during the fan-authorized contract invocation.
+The router is non-custodial. Yolixa does not hold fan funds and does not use a platform signer for fan payments.
 
-## Public Deployment Evidence
+## Implemented Repository Evidence
 
-Status: partially hardened locally; deployment remains blocked in this local workspace.
+- Contract source: `soroban/contracts/tip_router/src/lib.rs`
+- Contract tests: `soroban/contracts/tip_router/src/test.rs`
+- Laravel intent and confirmation service: `app/Services/SorobanTipRouterService.php`
+- On-chain evidence verifier: `app/Services/SorobanTransactionVerifier.php`
+- Freighter/Rabet transaction client: `resources/js/soroban-tip.js`
+- Application tests: `tests/Feature/*Soroban*`, `tests/Feature/WalletAuthenticationTest.php`, and Soroban verifier unit tests
+- CI: `.github/workflows/soroban-ci.yml`
 
-- Network: Stellar Testnet
-- Router contract ID: not available
-- Native XLM SAC contract ID: `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC`
-- Admin public address: not available
-- Treasury public address: not available
-- Fee BPS: expected `150`, not verified on-chain
-- Paused status: not verified on-chain
-- XLM allowlist status: not verified on-chain
+Current local toolchain observed in this workspace:
 
-Local blockers:
+```text
+PHP: 8.2.28
+Node: 18.8.0 locally; GitHub Actions uses Node 22 and package.json requires Node 22+
+npm: 8.18.0
+Cargo: 1.97.1
+Stellar CLI: 27.1.0
+```
 
-- `stellar` CLI is not installed on PATH.
-- `rustc` and `cargo` are not installed on PATH.
-- `winget` is present but inaccessible: `The file cannot be accessed by the system`.
-- This Codex session cannot manually approve Freighter browser prompts.
-- No funded local Testnet identities were available in the workspace for deployment or smoke testing.
+Use Node 22+ for reproducible local frontend work even though this workspace's existing Node 18 installation can currently build the bundle.
 
-No deployment, initialization, smoke-test, or Freighter evidence is fabricated.
+## Current Public Testnet Evidence
 
-The native XLM SAC address above was derived deterministically with the current Stellar JS SDK:
+Status: `MANUAL ACTION REQUIRED`
+
+No real public router deployment, initialization transaction, smoke-test tip transaction, ledger number, or browser wallet E2E evidence is recorded yet.
+
+Known public value derived from the Stellar Asset Contract ID algorithm:
+
+- Native Testnet XLM SAC ID: `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC`
+
+Validated command:
 
 ```bash
-npx -y node@22 -e "import { Asset, Networks } from '@stellar/stellar-sdk'; console.log(Asset.native().contractId(Networks.TESTNET));"
+stellar contract id asset --rpc-url https://soroban-testnet.stellar.org --network-passphrase "Test SDF Network ; September 2015" --asset native
 ```
 
-The Stellar CLI cross-check command remains:
+Local deployment blockers in this workspace:
+
+- `stellar keys ls` returned no configured identities.
+- No funded Testnet admin, treasury, fan, or creator identities were available locally.
+- This Codex session cannot approve Freighter or Rabet browser prompts.
+
+## Current Stellar CLI Syntax References
+
+The commands below were checked against local Stellar CLI 27.1.0 help and the current Stellar CLI documentation.
+
+- Stellar CLI manual: https://developers.stellar.org/docs/tools/cli/stellar-cli
+- Stellar Asset Contract deployment/id docs: https://developers.stellar.org/docs/tools/cli/cookbook/deploy-stellar-asset-contract
+
+## Browser Wallet API Notes
+
+Rabet is current MVP scope. The browser code expects modern Rabet behavior:
+
+- `rabet.connect()` returns the active public key as `publicKey`, `address`, or a string response.
+- `rabet.signMessage(challenge)` is required for wallet ownership authentication.
+- `rabet.getNetwork()` is required so Yolixa can reject non-Testnet wallets before authentication or tip signing.
+- `rabet.sign(preparedTransactionXdr, 'testnet')` returns the signed XDR as `xdr` or another normalized signed-XDR field.
+
+Older Rabet versions without these APIs receive user-facing upgrade errors. Yolixa never requests or handles a Rabet private key.
+
+## Reproducible Testnet Deployment Runbook
+
+Use a clean terminal. Do not commit secrets, seed phrases, private keys, or local CLI config.
+
+### 1. Check Tooling
 
 ```bash
-stellar contract id asset --network testnet --asset native
+stellar version
+rustc --version
+cargo --version
+node --version
+npm --version
+php -v
+composer --version
 ```
 
-## Commands To Run After Tooling Is Available
-
-Check current CLI syntax before running state-changing commands:
+Optional explicit network alias:
 
 ```bash
-stellar --help
-stellar contract --help
-stellar contract invoke --help
-stellar contract id asset --help
+stellar network add yolixa-testnet \
+  --rpc-url https://soroban-testnet.stellar.org \
+  --network-passphrase "Test SDF Network ; September 2015"
 ```
 
-Contract validation and build:
+### 2. Build and Verify the Contract
 
 ```bash
 cd soroban
@@ -68,139 +118,310 @@ cargo test --workspace --locked
 stellar contract build --package yolixa-tip-router --locked
 ```
 
-Derive native XLM SAC:
+Expected WASM path:
+
+```text
+soroban/target/wasm32v1-none/release/yolixa_tip_router.wasm
+```
+
+### 3. Create Separate Testnet Identities
+
+Use separate identities for admin, treasury, fan, and creator.
 
 ```bash
-stellar contract id asset --network testnet --asset native
+stellar keys generate yolixa-admin \
+  --fund \
+  --rpc-url https://soroban-testnet.stellar.org \
+  --network-passphrase "Test SDF Network ; September 2015"
+
+stellar keys generate yolixa-treasury \
+  --fund \
+  --rpc-url https://soroban-testnet.stellar.org \
+  --network-passphrase "Test SDF Network ; September 2015"
+
+stellar keys generate yolixa-smoke-fan \
+  --fund \
+  --rpc-url https://soroban-testnet.stellar.org \
+  --network-passphrase "Test SDF Network ; September 2015"
+
+stellar keys generate yolixa-smoke-creator \
+  --fund \
+  --rpc-url https://soroban-testnet.stellar.org \
+  --network-passphrase "Test SDF Network ; September 2015"
 ```
 
-Deployment command: pending exact current CLI syntax from `stellar contract deploy --help`.
+Record public addresses only:
 
-Initialization command: pending exact current CLI syntax from `stellar contract invoke --help`.
-
-Set-token command: pending exact current CLI syntax from `stellar contract invoke --help`.
-
-Read checks required after initialization:
-
-```text
-get_admin()
-get_treasury()
-get_fee_bps()
-is_paused()
-is_token_enabled(real_xlm_sac)
+```bash
+stellar keys public-key yolixa-admin
+stellar keys public-key yolixa-treasury
+stellar keys public-key yolixa-smoke-fan
+stellar keys public-key yolixa-smoke-creator
 ```
 
-## CLI Smoke Test Evidence
+### 4. Deploy `YolixaTipRouter`
 
-Status: not completed.
+```bash
+ROUTER_ID=$(stellar contract deploy \
+  --wasm target/wasm32v1-none/release/yolixa_tip_router.wasm \
+  --source-account yolixa-admin \
+  --rpc-url https://soroban-testnet.stellar.org \
+  --network-passphrase "Test SDF Network ; September 2015" \
+  --alias yolixa-tip-router-testnet)
 
-Required public values after completion:
+echo "$ROUTER_ID"
+```
 
-- Transaction hash: not available
-- Ledger: not available
-- Sender public address: not available
-- Creator public address: not available
-- Treasury public address: not available
-- Router contract ID: not available
-- Native XLM SAC ID: not available
-- Tip ID: not available
-- `tip_exists(sender, tip_id)`: not available
-- `get_tip(sender, tip_id)`: not available
-- `get_creator_stats(creator)`: not available
+If your shell does not support command substitution, run the deploy command and copy the returned public C-address into `ROUTER_ID`.
 
-For a 1 XLM tip at 150 BPS, the expected split is `150000` stroops platform fee and `9850000` stroops creator payout, but final evidence must come from the deployed contract result.
+### 5. Initialize the Router
 
-## Browser/Freighter Evidence
+```bash
+TREASURY_ADDRESS=$(stellar keys public-key yolixa-treasury)
 
-Status: not completed.
+stellar contract invoke \
+  --id "$ROUTER_ID" \
+  --source-account yolixa-admin \
+  --rpc-url https://soroban-testnet.stellar.org \
+  --network-passphrase "Test SDF Network ; September 2015" \
+  -- initialize \
+  --admin yolixa-admin \
+  --treasury "$TREASURY_ADDRESS" \
+  --fee_bps 150
+```
 
-Manual Freighter approval is required. Required public values after completion:
+Record the transaction hash and ledger from the command output or with `stellar tx fetch`.
 
-- Browser/Freighter tx hash: not available
-- Laravel `TipIntent` status: not available
-- Exactly-one `tips` row proof: not available
-- Idempotent retry proof for `/api/soroban/tip/confirm`: not available
+### 6. Derive and Enable Native XLM SAC
 
-## Automated Test Results
+```bash
+XLM_SAC_ID=$(stellar contract id asset \
+  --rpc-url https://soroban-testnet.stellar.org \
+  --network-passphrase "Test SDF Network ; September 2015" \
+  --asset native)
 
-Local results from this workspace:
+echo "$XLM_SAC_ID"
+```
 
-```text
+```bash
+stellar contract invoke \
+  --id "$ROUTER_ID" \
+  --source-account yolixa-admin \
+  --rpc-url https://soroban-testnet.stellar.org \
+  --network-passphrase "Test SDF Network ; September 2015" \
+  -- set_token \
+  --admin yolixa-admin \
+  --token "$XLM_SAC_ID" \
+  --enabled true
+```
+
+### 7. Query Router Configuration
+
+Use `--send no` for read-only simulation.
+
+```bash
+stellar contract invoke --send no --id "$ROUTER_ID" --source-account yolixa-admin --rpc-url https://soroban-testnet.stellar.org --network-passphrase "Test SDF Network ; September 2015" -- get_admin
+stellar contract invoke --send no --id "$ROUTER_ID" --source-account yolixa-admin --rpc-url https://soroban-testnet.stellar.org --network-passphrase "Test SDF Network ; September 2015" -- get_treasury
+stellar contract invoke --send no --id "$ROUTER_ID" --source-account yolixa-admin --rpc-url https://soroban-testnet.stellar.org --network-passphrase "Test SDF Network ; September 2015" -- get_fee_bps
+stellar contract invoke --send no --id "$ROUTER_ID" --source-account yolixa-admin --rpc-url https://soroban-testnet.stellar.org --network-passphrase "Test SDF Network ; September 2015" -- is_paused
+stellar contract invoke --send no --id "$ROUTER_ID" --source-account yolixa-admin --rpc-url https://soroban-testnet.stellar.org --network-passphrase "Test SDF Network ; September 2015" -- is_token_enabled --token "$XLM_SAC_ID"
+```
+
+Expected values:
+
+- `get_admin`: admin public G-address
+- `get_treasury`: treasury public G-address
+- `get_fee_bps`: `150`
+- `is_paused`: `false`
+- `is_token_enabled`: `true`
+
+### 8. CLI Smoke-Test Tip
+
+Use a unique `tip_id` for each smoke test. Amounts are in stroops for XLM SAC calls.
+
+```bash
+FAN_ADDRESS=$(stellar keys public-key yolixa-smoke-fan)
+CREATOR_ADDRESS=$(stellar keys public-key yolixa-smoke-creator)
+TIP_ID=$(date +%s)
+
+stellar contract invoke \
+  --id "$ROUTER_ID" \
+  --source-account yolixa-smoke-fan \
+  --rpc-url https://soroban-testnet.stellar.org \
+  --network-passphrase "Test SDF Network ; September 2015" \
+  -- tip \
+  --sender "$FAN_ADDRESS" \
+  --creator "$CREATOR_ADDRESS" \
+  --token "$XLM_SAC_ID" \
+  --amount 10000000 \
+  --tip_id "$TIP_ID"
+```
+
+For a 1 XLM tip at 150 BPS, expected contract split:
+
+- Gross: `10000000` stroops / `1.0000000` XLM
+- Platform fee: `150000` stroops / `0.0150000` XLM
+- Creator payout: `9850000` stroops / `0.9850000` XLM
+
+### 9. Query Smoke-Test Receipt and Stats
+
+```bash
+stellar contract invoke --send no --id "$ROUTER_ID" --source-account yolixa-admin --rpc-url https://soroban-testnet.stellar.org --network-passphrase "Test SDF Network ; September 2015" -- tip_exists --sender "$FAN_ADDRESS" --tip_id "$TIP_ID"
+stellar contract invoke --send no --id "$ROUTER_ID" --source-account yolixa-admin --rpc-url https://soroban-testnet.stellar.org --network-passphrase "Test SDF Network ; September 2015" -- get_tip --sender "$FAN_ADDRESS" --tip_id "$TIP_ID"
+stellar contract invoke --send no --id "$ROUTER_ID" --source-account yolixa-admin --rpc-url https://soroban-testnet.stellar.org --network-passphrase "Test SDF Network ; September 2015" -- get_creator_stats --creator "$CREATOR_ADDRESS"
+```
+
+Fetch transaction details for public evidence:
+
+```bash
+stellar tx fetch --hash "<SMOKE_TEST_TX_HASH>" --output json-formatted --rpc-url https://soroban-testnet.stellar.org --network-passphrase "Test SDF Network ; September 2015"
+stellar tx fetch events --hash "<SMOKE_TEST_TX_HASH>" --output json-formatted --rpc-url https://soroban-testnet.stellar.org --network-passphrase "Test SDF Network ; September 2015"
+```
+
+## Laravel Environment After Deployment
+
+Set these in local `.env` or deployment secrets:
+
+```env
+YOLIXA_NETWORK=testnet
+YOLIXA_TIP_EXECUTION_MODE=soroban
+YOLIXA_PLATFORM_WALLET_PUBLIC=<TREASURY_PUBLIC_G_ADDRESS>
+SOROBAN_ENABLED=true
+SOROBAN_RPC_URL=https://soroban-testnet.stellar.org
+SOROBAN_TIP_ROUTER_CONTRACT_ID=<ROUTER_ID>
+SOROBAN_XLM_TOKEN_CONTRACT_ID=<XLM_SAC_ID>
+SOROBAN_TIP_ROUTER_FEE_BPS=150
+SOROBAN_VERIFIER_SOURCE_ACCOUNT=<FUNDED_PUBLIC_G_ADDRESS>
+```
+
+Run:
+
+```bash
+php artisan config:clear
+php artisan migrate:fresh --seed
+npm run build
 php artisan test
-Tests: 50 passed (165 assertions)
-Duration: 3.16s
 ```
 
-Generated bindings:
+## Browser Wallet E2E Checklist
 
-```text
-packages/yolixa-tip-router/
-```
+Status: `MANUAL ACTION REQUIRED`
 
-Generated with:
+1. Use a funded Testnet creator wallet.
+2. Use a different funded Testnet fan wallet.
+3. Authenticate the fan using the Yolixa wallet challenge.
+4. Open the creator referral/profile page.
+5. Enter an XLM tip.
+6. Create a server-side `TipIntent`.
+7. Build the Soroban transaction in the browser.
+8. Approve the transaction in Freighter or Rabet.
+9. Submit it to Stellar Testnet.
+10. Persist the tx hash against the intent with `/api/soroban/tip/submitted`.
+11. Verify final successful transaction status through RPC.
+12. Verify the invocation targets the configured `YolixaTipRouter`.
+13. Verify sender, creator, XLM SAC, amount, and `contract_tip_id`.
+14. Verify router receipt with `get_tip`.
+15. Verify creator stats with `get_creator_stats`.
+16. Mark the intent confirmed through `/api/soroban/tip/confirm`.
+17. Confirm exactly one `tips` DB row exists for the intent.
+18. Retry confirmation and prove it does not create another payment or `tips` row.
+
+For a 1 XLM tip at 150 BPS, expected application-level split:
+
+- Gross: `1.0000000` XLM
+- Platform fee: `0.0150000` XLM
+- Creator payout: `0.9850000` XLM
+
+Actual final evidence must come from the real on-chain transaction.
+
+## Wallet Test Matrix
+
+Do not mark either wallet `VERIFIED` until a real Testnet browser run is completed and recorded.
+
+| Capability | Freighter | Rabet |
+| --- | --- | --- |
+| Connect | Required; code path present; browser proof pending | Required; code path present; browser proof pending |
+| Wallet ownership auth | Required; automated backend coverage; browser proof pending | Required; automated backend coverage for SEP-53-style signature; browser proof pending |
+| Testnet validation | Required before signing | Required before signing; Rabet 1.8.0+ `getNetwork()` required |
+| Soroban XLM tip signing | Required; code path present; browser proof pending | Required; code path present through `rabet.sign(xdr, testnet)`; browser proof pending |
+| Wrong account rejection | Required; code path present | Required; code path present |
+| Self-tip rejection | Required; backend/UI/contract coverage | Required; backend/UI/contract coverage |
+| User-rejected signature handling | Required; code path present | Required; code path present |
+| Successful Testnet transaction | MANUAL ACTION REQUIRED | MANUAL ACTION REQUIRED |
+| Backend on-chain verification | Required; automated service coverage; browser proof pending | Required; automated service coverage; browser proof pending |
+| Idempotent confirmation | Required; automated coverage; browser proof pending | Required; automated coverage; browser proof pending |
+
+## Public Deployment Evidence Template
+
+Fill this only after a real deployment.
+
+| Field | Value |
+| --- | --- |
+| Network | Stellar Testnet |
+| Router contract ID | `MANUAL ACTION REQUIRED` |
+| XLM SAC ID | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
+| Admin public address | `MANUAL ACTION REQUIRED` |
+| Treasury public address | `MANUAL ACTION REQUIRED` |
+| Router WASM hash | `51e6fb33206894428e67afc01691e47823fd9867b35bbea935dc9edee8759d32` |
+| Deploy transaction hash | `MANUAL ACTION REQUIRED` |
+| Deploy ledger | `MANUAL ACTION REQUIRED` |
+| Initialize transaction hash | `MANUAL ACTION REQUIRED` |
+| Initialize ledger | `MANUAL ACTION REQUIRED` |
+| Set-token transaction hash | `MANUAL ACTION REQUIRED` |
+| Set-token ledger | `MANUAL ACTION REQUIRED` |
+| Smoke-test tip ID | `MANUAL ACTION REQUIRED` |
+| Smoke-test transaction hash | `MANUAL ACTION REQUIRED` |
+| Smoke-test ledger | `MANUAL ACTION REQUIRED` |
+| `get_admin` result | `MANUAL ACTION REQUIRED` |
+| `get_treasury` result | `MANUAL ACTION REQUIRED` |
+| `get_fee_bps` result | `MANUAL ACTION REQUIRED` |
+| `is_paused` result | `MANUAL ACTION REQUIRED` |
+| `is_token_enabled(XLM)` result | `MANUAL ACTION REQUIRED` |
+| `tip_exists` result | `MANUAL ACTION REQUIRED` |
+| `get_tip` result | `MANUAL ACTION REQUIRED` |
+| `get_creator_stats` result | `MANUAL ACTION REQUIRED` |
+
+## Browser Wallet E2E Evidence Template
+
+Fill this only after a real browser run.
+
+| Field | Value |
+| --- | --- |
+| Test date | `MANUAL ACTION REQUIRED` |
+| App URL | `MANUAL ACTION REQUIRED` |
+| Creator public address | `MANUAL ACTION REQUIRED` |
+| Fan public address | `MANUAL ACTION REQUIRED` |
+| TipIntent ID | `MANUAL ACTION REQUIRED` |
+| Contract tip ID | `MANUAL ACTION REQUIRED` |
+| Amount | `MANUAL ACTION REQUIRED` |
+| Wallet used | `MANUAL ACTION REQUIRED` |
+| Wallet network | `MANUAL ACTION REQUIRED` |
+| Browser transaction hash | `MANUAL ACTION REQUIRED` |
+| Ledger | `MANUAL ACTION REQUIRED` |
+| Router contract ID verified | `MANUAL ACTION REQUIRED` |
+| XLM SAC ID verified | `MANUAL ACTION REQUIRED` |
+| Sender/creator/amount/tip ID verified | `MANUAL ACTION REQUIRED` |
+| Router receipt verified | `MANUAL ACTION REQUIRED` |
+| Creator stats verified | `MANUAL ACTION REQUIRED` |
+| TipIntent confirmed at | `MANUAL ACTION REQUIRED` |
+| Tip DB row count for intent | `MANUAL ACTION REQUIRED` |
+| Idempotent retry result | `MANUAL ACTION REQUIRED` |
+
+## Automated Test Commands
+
+CI-relevant commands:
 
 ```bash
-npx -y node@22 node_modules/@stellar/stellar-sdk/bin/stellar-js generate --wasm soroban/target/wasm32v1-none/release/yolixa_tip_router.wasm --output-dir packages/yolixa-tip-router --contract-name yolixa-tip-router --overwrite
-```
+composer install --no-interaction --prefer-dist --no-progress
+npm ci
+npm run build
+php artisan test
 
-Frontend build:
-
-```text
-npx -y node@22 "$(npm root -g)/npm/bin/npm-cli.js" run build
-success, 261 modules transformed, built in 4.93s
-```
-
-Dependency validation:
-
-```text
-composer install
-failed: soneso/stellar-php-sdk 1.12.0 requires ext-gmp, which is missing locally.
-```
-
-```text
-npx -y node@22 "$(npm root -g)/npm/bin/npm-cli.js" ci
-success, 271 packages installed/audited.
-```
-
-Local Rust/Soroban validation:
-
-```text
+cd soroban
 cargo fmt --check
-failed: cargo is not installed on PATH.
-
 cargo clippy --workspace --all-targets --locked -- -D warnings
-failed: cargo is not installed on PATH.
-
 cargo test --workspace --locked
-failed: cargo is not installed on PATH.
-
 stellar contract build --package yolixa-tip-router --locked
-failed: stellar is not installed on PATH.
 ```
 
-## Verification Architecture
-
-The backend verifier proves:
-
-- RPC transaction status is final `SUCCESS`.
-- The transaction envelope invokes the configured router.
-- The function is `tip`.
-- Sender, creator, configured XLM SAC token, amount, and contract tip ID match the server-created `TipIntent`.
-- Read-only router calls prove `tip_exists`, `get_tip`, `get_creator_stats`, `get_fee_bps`, `get_treasury`, `is_paused`, and `is_token_enabled`.
-- Current event metadata is parsed when present, but storage-key reconstruction from `getTxChangesAfter()` is not required.
-
-## Replay And Idempotency
-
-The contract replay key is `sender + contract_tip_id`. The Laravel confirmation path stores a submitted intent safely, treats pending/not-found transaction states as retryable, and records one `tips` row per `TipIntent`.
-
-## No Automatic Fallback
-
-After a Soroban transaction is submitted, Yolixa does not create a classic payment for timeout, unknown, pending, not-found, or temporary RPC states. Classic mode is only available when selected before transaction construction.
-
-## Phase 3 Candidates
-
-- Production deployment automation and hosted observability.
-- Mainnet readiness gates.
-- Additional Stellar assets after explicit allowlisting.
-- Creator analytics and export.
-- Moderation/admin tooling.
+Latest exact local test results are reported in the final implementation report for this SCF readiness pass.

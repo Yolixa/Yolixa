@@ -251,8 +251,8 @@
 
         try {
             if (tipExecutionMode === 'soroban') {
-                if (connectedWallet !== 'freighter') {
-                    throw new Error('Phase 2 Soroban tipping supports Freighter only.');
+                if (!['freighter', 'rabet'].includes(connectedWallet)) {
+                    throw new Error('Soroban tipping supports Freighter and Rabet wallets.');
                 }
 
                 if (!window.YolixaSorobanTip?.sendTip) {
@@ -264,6 +264,7 @@
                     receiver,
                     receiverId,
                     csrf: '{{ csrf_token() }}',
+                    walletType: connectedWallet,
                     onProgress: (status) => { btn.innerText = status; },
                 });
 

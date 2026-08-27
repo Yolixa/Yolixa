@@ -95,6 +95,70 @@ class SorobanTipConfirmationTest extends TestCase
         $this->assertSame('pending', $intent->status);
     }
 
+    public function test_submission_rejects_malformed_transaction_hash(): void
+    {
+        [$fan, , $intent] = $this->intent();
+
+        $this->actingAs($fan)->postJson('/api/soroban/tip/submitted', [
+            'intent_id' => $intent->id,
+            'tx_hash' => 'not-a-valid-stellar-transaction-hash',
+        ])->assertStatus(422);
+
+        $this->assertNull($intent->refresh()->tx_hash);
+        $this->assertSame('pending', $intent->status);
+        $this->assertCount(0, Tip::all());
+    }
+
+    public function test_submission_rejects_expired_pending_intent(): void
+    {
+        [$fan, , $intent] = $this->intent();
+        $intent->update(['expires_at' => now()->subSecond()]);
+
+        $response = $this->actingAs($fan)->postJson('/api/soroban/tip/submitted', [
+            'intent_id' => $intent->id,
+            'tx_hash' => str_repeat('a', 64),
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('message', 'This tip intent expired. Please start a new Soroban tip.');
+
+        $this->assertNull($intent->refresh()->tx_hash);
+        $this->assertSame('expired', $intent->status);
+        $this->assertCount(0, Tip::all());
+    }
+
+    public function test_same_transaction_hash_cannot_belong_to_multiple_intents(): void
+    {
+        [$fan, $creator, $intent] = $this->intent();
+        $secondIntent = TipIntent::create([
+            'sender_wallet' => $fan->public_key,
+            'receiver_id' => $creator->id,
+            'receiver_wallet' => $creator->public_key,
+            'asset' => 'XLM',
+            'token_contract_id' => $this->token,
+            'amount' => '2.0000000',
+            'amount_atomic' => '20000000',
+            'contract_tip_id' => 43,
+            'status' => 'pending',
+            'expires_at' => now()->addMinutes(30),
+        ]);
+        $hash = str_repeat('a', 64);
+
+        $this->actingAs($fan)->postJson('/api/soroban/tip/submitted', [
+            'intent_id' => $intent->id,
+            'tx_hash' => $hash,
+        ])->assertStatus(202);
+
+        $this->actingAs($fan)->postJson('/api/soroban/tip/submitted', [
+            'intent_id' => $secondIntent->id,
+            'tx_hash' => $hash,
+        ])->assertStatus(422);
+
+        $this->assertNull($secondIntent->refresh()->tx_hash);
+        $this->assertSame('pending', $secondIntent->status);
+        $this->assertCount(0, Tip::all());
+    }
+
     public function test_submission_does_not_mutate_confirmed_intent_or_create_tip(): void
     {
         [$fan, , $intent] = $this->intent();

@@ -1,40 +1,26 @@
 # yolixa-tip-router Contract Bindings
 
-TypeScript bindings for the yolixa-tip-router Stellar smart contract.
+Generated TypeScript bindings for the `YolixaTipRouter` Soroban contract.
 
-## Installation
+The Laravel frontend imports this package from `resources/js/soroban-tip.js` to build the browser wallet-signed `tip(sender, creator, token, amount, tip_id)` invocation for Freighter or Rabet. Rabet is current MVP scope; real Testnet browser validation evidence remains pending until a wallet run is recorded.
+
+## Build
+
+From this package directory:
 
 ```bash
 npm install
+npm run build
 ```
 
-## Build
+The root application build runs through Vite:
 
 ```bash
 npm run build
 ```
 
-## Usage
+## Notes
 
-```typescript
-import { Client } from "./src";
-
-const client = new Client({
-  contractId: "YOUR_CONTRACT_ID",
-  rpcUrl: "https://soroban-testnet.stellar.org:443",
-  networkPassphrase: "Test SDF Network ; September 2015",
-});
-
-// Call contract methods
-// const result = await client.methodName();
-```
-
-## Generated Files
-
-- `src/index.ts` - Entry point exporting the Client
-- `src/types.ts` - Type definitions for contract structs, enums, and unions
-- `src/client.ts` - Client implementation
-- `tsconfig.json` - TypeScript configuration
-- `package.json` - NPM package configuration
-
-This package was generated using the Js-Stellar-SDK contract binding generator.
+- These bindings do not contain contract IDs, secret keys, or deployment proof.
+- Configure the deployed router and XLM SAC IDs through `.env`.
+- Current product integration uses standard XLM tips. Contract-level `tip_split` support is generated here but product-level split tipping remains future scope until application integration is completed.

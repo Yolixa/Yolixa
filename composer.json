@@ -1,10 +1,10 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "yolixa/yolixa",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
-    "license": "MIT",
+    "description": "Non-custodial creator tipping and payment routing on Stellar, powered by Soroban.",
+    "keywords": ["stellar", "soroban", "creator-economy", "payments", "micropayments", "laravel", "rust", "web3"],
+    "license": "proprietary",
     "require": {
         "php": "^8.2",
         "laravel/framework": "^11.31",

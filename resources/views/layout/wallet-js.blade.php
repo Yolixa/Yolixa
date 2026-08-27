@@ -1,5 +1,6 @@
 <script>
     let currentCsrfToken = "{{ csrf_token() }}";
+    const STELLAR_TESTNET_PASSPHRASE = "Test SDF Network ; September 2015";
 
     document.addEventListener("DOMContentLoaded", function () {
         updateWalletUIStatus();
@@ -337,6 +338,34 @@
             || null;
     }
 
+    function getRabetApi() {
+        return window.rabet || null;
+    }
+
+    async function assertRabetTestnetNetwork() {
+        const rabet = getRabetApi();
+
+        if (typeof rabet?.getNetwork !== "function") {
+            throw new Error("Rabet 1.8.0 or newer is required so Yolixa can verify Stellar Testnet before authentication.");
+        }
+
+        const network = await rabet.getNetwork();
+        if (network?.error) {
+            throw new Error(typeof network.error === 'string' ? network.error : network.error?.message || "Could not read Rabet network.");
+        }
+
+        const walletPassphrase = network?.networkPassphrase || network?.network_passphrase || network?.passphrase;
+        const walletNetwork = String(network?.network || network?.networkName || network?.networkId || '').toLowerCase();
+
+        if (walletPassphrase && walletPassphrase !== STELLAR_TESTNET_PASSPHRASE) {
+            throw new Error("Rabet is on the wrong network. Switch Rabet to Stellar Testnet.");
+        }
+
+        if (!walletPassphrase && walletNetwork && walletNetwork !== "testnet") {
+            throw new Error("Rabet is on the wrong network. Switch Rabet to Stellar Testnet.");
+        }
+    }
+
     async function signFreighterChallenge(challenge, publicKey) {
         const freighter = getFreighterApi();
 
@@ -377,6 +406,42 @@
         }
 
         throw lastError || new Error("Freighter did not return a valid signature.");
+    }
+
+    async function signRabetChallenge(challenge) {
+        const rabet = getRabetApi();
+
+        if (!rabet || typeof rabet.signMessage !== "function") {
+            throw new Error("Rabet 1.8.0 or newer is required for wallet authentication.");
+        }
+
+        const network = (window.config?.YOLIXA_NETWORK || 'testnet').toLowerCase();
+        const attempts = [
+            () => rabet.signMessage(challenge),
+            () => rabet.signMessage(challenge, network),
+        ];
+
+        let lastError = null;
+
+        for (const attempt of attempts) {
+            try {
+                const response = await attempt();
+                if (response?.error) {
+                    throw new Error(typeof response.error === 'string' ? response.error : response.error?.message || 'Rabet rejected the signature request.');
+                }
+
+                return normalizeWalletSignature(response);
+            } catch (error) {
+                lastError = error;
+
+                const message = String(error?.message || error || '').toLowerCase();
+                if (message.includes('reject') || message.includes('declin') || message.includes('denied')) {
+                    throw error;
+                }
+            }
+        }
+
+        throw lastError || new Error("Rabet did not return a valid signature.");
     }
 
     async function connectFreighter() {
@@ -441,15 +506,33 @@
     }
 
     async function connectRabet() {
-        if (typeof window.rabet === "undefined") {
+        const rabet = getRabetApi();
+
+        if (!rabet) {
             toastr.error("Rabet not found.");
             return;
         }
 
         try {
-            const result = await window.rabet.connect();
-            if (result && result.publicKey) {
-                const publicKey = result.publicKey;
+            if (typeof rabet.isUnlocked === "function") {
+                const unlocked = await rabet.isUnlocked();
+                if (unlocked === false) {
+                    throw new Error("Rabet is locked. Unlock Rabet and try again.");
+                }
+            }
+
+            if (typeof rabet.connect !== "function") {
+                throw new Error("This Rabet version does not expose the connection API.");
+            }
+
+            const result = await rabet.connect();
+            if (result?.error) {
+                throw new Error(typeof result.error === 'string' ? result.error : result.error?.message || "Rabet connection was rejected.");
+            }
+
+            const publicKey = result?.publicKey || result?.address || (typeof result === 'string' ? result : null);
+            if (publicKey) {
+                await assertRabetTestnetNetwork();
 
                 // 1. Fetch Challenge
                 const chalRes = await postJsonWithFreshCsrf("/auth/challenge", { address: publicKey });
@@ -459,10 +542,10 @@
                 // 2. Sign Challenge
                 let signature = "";
                 try {
-                    const signRes = await window.rabet.signMessage(chalData.challenge, (window.config?.YOLIXA_NETWORK || 'testnet').toLowerCase());
-                    signature = normalizeWalletSignature(signRes);
+                    signature = await signRabetChallenge(chalData.challenge);
                 } catch (signErr) {
-                    throw new Error("Signature rejected securely by Rabet.");
+                    console.error("Rabet signMessage failed:", signErr);
+                    throw new Error(signErr?.message || "Signature rejected or failed in Rabet.");
                 }
 
                 // 3. Authenticate
@@ -490,10 +573,12 @@
                 }
 
                 handleWalletLoginSuccess(publicKey, 'rabet', data);
+            } else {
+                throw new Error("Rabet did not return an active public key.");
             }
         } catch (error) {
             console.error("Rabet connect error:", error);
-            toastr.error("User denied permission or an error occurred.");
+            toastr.error(error?.message || "User denied permission or an error occurred.");
         }
     }
 

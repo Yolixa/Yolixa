@@ -63,19 +63,20 @@ return [
         ],
     ],
 
-    // YLX prices for supported assets
+    // Experimental YLX conversion values used only by legacy reward-preview code.
+    // Production token distribution is outside the current Testnet MVP.
     'ylx_price' => [
-        'XLM' => env('YOLIXA_YLX_PRICE_XLM', 0.1), // e.g. 1 YLX = 0.1 XLM -> 10 YLX per 1 XLM tip
-        'USDC' => env('YOLIXA_YLX_PRICE_USDC', 0.05), // e.g. 1 YLX = 0.05 USDC -> 20 YLX per 1 USDC tip
+        'XLM' => env('YOLIXA_YLX_PRICE_XLM', 0.1),
+        'USDC' => env('YOLIXA_YLX_PRICE_USDC', 0.05),
     ],
 
-    'supported_tip_assets' => explode(',', env('YOLIXA_SUPPORTED_TIP_ASSETS', 'XLM,USDC')),
-    'ylx_reward_rate_percent' => env('YLX_REWARD_RATE_PERCENT', 1),
+    'supported_tip_assets' => explode(',', env('YOLIXA_SUPPORTED_TIP_ASSETS', 'XLM')),
+    'ylx_reward_rate_percent' => env('YLX_REWARD_RATE_PERCENT', 0),
 
     // Legacy name retained for existing views/services. Prefer platform_public_key in new code.
     'platform_collection_wallet' => env('PLATFORM_COLLECTION_PUBLIC', env('YOLIXA_PLATFORM_WALLET_PUBLIC', env('YOLIXA_PLATFORM_PUBLIC_KEY'))),
 
-    // For Option A: the platform pays out YLX
+    // Legacy/manual reward distribution setting. Leave blank unless explicitly enabling that flow.
     'platform_distribution_seed' => env('PLATFORM_DISTRIBUTION_SECRET', env('ISSUER_SECRET_KEY')),
 
     'ylx_asset' => [

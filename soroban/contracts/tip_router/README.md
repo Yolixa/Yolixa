@@ -1,20 +1,44 @@
 # YolixaTipRouter
 
-`YolixaTipRouter` is Yolixa's Soroban payment execution contract. It routes an authorized fan payment directly through a Stellar Asset Contract token to creators and to the Yolixa treasury for the platform fee.
+`YolixaTipRouter` is Yolixa's primary Soroban payment routing contract. It routes an authorized fan payment through a configured Stellar Asset Contract token to the creator and to the Yolixa treasury in one atomic transaction.
 
-This contract is intentionally separate from the older `tip_registry` contract. The registry remains available as a backward-compatible record-only reference while this router becomes the production-oriented payment layer.
+This contract is separate from the older `tip_registry` reference contract. The current Laravel Phase 2 standard-tip flow uses `YolixaTipRouter`.
 
-## Architecture
+## Status
 
-The router is non-custodial:
+### Contract Implementation
 
-1. The fan invokes `tip` or `tip_split`.
-2. The fan address authorizes the Soroban invocation.
-3. The router calls the configured Stellar Asset Contract token.
-4. The token transfers creator payout directly from the fan to creator recipients.
-5. The token transfers the platform fee directly from the fan to the Yolixa treasury.
+Implemented and tested.
 
-The router never receives or stores user funds.
+### Current Laravel Standard-Tip Integration
+
+Implemented in code for XLM on Stellar Testnet. Laravel creates a server-side `TipIntent`, the browser builds a wallet-approved Soroban invocation for Freighter or Rabet, and the backend verifies the resulting transaction and router receipt before recording a confirmed tip. Real browser validation evidence is still pending.
+
+### `tip_split` Contract
+
+Implemented and tested at contract level.
+
+### Product-Level Split-Tipping Integration
+
+Planned future funded scope unless separate application integration evidence is added. The current product UI/backend flow is standard one-creator tipping.
+
+## Non-Custodial Architecture
+
+```text
+Fan wallet
+    |
+    | authorizes Soroban invocation
+    v
+YolixaTipRouter
+    |
+    +----> Creator: net payout
+    |
+    +----> Yolixa treasury: platform fee
+```
+
+The router never receives or stores user funds. The fan authorizes the `tip` or `tip_split` call, and the router invokes the token contract to transfer funds directly from the fan to the creator recipient(s) and treasury.
+
+No private keys are required by the tipping contract, and no platform-controlled wallet signs fan payments.
 
 ## Initialization
 
@@ -33,14 +57,14 @@ Initialization can run only once. The `admin` must authorize it. The contract st
 
 ## Fee Model
 
-Fees use basis points:
+Fees use deterministic integer basis-point math:
 
 ```text
 platform_fee = amount * fee_bps / 10_000
 creator_amount = amount - platform_fee
 ```
 
-Integer division rounds the fee down. If the fee is zero, the router skips the treasury transfer.
+Integer division rounds the fee down. If the fee is zero, the router skips the treasury transfer. At the current application configuration of 150 BPS, a 1 XLM tip routes 0.9850000 XLM to the creator and 0.0150000 XLM to the treasury before network-related considerations.
 
 ## Token Allowlist
 
@@ -51,17 +75,25 @@ set_token(admin, token, enabled)
 is_token_enabled(token)
 ```
 
-This is the guardrail for future XLM and USDC Stellar Asset Contract setup.
+Phase 2 product support is XLM only. USDC or any other Stellar asset should be enabled only after explicit SAC validation and application-level verification work.
 
-## Tipping
+## Standard Tipping
 
 ```rust
 tip(sender, creator, token, amount, tip_id)
 ```
 
-The sender must authorize the invocation. The router rejects paused state, unsupported tokens, duplicate `tip_id`, self-tips, and non-positive amounts.
+The router rejects:
 
-`tip_id` replay protection is scoped by sender. A duplicate means the same sender reuses the same `tip_id`; two different senders may safely use the same numeric ID. This is application idempotency state and is separate from Soroban transaction/auth replay protection.
+- uninitialized or paused state
+- unsupported tokens
+- duplicate `sender + tip_id`
+- sender tipping themselves
+- zero or negative amounts
+- payouts that would be invalid after fee calculation
+- math overflow
+
+`tip_id` replay protection is scoped by sender. Two different senders may reuse the same numeric `tip_id`; the same sender may not.
 
 ## Split Tipping
 
@@ -78,32 +110,9 @@ SplitRecipient {
 }
 ```
 
-Allocations must total exactly 10,000 BPS. Recipient count is capped at `MAX_SPLIT_RECIPIENTS = 10`. Duplicate recipients and sender-as-recipient are rejected. The platform fee is deducted first, then creator payout is split by BPS. Any rounding remainder is assigned to the first recipient for deterministic exact-total payout.
+Allocations must total exactly 10,000 BPS. Recipient count is capped at `MAX_SPLIT_RECIPIENTS = 10`. Duplicate recipients and sender-as-recipient are rejected. The platform fee is deducted first, then the creator payout is split by BPS. Any rounding remainder is assigned to the first recipient for deterministic exact-total payout.
 
-## Events
-
-The contract emits typed events:
-
-- `TipEvent` for standard tips.
-- `SplitTipEvent` for collaborative payouts, including per-recipient gross and net amounts.
-- `FeeUpdatedEvent` for platform fee changes.
-- `TreasuryUpdatedEvent` for treasury address changes.
-- `TokenStatusChangedEvent` for token allowlist changes.
-- `PauseStatusChangedEvent` for pause and unpause changes.
-
-Events carry analytics-friendly payment data without storing large redundant payloads.
-
-## Creator Stats
-
-Compact creator stats are stored on-chain:
-
-```rust
-get_creator_stats(creator)
-```
-
-Stats include `tip_count`, `gross_received`, and `net_received`.
-
-## Replay State and Receipts
+## Receipts and Stats
 
 The router stores compact tip receipts by `sender` and `tip_id`:
 
@@ -112,28 +121,38 @@ tip_exists(sender, tip_id)
 get_tip(sender, tip_id)
 ```
 
-This prevents duplicate payment execution for a given sender while keeping persistent storage small.
+Creator stats remain queryable on-chain:
 
-## Security Assumptions
+```rust
+get_creator_stats(creator)
+```
 
-- Admin keys are controlled by Yolixa governance or deployment operations.
-- Production admin should not be a casually-held developer wallet.
-- Mainnet should use an appropriate operational or governance security model, preferably multisig or another reviewed admin setup.
-- Only trusted Stellar Asset Contract addresses are enabled.
-- Fans authorize payments from their own wallet addresses.
-- Token transfers are performed atomically in the same Soroban transaction.
-- The 3% `MAX_FEE_BPS` cap is enforced at the contract level.
-- Fee, treasury, token allowlist, and pause changes are observable through typed events.
-- Private keys and wallet secrets must never be committed or embedded in deployment config.
+Stats include `tip_count`, `gross_received`, and `net_received`.
 
-## Upgrade Policy
+## Events
 
-This phase does not add an upgrade function. Before mainnet, Yolixa must choose and review one of two approaches:
+The contract emits typed events:
 
-- An explicitly authorized contract upgrade path with a secure admin/governance model.
-- Immutable deployment with versioned redeployment and a documented migration/cutover process.
+- `TipEvent`
+- `SplitTipEvent`
+- `FeeUpdatedEvent`
+- `TreasuryUpdatedEvent`
+- `TokenStatusChangedEvent`
+- `PauseStatusChangedEvent`
 
-An unrestricted upgrade mechanism must not be introduced.
+Events expose analytics-friendly data without storing large redundant payloads.
+
+## Admin Controls
+
+Admin-only functions require the stored admin address to authorize:
+
+- `set_fee`
+- `set_treasury`
+- `set_token`
+- `pause`
+- `unpause`
+
+Before Mainnet, Yolixa should define a production admin/governance strategy. The current contract does not include an upgrade function.
 
 ## Test Commands
 
@@ -141,23 +160,8 @@ From the Soroban workspace:
 
 ```bash
 cd soroban
-cargo fmt
-cargo clippy --workspace --all-targets
-cargo test --workspace
+cargo fmt --check
+cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo test --workspace --locked
+stellar contract build --package yolixa-tip-router --locked
 ```
-
-To build deployable Wasm with the Stellar CLI, use the official contract build flow instead of a plain Cargo wasm build.
-
-## Future Laravel Integration
-
-Laravel integration is intentionally out of scope for this phase. A later phase should:
-
-- Store the deployed router contract ID in Laravel config.
-- Build Soroban invocations for `tip` and `tip_split`.
-- Let connected fan wallets sign the invocation.
-- Index router events for dashboard analytics.
-- Preserve the existing classic XLM tipping path as fallback until cutover is complete.
-
-## Future XLM/USDC SAC Setup
-
-Deployment should enable only audited/expected Stellar Asset Contract addresses. On testnet this will likely include test XLM and test USDC SAC addresses. On mainnet, production USDC/XLM configuration should be validated before enabling.
