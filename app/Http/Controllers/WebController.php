@@ -21,8 +21,15 @@ class WebController extends Controller
 
     public function getWallets($id)
     {
-        $wallets = WalletType::where('blockchain_id', $id)->where('name', '!=', 'WalletConnect')
-                    ->select('id', 'name')
+        $enabledWallets = collect(config('yolixa.enabled_wallets', []))
+            ->map(fn ($wallet) => strtolower(trim((string) $wallet)))
+            ->filter()
+            ->values();
+
+        $wallets = WalletType::where('blockchain_id', $id)
+                    ->where('name', '!=', 'WalletConnect')
+                    ->when($enabledWallets->isNotEmpty(), fn ($query) => $query->whereIn('slug', $enabledWallets))
+                    ->select('id', 'name', 'slug')
                     ->get();
 
         return response()->json(['wallets' => $wallets]);

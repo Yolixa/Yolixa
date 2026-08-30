@@ -125,14 +125,13 @@ class WalletController extends Controller
 
                 $verified = $kp->verifySignature($rawSig, $challenge);
                 
-                // Freighter uses a specific prefix, if raw fails, check prefixed message
+                // Stellar browser wallets may sign the SEP-53 prefixed challenge payload.
                 if (!$verified) {
-                    $freighterPrefix = "Stellar Signed Message:\n" . $challenge;
-                    $verified = $kp->verifySignature($rawSig, $freighterPrefix);
+                    $stellarMessagePayload = "Stellar Signed Message:\n" . $challenge;
+                    $verified = $kp->verifySignature($rawSig, $stellarMessagePayload);
                 }
 
                 if (!$verified) {
-                    // Try with hashing the payload if it's signed over hash
                     $verified = $kp->verifySignature($rawSig, hash('sha256', "Stellar Signed Message:\n" . $challenge, true));
                 }
                 

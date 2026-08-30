@@ -55,6 +55,10 @@ class TipController extends Controller
 
     public function buildXdr(Request $request)
     {
+        if (config('yolixa.tip_execution_mode') !== 'classic') {
+            return response()->json(['success' => false, 'message' => 'Classic tipping is not the selected execution mode.'], 409);
+        }
+
         $request->validate([
             'amount'      => 'required|numeric|min:' . config('yolixa.min_payment_amount', 0.0000001) . '|max:' . config('yolixa.max_payment_amount', 1000),
             'destination' => 'required|string',
@@ -90,6 +94,10 @@ class TipController extends Controller
 
     public function submitTransaction(Request $request)
     {
+        if (config('yolixa.tip_execution_mode') !== 'classic') {
+            return response()->json(['success' => false, 'message' => 'Classic tipping is not the selected execution mode.'], 409);
+        }
+
         $request->validate([
             'signedXdr' => 'required|string',
             'sender_key' => 'required|string',
@@ -110,6 +118,10 @@ class TipController extends Controller
 
     public function recordTip(Request $request)
     {
+        if (config('yolixa.tip_execution_mode') !== 'classic') {
+            return response()->json(['success' => false, 'message' => 'Classic tipping is not the selected execution mode.'], 409);
+        }
+
         $request->validate([
             'tx_hash'      => 'required|string|unique:tips,tx_hash',
             'amount'       => 'required|numeric|min:' . config('yolixa.min_payment_amount', 0.0000001) . '|max:' . config('yolixa.max_payment_amount', 1000),

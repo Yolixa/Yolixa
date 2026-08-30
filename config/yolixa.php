@@ -24,9 +24,10 @@ return [
 
     'platform_public_key' => env('YOLIXA_PLATFORM_WALLET_PUBLIC', env('YOLIXA_PLATFORM_PUBLIC_KEY')),
     'fee_percentage' => env('YOLIXA_PLATFORM_FEE_PERCENT', env('YOLIXA_FEE_PERCENTAGE', 0.015)),
-    'min_payment_amount' => env('YOLIXA_MIN_PAYMENT_AMOUNT', 0.0000001),
-    'max_payment_amount' => env('YOLIXA_MAX_PAYMENT_AMOUNT', 1000),
+    'min_payment_amount' => env('YOLIXA_MIN_PAYMENT_AMOUNT', '0.0000001'),
+    'max_payment_amount' => env('YOLIXA_MAX_PAYMENT_AMOUNT', '1000'),
     'wallet_challenge_ttl_seconds' => env('YOLIXA_WALLET_CHALLENGE_TTL_SECONDS', 300),
+    'tip_execution_mode' => env('YOLIXA_TIP_EXECUTION_MODE', 'soroban'),
 
     'enabled_wallets' => array_values(array_filter(array_map(
         'trim',
@@ -62,19 +63,20 @@ return [
         ],
     ],
 
-    // YLX prices for supported assets
+    // Experimental YLX conversion values used only by legacy reward-preview code.
+    // Production token distribution is outside the current Testnet MVP.
     'ylx_price' => [
-        'XLM' => env('YOLIXA_YLX_PRICE_XLM', 0.1), // e.g. 1 YLX = 0.1 XLM -> 10 YLX per 1 XLM tip
-        'USDC' => env('YOLIXA_YLX_PRICE_USDC', 0.05), // e.g. 1 YLX = 0.05 USDC -> 20 YLX per 1 USDC tip
+        'XLM' => env('YOLIXA_YLX_PRICE_XLM', 0.1),
+        'USDC' => env('YOLIXA_YLX_PRICE_USDC', 0.05),
     ],
 
-    'supported_tip_assets' => explode(',', env('YOLIXA_SUPPORTED_TIP_ASSETS', 'XLM,USDC')),
-    'ylx_reward_rate_percent' => env('YLX_REWARD_RATE_PERCENT', 1),
+    'supported_tip_assets' => explode(',', env('YOLIXA_SUPPORTED_TIP_ASSETS', 'XLM')),
+    'ylx_reward_rate_percent' => env('YLX_REWARD_RATE_PERCENT', 0),
 
     // Legacy name retained for existing views/services. Prefer platform_public_key in new code.
     'platform_collection_wallet' => env('PLATFORM_COLLECTION_PUBLIC', env('YOLIXA_PLATFORM_WALLET_PUBLIC', env('YOLIXA_PLATFORM_PUBLIC_KEY'))),
 
-    // For Option A: the platform pays out YLX
+    // Legacy/manual reward distribution setting. Leave blank unless explicitly enabling that flow.
     'platform_distribution_seed' => env('PLATFORM_DISTRIBUTION_SECRET', env('ISSUER_SECRET_KEY')),
 
     'ylx_asset' => [
@@ -83,8 +85,15 @@ return [
     ],
 
     'soroban' => [
-        'enabled' => filter_var(env('SOROBAN_ENABLED', false), FILTER_VALIDATE_BOOL),
+        'enabled' => filter_var(env('SOROBAN_ENABLED', true), FILTER_VALIDATE_BOOL),
         'rpc_url' => env('SOROBAN_RPC_URL', 'https://soroban-testnet.stellar.org'),
+        'tip_router_contract_id' => env('SOROBAN_TIP_ROUTER_CONTRACT_ID'),
+        'xlm_token_contract_id' => env('SOROBAN_XLM_TOKEN_CONTRACT_ID'),
+        'tip_intent_ttl_minutes' => env('SOROBAN_TIP_INTENT_TTL_MINUTES', 30),
+        'fee_bps' => env('SOROBAN_TIP_ROUTER_FEE_BPS', 150),
+        'verifier_source_account' => env('SOROBAN_VERIFIER_SOURCE_ACCOUNT'),
+
+        // Legacy receipt-only registry. The Phase 2 router path does not use these.
         'tip_registry_contract_id' => env('SOROBAN_TIP_REGISTRY_CONTRACT_ID'),
         'platform_signer_public' => env('SOROBAN_PLATFORM_SIGNER_PUBLIC'),
         'platform_signer_secret' => env('SOROBAN_PLATFORM_SIGNER_SECRET'),

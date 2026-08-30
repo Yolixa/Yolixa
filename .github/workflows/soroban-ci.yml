@@ -1,0 +1,147 @@
+name: Phase 2 CI
+
+on:
+  push:
+    branches:
+      - scf-v2-phase-2-integration
+  pull_request:
+    paths:
+      - "app/**"
+      - "bootstrap/**"
+      - "config/**"
+      - "database/**"
+      - "packages/**"
+      - "resources/**"
+      - "routes/**"
+      - "soroban/**"
+      - "tests/**"
+      - "composer.json"
+      - "composer.lock"
+      - "package.json"
+      - "package-lock.json"
+      - "phpunit.xml"
+      - "vite.config.js"
+      - ".github/workflows/soroban-ci.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase-2-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  application:
+    name: Application
+    runs-on: ubuntu-latest
+
+    env:
+      APP_ENV: testing
+      APP_KEY: base64:MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI=
+      BCRYPT_ROUNDS: 4
+      CACHE_STORE: array
+      DB_CONNECTION: sqlite
+      DB_DATABASE: database/database.sqlite
+      MAIL_MAILER: array
+      QUEUE_CONNECTION: sync
+      SESSION_DRIVER: array
+      STELLAR_HORIZON: https://horizon-testnet.stellar.org
+      STELLAR_PASSPHRASE: Test SDF Network ; September 2015
+      STELLAR_TESTNET_HORIZON_URL: https://horizon-testnet.stellar.org
+      STELLAR_TESTNET_NETWORK_PASSPHRASE: Test SDF Network ; September 2015
+      YOLIXA_NETWORK: testnet
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: bcmath, gmp, sodium, sqlite3, pdo_sqlite
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Prepare SQLite database
+        run: |
+          cp .env.example .env
+          mkdir -p database
+          touch database/database.sqlite
+
+      - name: Run Laravel tests
+        run: php artisan test
+
+  soroban:
+    name: Soroban
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: soroban
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Rust
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt --component clippy --target wasm32v1-none
+          rustup default stable
+
+      - name: Install Stellar CLI
+        run: |
+          set -euo pipefail
+          version="27.1.0"
+          base_url="https://github.com/stellar/stellar-cli/releases/download/v${version}"
+          mkdir -p "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+          archive="$RUNNER_TEMP/stellar-cli.tar.gz"
+          if curl -fL --retry 12 --retry-delay 10 --retry-all-errors --connect-timeout 30 --max-time 600 \
+            -o "$archive" \
+            "$base_url/stellar-cli-${version}-x86_64-unknown-linux-gnu.tar.gz"; then
+            tar -xzf "$archive" -C "$HOME/.local/bin"
+            chmod +x "$HOME/.local/bin/stellar"
+          else
+            deb="$RUNNER_TEMP/stellar-cli.deb"
+            curl -fL --retry 12 --retry-delay 10 --retry-all-errors --connect-timeout 30 --max-time 600 \
+              -o "$deb" \
+              "$base_url/stellar-cli_${version}_amd64.deb"
+            sudo dpkg -i "$deb"
+          fi
+
+          stellar --version
+
+      - name: Verify toolchain
+        run: |
+          rustc --version
+          cargo --version
+          stellar --version
+          rustup target list --installed | grep '^wasm32v1-none$'
+
+      - name: Check formatting
+        run: cargo fmt --check
+
+      - name: Run clippy
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+
+      - name: Run tests
+        run: cargo test --workspace --locked
+
+      - name: Build contract WASM
+        run: stellar contract build --package yolixa-tip-router --locked

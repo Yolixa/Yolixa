@@ -20,6 +20,11 @@ class Tip extends Model
         'is_anonymous' => 'boolean',
     ];
 
+    public function intent()
+    {
+        return $this->belongsTo(TipIntent::class, 'tip_intent_id');
+    }
+
     public function sender()
     {
         return $this->belongsTo(User::class, 'sender_id');

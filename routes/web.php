@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\WebController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\CreatorController;
+use App\Http\Controllers\SorobanTipController;
 // use Soneso\StellarSDK\StellarSDK;
 // use Soneso\StellarSDK\Asset;
 // use Soneso\StellarSDK\Crypto\KeyPair;
@@ -37,6 +38,13 @@ Route::prefix('api/tip')->middleware('throttle:tip-api')->group(function() {
     Route::post('/build-xdr', [TipController::class, 'buildXdr']);
     Route::post('/submit', [TipController::class, 'submitTransaction']);
     Route::post('/record', [TipController::class, 'recordTip']);
+});
+
+Route::prefix('api/soroban')->middleware('throttle:tip-api')->group(function () {
+    Route::get('/config', [SorobanTipController::class, 'config']);
+    Route::post('/tip/intent', [SorobanTipController::class, 'intent'])->middleware('auth');
+    Route::post('/tip/submitted', [SorobanTipController::class, 'submitted'])->middleware('auth');
+    Route::post('/tip/confirm', [SorobanTipController::class, 'confirm'])->middleware('auth');
 });
 
 Route::get('/{username}', [CreatorController::class, 'showProfile'])

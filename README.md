@@ -1,108 +1,169 @@
 # Yolixa
 
-Yolixa is a creator-focused micro-tipping MVP built with Laravel and Stellar. Creators connect a Stellar wallet, generate a public referral/tip link, and receive XLM testnet tips directly from fans through Freighter or Rabet.
+Yolixa is a Soroban-first, non-custodial creator monetization and payment-routing platform on Stellar. Fans authorize payments from their own wallets, and the `YolixaTipRouter` atomically routes the creator payout and Yolixa platform fee without Yolixa taking custody of user funds.
 
-## Problem
+## Current Status
 
-Creators often lose small payments to platform custody, withdrawal delays, and high fees. Yolixa uses Stellar for fast, low-cost, transparent settlement so fans can support creators with direct wallet-to-wallet micro-tips.
+This branch, `scf-v2-phase-2-integration`, contains the SCF Build Open Track Testnet MVP candidate.
 
-## Why Stellar
+Implemented in repository code:
 
-- Fast finality suitable for micro-tips.
-- Very low transaction fees.
-- Public Horizon API for transaction proof and history.
-- Mature browser wallet ecosystem through Freighter and Rabet.
-- Testnet support for safe reviewer demos.
+- Stellar Testnet configuration.
+- Freighter and Rabet wallet authentication with one-time challenges.
+- XLM tipping through the `YolixaTipRouter` Soroban contract.
+- Server-created `TipIntent` records.
+- Non-custodial fan-authorized payment execution.
+- Atomic creator payout plus 1.5% treasury fee routing.
+- Backend transaction verification against the configured router, token, sender, creator, amount, and contract tip ID.
+- On-chain router receipts and creator stats reads.
+- Replay/idempotency protection in both contract and Laravel confirmation flow.
+- Rust contract tests, Laravel tests, frontend build, and GitHub Actions CI.
 
-## Current Working MVP
+Current MVP wallet scope:
 
-- Wallet-based fan and creator onboarding.
-- Freighter wallet connection.
-- Rabet wallet connection when the extension is installed.
-- Connected public key saved to `users` and `wallets`.
-- Creator registration and dashboard.
-- Unique creator referral link at `/r/{code}`.
-- Public creator tip page.
-- Direct XLM payment XDR built by Laravel with Soneso Stellar SDK.
-- Transaction signed by the fan wallet in the browser.
-- Signed transaction submitted to Stellar testnet Horizon.
-- Backend verification of tx hash, amount, asset, sender, and receiver.
-- Tip record saved with tx hash, amount, asset, sender wallet, receiver wallet, network fee, platform fee, and status.
-- Creator dashboard with total tips, wallet address, referral link, and transaction history.
-- Self-tipping prevention.
-- CSRF, validation, duplicate tx hash protection, and clear UI success/error messages.
+- Freighter: current MVP wallet; code integrated for authentication and Soroban XLM signing; Testnet browser validation pending.
+- Rabet: current MVP wallet; code integrated for authentication and Soroban XLM signing; Testnet browser validation pending.
 
-## Stellar Configuration
+Public Testnet deployment and browser E2E evidence are not yet recorded in this repository. See [docs/scf-v2-phase-2.md](docs/scf-v2-phase-2.md).
 
-Yolixa currently uses Stellar testnet only.
+## Architecture
 
-```env
-STELLAR_HORIZON=https://horizon-testnet.stellar.org
-STELLAR_PASSPHRASE="Test SDF Network ; September 2015"
-YOLIXA_FEE_PERCENTAGE=0.015
-YOLIXA_SUPPORTED_TIP_ASSETS=XLM
+```text
+Fan wallet
+    |
+    | authorizes Soroban invocation
+    v
+YolixaTipRouter
+    |
+    +----> Creator: 98.5% net payout
+    |
+    +----> Yolixa treasury: 1.5% platform fee
 ```
 
-No secret keys are required for the current direct-tip MVP. Do not put wallet seed phrases in `.env`.
+The router transfers from the fan's authorized Stellar Asset Contract balance during the same Soroban transaction. Yolixa does not store fan private keys and does not use a platform-controlled wallet to sign fan payments.
 
-## Install And Run
+The Laravel backend does not trust browser-provided proof alone. Confirmation verifies the final transaction via RPC and reads router state for `tip_exists`, `get_tip`, `get_creator_stats`, `get_fee_bps`, `get_treasury`, `is_paused`, and `is_token_enabled`.
+
+## Assets
+
+Current MVP support:
+
+- `XLM`: implemented for Soroban Testnet tipping.
+
+Future funded scope:
+
+- `USDC`: planned after explicit SAC validation, allowlisting, and product integration.
+- `YLX`: experimental/future creator loyalty and reward concept only. Production token distribution and reward settlement are not part of the current Testnet MVP.
+- Other Stellar assets: future only after explicit allowlisting and verification work.
+
+## Requirements
+
+- PHP 8.2 with `gmp`, `sodium`, `sqlite3`, and `pdo_sqlite`.
+- Composer.
+- Node.js 22+ and npm.
+- Rust stable with `wasm32v1-none`.
+- Stellar CLI 27.x for contract deployment/build verification.
+- Freighter or Rabet 1.8.0+ installed in the browser for wallet-signed tips.
+
+## Setup
 
 ```bash
 composer install
 cp .env.example .env
 php artisan key:generate
+mkdir -p database
+touch database/database.sqlite
 php artisan migrate:fresh --seed
-npm install
+npm ci
 npm run build
 php artisan serve
 ```
 
-Open the app at the URL printed by `php artisan serve`, usually `http://127.0.0.1:8000`.
+For local Soroban tipping, configure these values in `.env` after deploying the router:
 
-## Wallet Setup
+```env
+YOLIXA_NETWORK=testnet
+YOLIXA_TIP_EXECUTION_MODE=soroban
+YOLIXA_PLATFORM_WALLET_PUBLIC=
+SOROBAN_ENABLED=true
+SOROBAN_RPC_URL=https://soroban-testnet.stellar.org
+SOROBAN_TIP_ROUTER_CONTRACT_ID=
+SOROBAN_XLM_TOKEN_CONTRACT_ID=
+SOROBAN_TIP_ROUTER_FEE_BPS=150
+```
 
-1. Install Freighter or Rabet.
-2. Switch the wallet to Stellar testnet.
-3. Create or import a testnet account.
-4. Fund testnet accounts with Friendbot.
-5. Use different accounts for creator and fan to verify self-tip prevention.
+Never commit Stellar seeds, mnemonics, private keys, or funded wallet secrets.
 
-## Demo Flow For Reviewers
+## Testing
 
-1. Open Yolixa locally.
-2. Select Stellar and Freighter or Rabet from the wallet modal.
-3. Connect and sign the login challenge.
-4. Click `Join as Creator`.
-5. Enter creator name and email.
-6. Submit registration.
-7. Copy the referral link from the dashboard.
-8. Open the referral link in another browser profile or after switching to a different wallet account.
-9. Connect the fan wallet.
-10. Enter an XLM testnet tip amount.
-11. Sign the transaction in Freighter or Rabet.
-12. Wait for success confirmation.
-13. Return to the creator dashboard and verify the transaction history.
-14. Open the tx hash on Stellar Expert testnet.
+Application checks:
 
-## SCF Reviewer Notes
+```bash
+composer install --no-interaction --prefer-dist --no-progress
+npm ci
+npm run build
+php artisan test
+```
 
-- Live MVP status: functional local Laravel MVP with real Stellar testnet XLM transactions.
-- Stellar transaction proof: dashboard stores and links the testnet tx hash for each confirmed tip.
-- Settlement model: fan wallet sends XLM directly to creator wallet; Yolixa records fee metadata for reporting.
-- Review setup: seeders create Stellar, Freighter, and Rabet wallet options.
+Soroban checks:
+
+```bash
+cd soroban
+cargo fmt --check
+cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo test --workspace --locked
+stellar contract build --package yolixa-tip-router --locked
+```
+
+GitHub Actions runs the same application and Soroban coverage in `.github/workflows/soroban-ci.yml`.
+
+## Testnet Deployment
+
+Use [docs/scf-v2-phase-2.md](docs/scf-v2-phase-2.md) for the reproducible Testnet deployment, router initialization, XLM SAC allowlisting, CLI smoke test, and browser wallet E2E evidence checklist.
+
+Evidence placeholders before SCF submission:
+
+- Router contract ID: `MANUAL ACTION REQUIRED`
+- XLM SAC ID: `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC`
+- Admin public address: `MANUAL ACTION REQUIRED`
+- Treasury public address: `MANUAL ACTION REQUIRED`
+- Deployment transaction hash: `MANUAL ACTION REQUIRED`
+- Smoke-test transaction hash and ledger: `MANUAL ACTION REQUIRED`
 
 ## Current Limitations
 
-- Mainnet is intentionally disabled.
-- MVP supports direct XLM tips only.
-- Platform fee is recorded for reporting; it is not collected on-chain in the current direct-payment MVP.
-- YLX rewards, trustlines, automated payouts, analytics, and admin moderation are roadmap features.
-- Wallet extensions must be available in the browser; the app cannot sign transactions itself.
+- Testnet only; Mainnet launch is intentionally pending.
+- Soroban product flow supports XLM only.
+- Freighter/Rabet approval is manual in the browser.
+- Public Testnet contract and E2E transaction evidence must be supplied by a human operator.
+- USDC Soroban routing, production YLX rewards, analytics/indexing, moderation, production monitoring, off-ramps, mobile apps, and embeddable SDK/widget work remain future scope.
+- Contract-level `tip_split` is implemented and tested; product-level split tipping UI/backend integration remains future scope.
+- No root `LICENSE` file exists yet. See [docs/open-source-plan.md](docs/open-source-plan.md).
 
-## Roadmap
+## SCF-Funded Roadmap Boundary
 
-- Optional on-chain fee split or claimable balance flow.
-- USDC support through Stellar assets and trustline checks.
-- Creator analytics and exportable transaction reports.
-- Public profile customization and verified creator badges.
-- Production deployment hardening, observability, and SCF demo video.
+Completed before SCF: the Testnet MVP architecture, Soroban router, Laravel wallet-signed standard XLM tip integration, verification, idempotency, and automated tests.
+
+Planned for SCF funding:
+
+- Product integration for `tip_split`.
+- USDC via an approved Stellar Asset Contract.
+- Multi-asset UX.
+- Embeddable tipping component, SDK, and API documentation.
+- Expanded public Testnet creator beta, analytics/event indexing, monitoring, and E2E evidence.
+- Mainnet hardening, production admin/governance plan, deployment, observability, and launch documentation.
+- Additional Stellar wallets, Stellar Wallets Kit/standardized wallet abstraction, mobile wallet UX, and WalletConnect-compatible wallets.
+
+Freighter and Rabet are current MVP scope, not future wallet scope.
+
+Yolixa should be evaluated as a technically credible Testnet MVP with a concrete Stellar/Soroban path to Mainnet, not as a completed production platform.
+
+## Repository Metadata Recommendation
+
+Suggested GitHub description:
+
+`Non-custodial creator tipping and payment routing on Stellar, powered by Soroban.`
+
+Suggested topics:
+
+`stellar`, `soroban`, `creator-economy`, `payments`, `micropayments`, `laravel`, `rust`, `web3`

@@ -9,12 +9,12 @@ class SorobanTipRegistryService
 {
     public function recordTip(Tip $tip): array
     {
-        if (!config('yolixa.soroban.enabled')) {
+        if (!config('yolixa.soroban.enabled') || blank(config('yolixa.soroban.tip_registry_contract_id'))) {
             return ['success' => true, 'status' => 'disabled'];
         }
 
         $missing = [];
-        foreach (['rpc_url', 'tip_registry_contract_id', 'platform_signer_public', 'platform_signer_secret'] as $key) {
+        foreach (['rpc_url', 'platform_signer_public', 'platform_signer_secret'] as $key) {
             if (blank(config("yolixa.soroban.{$key}"))) {
                 $missing[] = $key;
             }
