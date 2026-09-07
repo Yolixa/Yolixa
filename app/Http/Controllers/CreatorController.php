@@ -151,12 +151,19 @@ class CreatorController extends Controller
             abort(404, 'Dashboard not found for the requested public key.');
         }
         
+        $totalConfirmedXlmReceived = \App\Models\Tip::where('receiver_id', $creator->id)
+            ->where('status', 'confirmed')
+            ->where('asset', 'XLM')
+            ->sum('creator_payout_amount');
+
+        $totalTips = \App\Models\Tip::where('receiver_id', $creator->id)->count();
+
         $tips = \App\Models\Tip::where('receiver_id', $creator->id)
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate(15);
 
         \Illuminate\Support\Facades\Log::info("Dashboard loaded successfully.", ['user_id' => $creator->id]);
-        return view('creator.dashboard', compact('creator', 'tips'));
+        return view('creator.dashboard', compact('creator', 'tips', 'totalConfirmedXlmReceived', 'totalTips'));
     }
 
     public function updateProfile(Request $request)
@@ -179,7 +186,7 @@ class CreatorController extends Controller
             'username' => 'nullable|string|min:3|max:50|alpha_dash|not_in:admin,api,auth,creator,dashboard,disconnect-wallet,get-wallets,r,save-wallet,storage,up,whitepaper|unique:users,username,' . $creator->id,
             'bio' => 'nullable|string|max:255',
             'category' => 'nullable|string|max:50',
-            'preferred_tip_asset' => 'nullable|in:XLM,YLX',
+            'preferred_tip_asset' => 'nullable|in:XLM',
             'custom_thank_you_message' => 'nullable|string|max:255',
             'min_tip_amount' => 'nullable|numeric|min:0.1',
             'goal_title' => 'nullable|string|max:100',
@@ -200,52 +207,4 @@ class CreatorController extends Controller
         ]);
     }
 
-    public function claimRewards(Request $request)
-    {
-        $creator = \Illuminate\Support\Facades\Auth::user();
-
-        if (!$creator || $creator->role !== 'creator') {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
-        }
-
-        $request->validate([
-            'amount' => 'required|numeric|min:1',
-        ]);
-
-        if ($creator->ylx_claimable_balance < $request->amount) {
-            return response()->json(['success' => false, 'message' => 'Insufficient claimable balance.'], 400);
-        }
-
-        $processingFee = config('yolixa.claim_fee', 0); // Flat or percentage processing fee placeholder
-
-        try {
-            \Illuminate\Support\Facades\DB::beginTransaction();
-
-            $creator->decrement('ylx_claimable_balance', $request->amount);
-            $creator->increment('ylx_claimed_total', $request->amount);
-
-            $claim = \App\Models\RewardClaim::create([
-                'user_id' => $creator->id,
-                'amount' => $request->amount,
-                'fee_deducted' => $processingFee,
-                'status' => 'pending',
-                'notes' => 'Awaiting admin processing',
-            ]);
-
-            \Illuminate\Support\Facades\DB::commit();
-
-            \Illuminate\Support\Facades\Log::channel('stellar')->info("Reward Claim Requested by {$creator->id} for {$request->amount} YLX.");
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Reward claim submitted successfully. It will be processed shortly.',
-                'claim' => $claim
-            ]);
-
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\DB::rollBack();
-            \Illuminate\Support\Facades\Log::error('Reward Claim Error: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Internal Server Error.'], 500);
-        }
-    }
 }

@@ -6,7 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class WalletType extends Model
 {
-    protected $guarded=[];
+    protected $fillable = [
+        'blockchain_id',
+        'name',
+        'slug',
+    ];
 
     public function blockchain()
     {

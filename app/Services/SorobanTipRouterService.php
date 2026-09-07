@@ -22,7 +22,7 @@ class SorobanTipRouterService
 
     public function executionMode(): string
     {
-        return strtolower((string) config('yolixa.tip_execution_mode', 'soroban'));
+        return strtolower((string) config('yolixa.tip_execution_mode', 'classic'));
     }
 
     public function publicConfig(): array

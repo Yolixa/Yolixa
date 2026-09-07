@@ -63,7 +63,7 @@ class StellarConfigurationService
         }
 
         if (!filter_var($horizon, FILTER_VALIDATE_URL)) {
-            throw new InvalidArgumentException('STELLAR_HORIZON must be a valid URL.');
+            throw new InvalidArgumentException('STELLAR_HORIZON_URL must be a valid URL.');
         }
 
         if ($network === 'testnet' && $passphrase !== self::TESTNET_PASSPHRASE) {
@@ -85,14 +85,20 @@ class StellarConfigurationService
             }
         }
 
-        $fee = (float) config('yolixa.fee_percentage', 0);
-        if ($fee < 0 || $fee >= 1) {
+        $fee = trim((string) config('yolixa.fee_percentage', 0));
+        if (!preg_match('/^(0|0?\.\d+|1(?:\.0+)?)$/', $fee) || $this->compareDecimal($fee, '1') >= 0) {
             throw new InvalidArgumentException('YOLIXA_FEE_PERCENTAGE must be between 0 and 1.');
         }
 
-        $min = (float) config('yolixa.min_payment_amount');
-        $max = (float) config('yolixa.max_payment_amount');
-        if ($min <= 0 || $max < $min) {
+        $amounts = new XlmAmount();
+        try {
+            $min = $amounts->decimalToAtomic((string) config('yolixa.min_payment_amount'));
+            $max = $amounts->decimalToAtomic((string) config('yolixa.max_payment_amount'));
+        } catch (InvalidArgumentException) {
+            throw new InvalidArgumentException('Payment amount limits are invalid.');
+        }
+
+        if ($amounts->compareAtomic($max, $min) < 0) {
             throw new InvalidArgumentException('Payment amount limits are invalid.');
         }
     }
@@ -110,5 +116,30 @@ class StellarConfigurationService
         } catch (\Throwable) {
             return false;
         }
+    }
+
+    private function compareDecimal(string $left, string $right): int
+    {
+        $normalize = function (string $value): array {
+            [$whole, $fraction] = array_pad(explode('.', $value, 2), 2, '');
+
+            return [ltrim($whole, '0') ?: '0', rtrim($fraction, '0')];
+        };
+
+        [$leftWhole, $leftFraction] = $normalize($left);
+        [$rightWhole, $rightFraction] = $normalize($right);
+
+        if (strlen($leftWhole) !== strlen($rightWhole)) {
+            return strlen($leftWhole) <=> strlen($rightWhole);
+        }
+
+        $wholeComparison = $leftWhole <=> $rightWhole;
+        if ($wholeComparison !== 0) {
+            return $wholeComparison;
+        }
+
+        $scale = max(strlen($leftFraction), strlen($rightFraction));
+
+        return str_pad($leftFraction, $scale, '0') <=> str_pad($rightFraction, $scale, '0');
     }
 }

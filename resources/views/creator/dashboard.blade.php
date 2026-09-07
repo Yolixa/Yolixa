@@ -25,19 +25,19 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
             <div class="card-hover rounded-2xl p-8 border border-gray-800 flex flex-col justify-center">
                 <p class="text-gray-500 font-bold mb-2 uppercase text-xs">Creator Payout Received</p>
-                <h3 class="text-4xl font-black text-white">{{ number_format($tips->where('status', 'confirmed')->sum('creator_payout_amount'), 7) }} <span class="text-lg text-gray-500">MIXED</span></h3>
+                <h3 class="text-4xl font-black text-white">{{ number_format($totalConfirmedXlmReceived, 7) }} <span class="text-lg text-gray-500">XLM</span></h3>
             </div>
             
             <div class="card-hover rounded-2xl p-8 border border-yolixa-purple/30 bg-yolixa-purple/5 flex flex-col justify-center relative overflow-hidden">
                 <div class="absolute -right-4 -top-4 w-24 h-24 bg-yolixa-purple/10 rounded-full blur-2xl"></div>
                 <p class="text-yolixa-purple font-bold mb-2 uppercase text-xs">Total Tips Processed</p>
-                <h3 class="text-4xl font-black text-white">{{ $tips->count() }} <span class="text-lg text-yolixa-purple">Tips</span></h3>
+                <h3 class="text-4xl font-black text-white">{{ $totalTips }} <span class="text-lg text-yolixa-purple">Tips</span></h3>
             </div>
 
             <div class="card-hover rounded-2xl p-8 border border-gray-800 flex flex-col justify-center">
-                <p class="text-gray-500 font-bold mb-2 uppercase text-xs">Claimable YLX Rewards</p>
-                <h3 class="text-4xl font-black text-white">{{ number_format($creator->ylx_claimable_balance ?? 0, 7) }} <span class="text-lg text-gray-500">YLX</span></h3>
-                <p class="text-xs text-gray-400 mt-2">Ledger rewards pending manual claim; not automatically transferred on-chain yet.</p>
+                <p class="text-gray-500 font-bold mb-2 uppercase text-xs">Current Asset</p>
+                <h3 class="text-4xl font-black text-white">XLM <span class="text-lg text-gray-500">Testnet</span></h3>
+                <p class="text-xs text-gray-400 mt-2">USDC, YLX rewards, trustlines, and mainnet launch are future scope.</p>
             </div>
         </div>
 
@@ -62,7 +62,7 @@
                             <input type="text" id="goal_title" value="{{ $creator->goal_title }}" placeholder="e.g. New Equipment" class="w-full px-4 py-3 rounded-xl bg-gray-800/80 text-white border border-gray-700 outline-none focus:border-yolixa-purple">
                         </div>
                         <div>
-                            <label class="block text-gray-400 text-sm mb-1">Goal Amount (YLX)</label>
+                            <label class="block text-gray-400 text-sm mb-1">Goal Amount (XLM)</label>
                             <input type="number" id="goal_amount" value="{{ $creator->goal_amount }}" placeholder="500" class="w-full px-4 py-3 rounded-xl bg-gray-800/80 text-white border border-gray-700 outline-none focus:border-yolixa-purple">
                         </div>
                     </div>
@@ -100,8 +100,7 @@
                             <th class="px-8 py-4 text-xs font-bold text-gray-500 uppercase">Tx Hash</th>
                             <th class="px-8 py-4 text-xs font-bold text-gray-500 uppercase">Sender</th>
                             <th class="px-8 py-4 text-xs font-bold text-gray-500 uppercase">Amount</th>
-                            <th class="px-8 py-4 text-xs font-bold text-gray-500 uppercase">Fee</th>
-                            <th class="px-8 py-4 text-xs font-bold text-gray-500 uppercase">Soroban</th>
+                            <th class="px-8 py-4 text-xs font-bold text-gray-500 uppercase">Network Fee</th>
                             <th class="px-8 py-4 text-xs font-bold text-gray-500 uppercase">Status</th>
                             <th class="px-8 py-4 text-xs font-bold text-gray-500 uppercase">Date</th>
                         </tr>
@@ -116,14 +115,11 @@
                                 <span class="text-gray-400 text-sm font-mono">{{ $tip->sender_wallet ? substr($tip->sender_wallet, 0, 6).'...'.substr($tip->sender_wallet, -4) : 'Unknown' }}</span>
                             </td>
                             <td class="px-8 py-4">
-                                <span class="text-white font-bold">{{ number_format($tip->amount, 7) }} {{ $tip->asset }}</span><br>
-                                <span class="text-gray-500 text-xs">Net {{ number_format($tip->creator_payout_amount, 7) }}</span>
+                                <span class="text-white font-bold">{{ number_format($tip->creator_payout_amount, 7) }} {{ $tip->asset }}</span>
                             </td>
                             <td class="px-8 py-4 text-gray-400 text-sm">
-                                Platform {{ number_format($tip->platform_fee, 7) }} {{ $tip->asset }}<br>
-                                Network {{ number_format($tip->network_fee, 7) }} XLM
+                                {{ number_format($tip->network_fee, 7) }} XLM
                             </td>
-                            <td class="px-8 py-4 text-gray-400 text-sm">{{ $tip->soroban_status ?? 'disabled' }}</td>
                             <td class="px-8 py-4">
                                 <span class="px-2 py-1 rounded-full text-[10px] font-black {{ $tip->status == 'confirmed' ? 'bg-green-500/10 text-green-500' : ($tip->status == 'failed' ? 'bg-red-500/10 text-red-500' : 'bg-yellow-500/10 text-yellow-500') }}">
                                     {{ strtoupper($tip->status) }}
@@ -135,11 +131,14 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="7" class="px-8 py-12 text-center text-gray-500 italic">No tips received yet. Share your referral link!</td>
+                            <td colspan="6" class="px-8 py-12 text-center text-gray-500 italic">No tips received yet. Share your referral link!</td>
                         </tr>
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+            <div class="px-8 py-4 border-t border-gray-800">
+                {{ $tips->links() }}
             </div>
         </div>
     </div>

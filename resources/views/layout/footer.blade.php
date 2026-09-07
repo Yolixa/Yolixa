@@ -13,9 +13,9 @@
                     <div class="text-2xl font-bold gradient-text">Yolixa</div>
                 </div>
                 <p class="text-gray-300 mb-4">
-                    Yolixa empowers creators with borderless crypto tipping on the
-                    <span class="font-semibold text-yolixa-purple">Stellar blockchain</span>.
-                    Seamless, secure, and rewarding — the future of creator monetization.
+                    Yolixa helps creators receive direct XLM tips on
+                    <span class="font-semibold text-yolixa-purple">Stellar Testnet</span>.
+                    Non-custodial wallet signing and Horizon verification keep the MVP focused and transparent.
                 </p>
             </div>
 
@@ -44,8 +44,7 @@
 
         <!-- Bottom Copyright -->
         <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2025 Yolixa. All rights reserved. Powered by Stellar blockchain.</p>
+            <p>&copy; 2026 Yolixa. All rights reserved. Powered by Stellar Testnet.</p>
         </div>
     </div>
 </footer>
-

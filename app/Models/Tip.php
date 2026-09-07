@@ -6,7 +6,41 @@ use Illuminate\Database\Eloquent\Model;
 
 class Tip extends Model
 {
-    protected $guarded = [];
+    protected $fillable = [
+        'tip_intent_id',
+        'sender_id',
+        'receiver_id',
+        'sender_wallet',
+        'receiver_wallet',
+        'tx_hash',
+        'amount',
+        'asset',
+        'asset_issuer',
+        'platform_fee',
+        'network_fee',
+        'bonus',
+        'reward_ylx_amount',
+        'ylx_reward_status',
+        'status',
+        'confirmed_at',
+        'conversion_rate',
+        'converted_ylx_amount',
+        'creator_payout_amount',
+        'payout_status',
+        'payout_tx_hash',
+        'payout_error',
+        'stellar_meta',
+        'soroban_status',
+        'soroban_tx_hash',
+        'soroban_error',
+        'soroban_recorded_at',
+        'router_contract_id',
+        'token_contract_id',
+        'contract_tip_id',
+        'message',
+        'is_anonymous',
+        'sender_name',
+    ];
 
     protected $casts = [
         'amount' => 'decimal:8',

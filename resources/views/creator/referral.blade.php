@@ -1,7 +1,7 @@
 @extends('layout.app')
 
 @section('content')
-@php($tipExecutionMode = config('yolixa.tip_execution_mode', 'soroban'))
+@php($tipExecutionMode = config('yolixa.tip_execution_mode', 'classic'))
 <section class="min-h-screen flex items-center justify-center hero-bg pt-20 pb-10">
     <div class="max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8">
         <div class="card-hover rounded-2xl p-8 md:p-12 border border-yolixa-purple/20 bg-gray-900/80 backdrop-blur-lg">
@@ -14,7 +14,7 @@
                     @if($tipExecutionMode === 'soroban')
                         Payment executed by YolixaTipRouter on Stellar Testnet.
                     @else
-                        Support this creator by sending a Web3 tip.
+                        Support this creator with a direct Stellar Testnet XLM tip.
                     @endif
                 </p>
                 <div class="mt-4 flex items-center justify-center gap-2">
@@ -39,12 +39,6 @@
                                 <img src="{{ asset('assets/images/stellar-xlm-logo.png') }}" class="w-6 h-6" alt="XLM">
                                 <span>XLM on {{ strtoupper(config('yolixa.network', 'testnet')) }}</span>
                             </button>
-                            @if($tipExecutionMode === 'classic' && config('yolixa.assets.USDC.enabled') && config('yolixa.assets.USDC.issuer'))
-                            <button onclick="selectAsset('USDC')" id="assetUSDC" class="asset-btn flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-gray-700 bg-gray-800 text-white hover:border-yolixa-purple transition-all">
-                                <img src="{{ asset('assets/images/usd-coin-usdc-logo.png') }}" class="w-6 h-6" alt="USDC">
-                                <span>USDC on {{ strtoupper(config('yolixa.network', 'testnet')) }}</span>
-                            </button>
-                            @endif
                         </div>
                     </div>
 
@@ -67,11 +61,11 @@
                             <span class="text-white font-bold" id="previewGross">-</span>
                         </div>
                         <div class="flex justify-between text-sm mb-2">
-                            <span class="text-gray-400">Platform Fee:</span>
-                            <span class="text-red-400 font-bold" id="previewFee">-</span>
+                            <span class="text-gray-400">Yolixa Fee Collected:</span>
+                            <span class="text-gray-300 font-bold" id="previewFee">0.0000000 XLM</span>
                         </div>
                         <div class="flex justify-between text-base border-t border-gray-700 pt-2 mt-2">
-                            <span class="text-gray-300 font-bold">Creator Receives On-Chain:</span>
+                            <span class="text-gray-300 font-bold">Creator Receives:</span>
                             <span class="text-green-400 font-black" id="previewPayout">-</span>
                         </div>
                     </div>
@@ -85,7 +79,7 @@
                         @if($tipExecutionMode === 'soroban')
                             * The smart contract splits your XLM tip atomically between creator and Yolixa treasury.
                         @else
-                            * The Stellar transaction pays the creator net amount and platform fee in the same signed transaction.
+                            * Current MVP tips are direct XLM payments to the creator wallet. Yolixa does not collect a platform fee in this flow.
                         @endif
                     </p>
                 </div>
@@ -295,7 +289,7 @@
                     link.href = explorerTemplate.replace('{hash}', txHash);
                     link.classList.remove('hidden');
                 }
-                document.getElementById('successSorobanStatus').innerText = `Soroban receipt: ${tip.soroban_status || 'disabled'}`;
+                document.getElementById('successSorobanStatus').innerText = 'Verified direct XLM payment.';
                 document.getElementById('successProofDetails').classList.add('hidden');
                 document.getElementById('successProofDetails').innerHTML = '';
                 document.getElementById('successModal').classList.remove('hidden');
@@ -365,9 +359,11 @@
         const response = await fetch('/api/tip/build-xdr', {
             method: 'POST',
             headers: {
+                'Accept': 'application/json',
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
             },
+            credentials: 'same-origin',
             body: JSON.stringify({
                 amount,
                 destination,
@@ -385,6 +381,8 @@
 
         const data = await response.json();
         if (!data.success) throw new Error(data.message);
+
+        await assertFreighterClassicTestnet(freighter);
 
         // Ensure active address matches local storage to avoid tx_bad_auth
         if (typeof freighter.getPublicKey === 'function') {
@@ -405,9 +403,11 @@
         const submitRes = await fetch('/api/tip/submit', {
             method: 'POST',
             headers: {
+                'Accept': 'application/json',
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
             },
+            credentials: 'same-origin',
             body: JSON.stringify({ signedXdr: signedTx, sender_key: localStorage.getItem('freighter_wallet') })
         });
 
@@ -432,9 +432,11 @@
         const response = await fetch('/api/tip/build-xdr', {
             method: 'POST',
             headers: {
+                'Accept': 'application/json',
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
             },
+            credentials: 'same-origin',
             body: JSON.stringify({
                 amount,
                 destination,
@@ -453,6 +455,8 @@
         const data = await response.json();
         if (!data.success) throw new Error(data.message);
 
+        await assertRabetTestnetNetwork();
+
         const network = (window.config?.YOLIXA_NETWORK || 'testnet').toLowerCase();
 
         let signedTx;
@@ -468,9 +472,11 @@
         const submitRes = await fetch('/api/tip/submit', {
             method: 'POST',
             headers: {
+                'Accept': 'application/json',
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
             },
+            credentials: 'same-origin',
             body: JSON.stringify({ signedXdr: signedTx, sender_key: localStorage.getItem('rabet_wallet') })
         });
 
@@ -491,9 +497,11 @@
         const response = await fetch('/api/tip/record', {
             method: 'POST',
             headers: {
+                'Accept': 'application/json',
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
             },
+            credentials: 'same-origin',
             body: JSON.stringify({
                 tx_hash: txHash,
                 amount: amount,
@@ -509,6 +517,24 @@
         }
 
         return data.tip;
+    }
+
+    async function assertFreighterClassicTestnet(freighter) {
+        if (typeof freighter.getNetwork !== 'function') {
+            return;
+        }
+
+        const network = await freighter.getNetwork();
+        const walletPassphrase = network?.networkPassphrase || network?.network_passphrase || network?.passphrase;
+        const walletNetwork = String(network?.network || network?.networkName || network?.networkId || '').toLowerCase();
+
+        if (walletPassphrase && walletPassphrase !== (window.config?.STELLAR_PASSPHRASE || 'Test SDF Network ; September 2015')) {
+            throw new Error('Freighter is on the wrong network. Switch Freighter to Stellar Testnet.');
+        }
+
+        if (!walletPassphrase && walletNetwork && walletNetwork !== 'testnet') {
+            throw new Error('Freighter is on the wrong network. Switch Freighter to Stellar Testnet.');
+        }
     }
 
     function normalizeSignedXdr(response) {

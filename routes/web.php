@@ -24,20 +24,18 @@ Route::get('/r/{code}', [CreatorController::class, 'referralLanding'])->name('cr
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard/{publicKey}', [CreatorController::class, 'dashboard'])->name('creator.dashboard');
     Route::post('/creator/update-profile', [CreatorController::class, 'updateProfile'])->name('creator.update_profile');
-    Route::post('/creator/claim-rewards', [CreatorController::class, 'claimRewards'])->name('creator.claim_rewards');
     
     // Admin Routes
-    Route::prefix('admin')->group(function () {
+    Route::prefix('admin')->middleware('admin')->group(function () {
         Route::get('/dashboard', [\App\Http\Controllers\AdminController::class, 'dashboard'])->name('admin.dashboard');
         Route::post('/creators/{id}/manage', [\App\Http\Controllers\AdminController::class, 'manageCreator'])->name('admin.manage_creator');
     });
 });
-// Tip & Reward API routes
 Route::prefix('api/tip')->middleware('throttle:tip-api')->group(function() {
     Route::post('/preview', [TipController::class, 'getPreview']);
-    Route::post('/build-xdr', [TipController::class, 'buildXdr']);
-    Route::post('/submit', [TipController::class, 'submitTransaction']);
-    Route::post('/record', [TipController::class, 'recordTip']);
+    Route::post('/build-xdr', [TipController::class, 'buildXdr'])->middleware('auth');
+    Route::post('/submit', [TipController::class, 'submitTransaction'])->middleware('auth');
+    Route::post('/record', [TipController::class, 'recordTip'])->middleware('auth');
 });
 
 Route::prefix('api/soroban')->middleware('throttle:tip-api')->group(function () {

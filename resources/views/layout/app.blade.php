@@ -228,7 +228,9 @@
      {{-- Wallet SDKs --}}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-sdk/10.4.0/stellar-sdk.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-freighter-api/3.0.0/index.min.js"></script>
+    @if(in_array('rabet', config('yolixa.enabled_wallets', []), true))
     <script src="https://unpkg.com/@rabet/extension/dist/rabet.umd.min.js"></script>
+    @endif
 
     <script>
         toastr.options = {
@@ -252,8 +254,8 @@
             SOROBAN_RPC_URL: "{{ config('yolixa.soroban.rpc_url') }}",
             SOROBAN_TIP_ROUTER_CONTRACT_ID: "{{ config('yolixa.soroban.tip_router_contract_id') }}",
             SOROBAN_XLM_TOKEN_CONTRACT_ID: "{{ config('yolixa.soroban.xlm_token_contract_id') }}",
-            YLX_ASSET_CODE: "{{ env('YLX_ASSET_CODE', 'YLX') }}",
-            YLX_ISSUER_PUBLIC: "{{ env('YLX_ISSUER_PUBLIC') }}"
+            YLX_ASSET_CODE: "{{ config('yolixa.ylx_asset.code', 'YLX') }}",
+            YLX_ISSUER_PUBLIC: "{{ config('yolixa.ylx_asset.issuer') }}"
         };
     </script>
 

@@ -6,7 +6,21 @@ use Illuminate\Database\Eloquent\Model;
 
 class TipIntent extends Model
 {
-    protected $guarded = [];
+    protected $fillable = [
+        'sender_wallet',
+        'receiver_id',
+        'receiver_wallet',
+        'asset',
+        'token_contract_id',
+        'amount',
+        'amount_atomic',
+        'contract_tip_id',
+        'status',
+        'tx_hash',
+        'expires_at',
+        'confirmed_at',
+        'failure_reason',
+    ];
 
     protected $casts = [
         'amount' => 'decimal:7',

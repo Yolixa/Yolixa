@@ -114,7 +114,7 @@ class SorobanTransactionVerifierProtocol27ReadTest extends TestCase
         ]);
 
         $rpc->shouldReceive('addressArgument')->andReturnUsing(
-            fn (string $address) => SorobanAddress::fromAnyId($address)->toXdrSCVal()
+            fn (string $address) => $this->sorobanAddress($address)->toXdrSCVal()
         );
         $rpc->shouldReceive('u64Argument')->andReturnUsing(fn (string $value) => XdrSCVal::forU64((int) $value));
         $rpc->shouldReceive('callContractRead')->once()->andThrow(SorobanRpcException::forHttpStatus(429));
@@ -190,7 +190,7 @@ class SorobanTransactionVerifierProtocol27ReadTest extends TestCase
         ]);
 
         $rpc->shouldReceive('addressArgument')->andReturnUsing(
-            fn (string $address) => SorobanAddress::fromAnyId($address)->toXdrSCVal()
+            fn (string $address) => $this->sorobanAddress($address)->toXdrSCVal()
         );
         $rpc->shouldReceive('u64Argument')->andReturnUsing(fn (string $value) => XdrSCVal::forU64((int) $value));
 
@@ -231,10 +231,10 @@ class SorobanTransactionVerifierProtocol27ReadTest extends TestCase
         $amountAtomic = $overrides['amountAtomic'] ?? '10000000';
         $tipId = $overrides['tipId'] ?? '42';
 
-        $hostFunction = new InvokeContractHostFunction($this->router, $functionName, [
+        $hostFunction = new InvokeContractHostFunction(StrKey::decodeContractIdHex($this->router), $functionName, [
             SorobanAddress::fromAccountId($sender)->toXdrSCVal(),
             SorobanAddress::fromAccountId($creator)->toXdrSCVal(),
-            SorobanAddress::fromAnyId($token)->toXdrSCVal(),
+            $this->sorobanAddress($token)->toXdrSCVal(),
             XdrSCVal::forI128Parts(0, (int) $amountAtomic),
             XdrSCVal::forU64((int) $tipId),
         ]);
@@ -258,5 +258,14 @@ class SorobanTransactionVerifierProtocol27ReadTest extends TestCase
             'amount_atomic' => '10000000',
             'contract_tip_id' => 42,
         ]);
+    }
+
+    private function sorobanAddress(string $address): SorobanAddress
+    {
+        if (str_starts_with($address, 'C')) {
+            return SorobanAddress::fromContractId(StrKey::decodeContractIdHex($address));
+        }
+
+        return SorobanAddress::fromAccountId($address);
     }
 }

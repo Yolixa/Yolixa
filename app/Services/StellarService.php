@@ -2,16 +2,17 @@
 
 namespace App\Services;
 
+use DateTime;
 use Illuminate\Support\Facades\Log;
 use Soneso\StellarSDK\AbstractTransaction;
 use Soneso\StellarSDK\Account;
 use Soneso\StellarSDK\Asset;
-use Soneso\StellarSDK\AssetTypeCreditAlphanum;
 use Soneso\StellarSDK\Crypto\KeyPair;
 use Soneso\StellarSDK\Exceptions\HorizonRequestException;
 use Soneso\StellarSDK\PaymentOperationBuilder;
 use Soneso\StellarSDK\Responses\Operations\PaymentOperationResponse;
 use Soneso\StellarSDK\StellarSDK;
+use Soneso\StellarSDK\TimeBounds;
 use Soneso\StellarSDK\TransactionBuilder;
 use Soneso\StellarSDK\TransactionBuilderAccount;
 
@@ -19,10 +20,12 @@ class StellarService
 {
     private StellarSDK $sdk;
     private StellarConfigurationService $configuration;
+    private XlmAmount $amounts;
 
-    public function __construct(StellarConfigurationService $configuration)
+    public function __construct(StellarConfigurationService $configuration, XlmAmount $amounts)
     {
         $this->configuration = $configuration;
+        $this->amounts = $amounts;
         $this->sdk = $configuration->sdk();
     }
 
@@ -40,10 +43,11 @@ class StellarService
      * Build the core Yolixa MVP transaction: a real direct XLM payment from fan to creator.
      * The app never handles secret keys; Freighter/Rabet signs this XDR in the browser.
      */
-    public function buildTipXdr(string $sender, string $destination, string $assetCode, float $amount): array
+    public function buildTipXdr(string $sender, string $destination, string $assetCode, string $amount): array
     {
         try {
-            $validation = $this->validateTipInputs($sender, $destination, $assetCode, (string) $amount);
+            $normalizedAmount = $this->normalizeXlmAmount($amount);
+            $validation = $this->validateTipInputs($sender, $destination, $assetCode, $normalizedAmount);
             if (!$validation['success']) {
                 return $validation;
             }
@@ -60,47 +64,19 @@ class StellarService
                 return ['success' => false, 'message' => 'Creator wallet is not funded on the configured Stellar network.'];
             }
 
-            $platformWallet = config('yolixa.platform_public_key');
-            if (!$this->isValidPublicKey($platformWallet)) {
-                return ['success' => false, 'message' => 'Platform fee wallet is not configured. Set YOLIXA_PLATFORM_WALLET_PUBLIC before enabling tips.'];
-            }
-
-            try {
-                $platformAccount = $this->sdk->requestAccount($platformWallet);
-            } catch (\Throwable) {
-                return ['success' => false, 'message' => 'Platform fee wallet is not funded on the configured Stellar network.'];
-            }
-
             $asset = $this->assetForCode($assetCode);
             if (!$asset) {
-                return ['success' => false, 'message' => 'Unsupported asset or missing asset issuer config.'];
+                return ['success' => false, 'message' => 'Only native XLM tipping is enabled in the current MVP.'];
             }
 
-            if ($assetCode !== 'XLM') {
-                $senderTrustline = $this->accountAssetBalance($senderAccount, $assetCode, $this->assetIssuer($assetCode));
-                $creatorTrustline = $this->accountAssetBalance($destinationAccount, $assetCode, $this->assetIssuer($assetCode));
-                $platformTrustline = $this->accountAssetBalance($platformAccount, $assetCode, $this->assetIssuer($assetCode));
-
-                if (!$senderTrustline) {
-                    return ['success' => false, 'code' => 'sender_missing_trustline', 'message' => "Sender wallet is missing a {$assetCode} trustline."];
-                }
-
-                if (!$creatorTrustline) {
-                    return ['success' => false, 'code' => 'creator_missing_trustline', 'message' => "Creator wallet is missing a {$assetCode} trustline."];
-                }
-
-                if (!$platformTrustline) {
-                    return ['success' => false, 'code' => 'platform_missing_trustline', 'message' => "Platform wallet is missing a {$assetCode} trustline."];
-                }
-
-                if ($this->compareDecimalStrings($senderTrustline->getBalance(), (string) $amount) < 0) {
-                    return ['success' => false, 'message' => "Sender wallet does not have enough {$assetCode} balance."];
-                }
+            $senderBalance = $this->accountAssetBalance($senderAccount, 'XLM', null);
+            if ($senderBalance && $this->compareDecimalStrings($senderBalance->getBalance(), $normalizedAmount) < 0) {
+                return ['success' => false, 'message' => 'Sender wallet does not have enough XLM for this tip and network fees.'];
             }
 
-            $amounts = $this->calculateSplitAmounts((string) $amount);
+            $amounts = $this->calculateSplitAmounts($normalizedAmount);
 
-            return $this->buildTipXdrFromAccount($senderAccount, $sender, $destination, $platformWallet, $assetCode, $amounts);
+            return $this->buildTipXdrFromAccount($senderAccount, $sender, $destination, null, $assetCode, $amounts);
         } catch (\Throwable $e) {
             Log::channel('stellar')->error('Tip XDR build failed: ' . $e->getMessage());
             return ['success' => false, 'message' => 'Failed to build Stellar transaction.'];
@@ -111,25 +87,22 @@ class StellarService
         TransactionBuilderAccount $senderAccount,
         string $sender,
         string $destination,
-        string $platformWallet,
+        ?string $platformWallet,
         string $assetCode,
         array $amounts
     ): array {
         $asset = $this->assetForCode($assetCode);
         if (!$asset) {
-            return ['success' => false, 'message' => 'Unsupported asset or missing asset issuer config.'];
+            return ['success' => false, 'message' => 'Only native XLM tipping is enabled in the current MVP.'];
         }
 
         $creatorPayment = (new PaymentOperationBuilder($destination, $asset, $amounts['creator_payout_amount']))
             ->setSourceAccount($sender)
             ->build();
-        $platformPayment = (new PaymentOperationBuilder($platformWallet, $asset, $amounts['platform_fee']))
-            ->setSourceAccount($sender)
-            ->build();
 
         $transaction = (new TransactionBuilder($senderAccount))
             ->addOperation($creatorPayment)
-            ->addOperation($platformPayment)
+            ->setTimeBounds(new TimeBounds(new DateTime('@0'), new DateTime('@'.(time() + 300))))
             ->build();
 
         return [
@@ -141,7 +114,7 @@ class StellarService
             'platform_fee' => $amounts['platform_fee'],
             'creator_payout_amount' => $amounts['creator_payout_amount'],
             'asset' => $assetCode,
-            'asset_issuer' => $this->assetIssuer($assetCode),
+            'asset_issuer' => null,
         ];
     }
 
@@ -172,29 +145,28 @@ class StellarService
     public function verifyTransaction(
         string $txHash,
         string $expectedReceiver,
-        float $expectedAmount,
+        string $expectedAmount,
         string $expectedAssetCode,
         ?string $expectedSender = null
     ): array {
         try {
-            $amounts = $this->calculateSplitAmounts((string) $expectedAmount);
-            $assetIssuer = $this->assetIssuer($expectedAssetCode);
-            $platformWallet = config('yolixa.platform_public_key');
+            $amounts = $this->calculateSplitAmounts($this->normalizeXlmAmount($expectedAmount));
 
             $txResponse = $this->sdk->requestTransaction($txHash);
             if (!$txResponse->isSuccessful()) {
                 return ['success' => false, 'message' => 'Transaction was not successful on Stellar.'];
             }
 
+            if ($expectedSender !== null && $txResponse->getSourceAccount() !== $expectedSender) {
+                return ['success' => false, 'message' => 'Transaction source account does not match the connected supporter wallet.'];
+            }
+
             $opsResponse = $this->sdk->operations()->forTransaction($txHash)->execute();
             $verification = $this->verifyPaymentOperations(
                 $opsResponse->getOperations()->toArray(),
                 $expectedReceiver,
-                $platformWallet,
                 $amounts['creator_payout_amount'],
-                $amounts['platform_fee'],
                 $expectedAssetCode,
-                $assetIssuer,
                 $expectedSender
             );
 
@@ -206,13 +178,12 @@ class StellarService
                 'success' => true,
                 'sender_wallet' => $verification['sender_wallet'],
                 'receiver_wallet' => $expectedReceiver,
-                'platform_wallet' => $platformWallet,
-                'network_fee' => ((float) $txResponse->getFeeCharged()) / 10000000,
+                'network_fee' => $this->amounts->atomicToDecimal((string) ($txResponse->getFeeCharged() ?? '0')),
                 'ledger' => $txResponse->getLedger(),
                 'created_at' => $txResponse->getCreatedAt(),
-                'platform_fee' => $amounts['platform_fee'],
+                'platform_fee' => '0.0000000',
                 'creator_payout_amount' => $amounts['creator_payout_amount'],
-                'asset_issuer' => $assetIssuer,
+                'asset_issuer' => null,
             ];
         } catch (HorizonRequestException $e) {
             Log::channel('security')->warning('Horizon verify failed: ' . $e->getMessage());
@@ -226,19 +197,11 @@ class StellarService
     public function verifyPaymentOperations(
         array $operations,
         string $expectedReceiver,
-        ?string $platformWallet,
         string $expectedCreatorAmount,
-        string $expectedPlatformFee,
         string $expectedAssetCode,
-        ?string $expectedAssetIssuer,
         ?string $expectedSender
     ): array {
-        if (!$this->isValidPublicKey($platformWallet)) {
-            return ['success' => false, 'message' => 'Platform fee wallet is not configured.'];
-        }
-
         $creatorMatched = false;
-        $platformMatched = false;
         $senderWallet = null;
 
         foreach ($operations as $op) {
@@ -246,7 +209,7 @@ class StellarService
                 continue;
             }
 
-            if (!$this->operationAssetMatches($op, $expectedAssetCode, $expectedAssetIssuer)) {
+            if (!$this->operationAssetMatches($op, $expectedAssetCode, null)) {
                 continue;
             }
 
@@ -258,15 +221,10 @@ class StellarService
                 $creatorMatched = true;
                 $senderWallet = $op->getFrom();
             }
-
-            if ($op->getTo() === $platformWallet && $this->amountsEqual($op->getAmount(), $expectedPlatformFee)) {
-                $platformMatched = true;
-                $senderWallet = $op->getFrom();
-            }
         }
 
-        if (!$creatorMatched || !$platformMatched) {
-            return ['success' => false, 'message' => 'Transaction hash exists, but required creator and platform fee payment operations do not match this tip.'];
+        if (!$creatorMatched) {
+            return ['success' => false, 'message' => 'Transaction hash exists, but the XLM payment does not match this tip.'];
         }
 
         return ['success' => true, 'sender_wallet' => $senderWallet];
@@ -274,32 +232,18 @@ class StellarService
 
     public function calculateSplitAmounts(string $amount): array
     {
-        $grossUnits = $this->decimalToUnits($amount);
-        $feeRate = (float) config('yolixa.fee_percentage', 0.015);
-        $feeUnits = (int) round($grossUnits * $feeRate);
-        $creatorUnits = $grossUnits - $feeUnits;
-
-        if ($feeUnits <= 0 && $feeRate > 0) {
-            $feeUnits = 1;
-            $creatorUnits = $grossUnits - 1;
-        }
+        $grossAtomic = $this->amounts->decimalToAtomic($amount);
 
         return [
-            'gross_amount' => $this->unitsToDecimal($grossUnits),
-            'platform_fee' => $this->unitsToDecimal(max($feeUnits, 0)),
-            'creator_payout_amount' => $this->unitsToDecimal(max($creatorUnits, 0)),
+            'gross_amount' => $this->amounts->atomicToDecimal($grossAtomic),
+            'platform_fee' => '0.0000000',
+            'creator_payout_amount' => $this->amounts->atomicToDecimal($grossAtomic),
         ];
     }
 
     public function supportedTipAssets(): array
     {
-        $assets = ['XLM'];
-        $usdc = config('yolixa.assets.USDC');
-        if (($usdc['enabled'] ?? false) && $this->isValidPublicKey($usdc['issuer'] ?? null)) {
-            $assets[] = 'USDC';
-        }
-
-        return $assets;
+        return ['XLM'];
     }
 
     public function assetIssuer(string $assetCode): ?string
@@ -325,14 +269,11 @@ class StellarService
             return ['success' => false, 'message' => 'Unsupported asset or missing asset issuer config.'];
         }
 
-        $units = $this->decimalToUnits($amount);
-        if ($units <= 0) {
-            return ['success' => false, 'message' => 'Amount too small.'];
-        }
-
-        $maxUnits = $this->decimalToUnits((string) config('yolixa.max_payment_amount', 1000));
-        if ($units > $maxUnits) {
-            return ['success' => false, 'message' => 'Amount too large.'];
+        try {
+            $atomic = $this->amounts->decimalToAtomic($amount);
+            $this->amounts->validateWithinConfiguredLimits($atomic);
+        } catch (\InvalidArgumentException $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
         }
 
         return ['success' => true];
@@ -344,12 +285,7 @@ class StellarService
             return Asset::native();
         }
 
-        $issuer = $this->assetIssuer($assetCode);
-        if (!$this->isValidPublicKey($issuer)) {
-            return null;
-        }
-
-        return Asset::createNonNativeAsset($assetCode, $issuer);
+        return null;
     }
 
     private function accountAssetBalance($account, string $assetCode, ?string $issuer)
@@ -374,42 +310,25 @@ class StellarService
             return $asset->getType() === Asset::TYPE_NATIVE;
         }
 
-        return $asset instanceof AssetTypeCreditAlphanum
-            && $asset->getCode() === $assetCode
-            && $asset->getIssuer() === $issuer;
+        return false;
     }
 
     private function amountsEqual(string $actual, string $expected): bool
     {
-        return $this->decimalToUnits($actual) === $this->decimalToUnits($expected);
+        return $this->amounts->decimalToAtomic($actual) === $this->amounts->decimalToAtomic($expected);
     }
 
-    private function decimalToUnits(string $amount): int
+    private function normalizeXlmAmount(string $amount): string
     {
-        $amount = trim($amount);
-        if (!preg_match('/^\d+(\.\d+)?$/', $amount)) {
-            return 0;
-        }
-
-        [$whole, $fraction] = array_pad(explode('.', $amount, 2), 2, '');
-        $fraction = substr(str_pad($fraction, 8, '0'), 0, 8);
-        $rounded = (int) substr($fraction, 7, 1) >= 5 ? 1 : 0;
-        $fraction7 = (int) substr($fraction, 0, 7);
-
-        return ((int) $whole * 10000000) + $fraction7 + $rounded;
-    }
-
-    private function unitsToDecimal(int $units): string
-    {
-        $whole = intdiv($units, 10000000);
-        $fraction = str_pad((string) ($units % 10000000), 7, '0', STR_PAD_LEFT);
-
-        return "{$whole}.{$fraction}";
+        return $this->amounts->atomicToDecimal($this->amounts->decimalToAtomic($amount));
     }
 
     private function compareDecimalStrings(string $left, string $right): int
     {
-        return $this->decimalToUnits($left) <=> $this->decimalToUnits($right);
+        return $this->amounts->compareAtomic(
+            $this->amounts->decimalToAtomic($left),
+            $this->amounts->decimalToAtomic($right)
+        );
     }
 
     private function formatHorizonError(HorizonRequestException $e): string

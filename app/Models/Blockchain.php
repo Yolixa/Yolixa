@@ -6,7 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Blockchain extends Model
 {
-    protected $guarded=[];
+    protected $fillable = [
+        'name',
+        'symbol',
+        'active',
+    ];
 
     public function walletTypes()
     {

@@ -11,6 +11,7 @@ use Soneso\StellarSDK\Soroban\Address as SorobanAddress;
 use Soneso\StellarSDK\Soroban\Contract\ClientOptions;
 use Soneso\StellarSDK\Soroban\Contract\MethodOptions;
 use Soneso\StellarSDK\Soroban\Contract\SorobanClient;
+use Soneso\StellarSDK\Crypto\StrKey;
 use Soneso\StellarSDK\Xdr\XdrSCVal;
 
 class JsonSorobanRpcClient
@@ -103,9 +104,11 @@ class JsonSorobanRpcClient
 
     public function addressArgument(string $address): XdrSCVal
     {
-        $parsed = SorobanAddress::fromAnyId($address);
-
-        if (! $parsed) {
+        if (str_starts_with($address, 'C')) {
+            $parsed = SorobanAddress::fromContractId(StrKey::decodeContractIdHex($address));
+        } elseif (str_starts_with($address, 'G')) {
+            $parsed = SorobanAddress::fromAccountId($address);
+        } else {
             throw new RuntimeException('Invalid Soroban address argument.');
         }
 
@@ -157,7 +160,10 @@ class JsonSorobanRpcClient
         }
 
         if ($value->getAddress() !== null) {
-            return SorobanAddress::fromXdr($value->getAddress())->toStrKey();
+            $address = SorobanAddress::fromXdr($value->getAddress());
+
+            return $address->getAccountId()
+                ?? StrKey::encodeContractIdHex((string) $address->getContractId());
         }
 
         if ($value->getVec() !== null) {

@@ -1,10 +1,10 @@
 <?php
 
 return [
-    'network' => env('YOLIXA_NETWORK', env('STELLAR_NETWORK', 'testnet')),
-    'stellar_network' => env('YOLIXA_NETWORK', env('STELLAR_NETWORK', 'testnet')),
-    'stellar_horizon' => env('STELLAR_HORIZON', env('STELLAR_TESTNET_HORIZON_URL', 'https://horizon-testnet.stellar.org')),
-    'stellar_passphrase' => env('STELLAR_PASSPHRASE', env('STELLAR_TESTNET_NETWORK_PASSPHRASE', 'Test SDF Network ; September 2015')),
+    'network' => env('STELLAR_NETWORK', env('YOLIXA_NETWORK', 'testnet')),
+    'stellar_network' => env('STELLAR_NETWORK', env('YOLIXA_NETWORK', 'testnet')),
+    'stellar_horizon' => env('STELLAR_HORIZON_URL', env('STELLAR_HORIZON', env('STELLAR_TESTNET_HORIZON_URL', 'https://horizon-testnet.stellar.org'))),
+    'stellar_passphrase' => env('STELLAR_NETWORK_PASSPHRASE', env('STELLAR_PASSPHRASE', env('STELLAR_TESTNET_NETWORK_PASSPHRASE', 'Test SDF Network ; September 2015'))),
     'stellar_horizon_urls' => [
         'testnet' => env('STELLAR_TESTNET_HORIZON_URL', 'https://horizon-testnet.stellar.org'),
         'mainnet' => env('STELLAR_MAINNET_HORIZON_URL', 'https://horizon.stellar.org'),
@@ -23,15 +23,15 @@ return [
     ],
 
     'platform_public_key' => env('YOLIXA_PLATFORM_WALLET_PUBLIC', env('YOLIXA_PLATFORM_PUBLIC_KEY')),
-    'fee_percentage' => env('YOLIXA_PLATFORM_FEE_PERCENT', env('YOLIXA_FEE_PERCENTAGE', 0.015)),
+    'fee_percentage' => env('YOLIXA_PLATFORM_FEE_PERCENT', env('YOLIXA_FEE_PERCENTAGE', 0)),
     'min_payment_amount' => env('YOLIXA_MIN_PAYMENT_AMOUNT', '0.0000001'),
     'max_payment_amount' => env('YOLIXA_MAX_PAYMENT_AMOUNT', '1000'),
     'wallet_challenge_ttl_seconds' => env('YOLIXA_WALLET_CHALLENGE_TTL_SECONDS', 300),
-    'tip_execution_mode' => env('YOLIXA_TIP_EXECUTION_MODE', 'soroban'),
+    'tip_execution_mode' => env('YOLIXA_TIP_EXECUTION_MODE', 'classic'),
 
     'enabled_wallets' => array_values(array_filter(array_map(
         'trim',
-        explode(',', env('YOLIXA_ENABLED_WALLETS', 'freighter,rabet'))
+        explode(',', env('YOLIXA_ENABLED_WALLETS', 'freighter'))
     ))),
 
     'features' => [
@@ -58,19 +58,19 @@ return [
         'USDC' => [
             'code' => env('USDC_ASSET_CODE', 'USDC'),
             'issuer' => env('USDC_ISSUER_PUBLIC'),
-            'enabled' => filled(env('USDC_ISSUER_PUBLIC')),
+            'enabled' => false,
             'display_name' => 'USD Coin',
         ],
     ],
 
-    // Experimental YLX conversion values used only by legacy reward-preview code.
-    // Production token distribution is outside the current Testnet MVP.
+    // Experimental YLX conversion values are retained for future reward research only.
+    // Production token distribution is outside the current Testnet XLM MVP.
     'ylx_price' => [
         'XLM' => env('YOLIXA_YLX_PRICE_XLM', 0.1),
         'USDC' => env('YOLIXA_YLX_PRICE_USDC', 0.05),
     ],
 
-    'supported_tip_assets' => explode(',', env('YOLIXA_SUPPORTED_TIP_ASSETS', 'XLM')),
+    'supported_tip_assets' => ['XLM'],
     'ylx_reward_rate_percent' => env('YLX_REWARD_RATE_PERCENT', 0),
 
     // Legacy name retained for existing views/services. Prefer platform_public_key in new code.
@@ -85,7 +85,7 @@ return [
     ],
 
     'soroban' => [
-        'enabled' => filter_var(env('SOROBAN_ENABLED', true), FILTER_VALIDATE_BOOL),
+        'enabled' => filter_var(env('SOROBAN_ENABLED', false), FILTER_VALIDATE_BOOL),
         'rpc_url' => env('SOROBAN_RPC_URL', 'https://soroban-testnet.stellar.org'),
         'tip_router_contract_id' => env('SOROBAN_TIP_ROUTER_CONTRACT_ID'),
         'xlm_token_contract_id' => env('SOROBAN_XLM_TOKEN_CONTRACT_ID'),

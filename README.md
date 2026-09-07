@@ -1,169 +1,190 @@
 # Yolixa
 
-Yolixa is a Soroban-first, non-custodial creator monetization and payment-routing platform on Stellar. Fans authorize payments from their own wallets, and the `YolixaTipRouter` atomically routes the creator payout and Yolixa platform fee without Yolixa taking custody of user funds.
+Yolixa is a non-custodial creator micro-tipping MVP built with Laravel and Stellar. The current pre-SCF product runs on Stellar Testnet and supports direct native XLM tips from supporters to creators.
 
-## Current Status
+Creators connect a Stellar wallet, create a unique tipping link, and receive XLM directly in their wallet. Supporters sign transactions in their browser wallet. Laravel submits signed transactions to Horizon and verifies them before storing confirmed tips.
 
-This branch, `scf-v2-phase-2-integration`, contains the SCF Build Open Track Testnet MVP candidate.
+## Current Scope
 
-Implemented in repository code:
+Implemented current MVP:
 
 - Stellar Testnet configuration.
-- Freighter and Rabet wallet authentication with one-time challenges.
-- XLM tipping through the `YolixaTipRouter` Soroban contract.
-- Server-created `TipIntent` records.
-- Non-custodial fan-authorized payment execution.
-- Atomic creator payout plus 1.5% treasury fee routing.
-- Backend transaction verification against the configured router, token, sender, creator, amount, and contract tip ID.
-- On-chain router receipts and creator stats reads.
-- Replay/idempotency protection in both contract and Laravel confirmation flow.
-- Rust contract tests, Laravel tests, frontend build, and GitHub Actions CI.
+- Native XLM tipping only.
+- Freighter wallet connection as the default supported wallet.
+- Signed wallet challenge authentication.
+- Creator registration bound to the authenticated wallet.
+- Unique referral/profile tipping links.
+- Public creator tipping page.
+- Unsigned XLM XDR construction.
+- Browser-wallet transaction signing.
+- Horizon submission.
+- Backend Horizon verification before tip persistence.
+- Duplicate transaction prevention through validation and database uniqueness.
+- Creator dashboard with paginated tip history.
+- Basic admin dashboard with real current-MVP fields.
 
-Current MVP wallet scope:
+Not current scope:
 
-- Freighter: current MVP wallet; code integrated for authentication and Soroban XLM signing; Testnet browser validation pending.
-- Rabet: current MVP wallet; code integrated for authentication and Soroban XLM signing; Testnet browser validation pending.
+- USDC payments.
+- Custom Stellar assets or trustlines.
+- YLX token issuance, rewards, or claim flows.
+- Platform fee collection.
+- Soroban router payments.
+- Staking, liquidity pools, DeFi, cross-chain integrations.
+- Mainnet launch.
+- Advanced creator analytics or moderation.
 
-Public Testnet deployment and browser E2E evidence are not yet recorded in this repository. See [docs/scf-v2-phase-2.md](docs/scf-v2-phase-2.md).
+## Current Stellar Integration
 
-## Architecture
+The current classic XLM flow is:
 
 ```text
-Fan wallet
-    |
-    | authorizes Soroban invocation
-    v
-YolixaTipRouter
-    |
-    +----> Creator: 98.5% net payout
-    |
-    +----> Yolixa treasury: 1.5% platform fee
+Supporter wallet
+-> Laravel builds unsigned XLM payment XDR
+-> Freighter signs in browser
+-> Laravel submits signed XDR to Horizon
+-> Laravel verifies transaction source, receiver, asset, amount, and success
+-> confirmed tip is stored
 ```
 
-The router transfers from the fan's authorized Stellar Asset Contract balance during the same Soroban transaction. Yolixa does not store fan private keys and does not use a platform-controlled wallet to sign fan payments.
+The generated XDR contains one native XLM payment operation from the supporter to the creator. Yolixa does not request, transmit, store, or log private keys.
 
-The Laravel backend does not trust browser-provided proof alone. Confirmation verifies the final transaction via RPC and reads router state for `tip_exists`, `get_tip`, `get_creator_stats`, `get_fee_bps`, `get_treasury`, `is_paused`, and `is_token_enabled`.
+## Architecture Summary
 
-## Assets
-
-Current MVP support:
-
-- `XLM`: implemented for Soroban Testnet tipping.
-
-Future funded scope:
-
-- `USDC`: planned after explicit SAC validation, allowlisting, and product integration.
-- `YLX`: experimental/future creator loyalty and reward concept only. Production token distribution and reward settlement are not part of the current Testnet MVP.
-- Other Stellar assets: future only after explicit allowlisting and verification work.
+- `routes/web.php`: public pages, wallet auth, creator routes, current tip APIs.
+- `app/Http/Controllers/WalletController.php`: wallet challenge and session auth.
+- `app/Http/Controllers/CreatorController.php`: creator registration, profile, dashboard.
+- `app/Http/Controllers/TipController.php`: preview, XDR build, submit, record.
+- `app/Services/StellarConfigurationService.php`: network, Horizon, passphrase, explorer URLs.
+- `app/Services/StellarService.php`: XDR construction, Horizon submission, transaction verification.
+- `app/Services/TipService.php`: idempotent confirmed-tip storage.
+- `resources/views`: Blade UI.
+- `docs`: architecture, security, API, demo, and SCF draft documentation.
+- `soroban`: future/experimental contract work, not the current default MVP payment path.
 
 ## Requirements
 
-- PHP 8.2 with `gmp`, `sodium`, `sqlite3`, and `pdo_sqlite`.
+- PHP 8.2 or newer.
 - Composer.
-- Node.js 22+ and npm.
-- Rust stable with `wasm32v1-none`.
-- Stellar CLI 27.x for contract deployment/build verification.
-- Freighter or Rabet 1.8.0+ installed in the browser for wallet-signed tips.
+- Node.js 22 or newer and npm.
+- SQLite for local setup, or MySQL/MariaDB.
+- Freighter browser wallet set to Stellar Testnet.
 
-## Setup
+## Local Setup
 
 ```bash
 composer install
-cp .env.example .env
+npm install
+copy .env.example .env
 php artisan key:generate
-mkdir -p database
-touch database/database.sqlite
-php artisan migrate:fresh --seed
-npm ci
+```
+
+For SQLite on Windows PowerShell:
+
+```powershell
+New-Item -ItemType Directory -Force database
+New-Item -ItemType File -Force database/database.sqlite
+```
+
+Set the current MVP environment values:
+
+```env
+DB_CONNECTION=sqlite
+DB_DATABASE=database/database.sqlite
+STELLAR_NETWORK=testnet
+STELLAR_HORIZON_URL=https://horizon-testnet.stellar.org
+STELLAR_NETWORK_PASSPHRASE="Test SDF Network ; September 2015"
+YOLIXA_TIP_EXECUTION_MODE=classic
+YOLIXA_ENABLED_WALLETS=freighter
+SOROBAN_ENABLED=false
+```
+
+Run database setup:
+
+```bash
+php artisan migrate --seed
+```
+
+Build frontend assets:
+
+```bash
 npm run build
+```
+
+Run the app:
+
+```bash
 php artisan serve
 ```
 
-For local Soroban tipping, configure these values in `.env` after deploying the router:
-
-```env
-YOLIXA_NETWORK=testnet
-YOLIXA_TIP_EXECUTION_MODE=soroban
-YOLIXA_PLATFORM_WALLET_PUBLIC=
-SOROBAN_ENABLED=true
-SOROBAN_RPC_URL=https://soroban-testnet.stellar.org
-SOROBAN_TIP_ROUTER_CONTRACT_ID=
-SOROBAN_XLM_TOKEN_CONTRACT_ID=
-SOROBAN_TIP_ROUTER_FEE_BPS=150
-```
-
-Never commit Stellar seeds, mnemonics, private keys, or funded wallet secrets.
-
-## Testing
-
-Application checks:
+For local frontend development:
 
 ```bash
-composer install --no-interaction --prefer-dist --no-progress
-npm ci
-npm run build
-php artisan test
+npm run dev
 ```
 
-Soroban checks:
+## Demo Flow
 
-```bash
-cd soroban
-cargo fmt --check
-cargo clippy --workspace --all-targets --locked -- -D warnings
-cargo test --workspace --locked
-stellar contract build --package yolixa-tip-router --locked
-```
+1. Open the homepage.
+2. Connect a creator Freighter wallet on Stellar Testnet.
+3. Register as a creator.
+4. Copy the referral/tip URL from the dashboard.
+5. Open the tip URL in a supporter session.
+6. Connect a different funded Freighter Testnet wallet.
+7. Enter an XLM amount.
+8. Approve the transaction in Freighter.
+9. Wait for Horizon confirmation.
+10. Show the transaction hash/explorer link.
+11. Return to the creator dashboard and show the confirmed tip.
 
-GitHub Actions runs the same application and Soroban coverage in `.github/workflows/soroban-ci.yml`.
+Do not use the same wallet for creator and supporter. Self-tipping is blocked.
 
-## Testnet Deployment
+## Security Notes
 
-Use [docs/scf-v2-phase-2.md](docs/scf-v2-phase-2.md) for the reproducible Testnet deployment, router initialization, XLM SAC allowlisting, CLI smoke test, and browser wallet E2E evidence checklist.
+- Private keys remain in the user's wallet.
+- Wallet login requires signed challenge proof.
+- Challenges expire and are single-use.
+- Creator registration must match the authenticated wallet.
+- Mutable tip endpoints require an authenticated wallet session.
+- The backend verifies every recorded transaction through Horizon.
+- `tips.tx_hash` is unique.
+- Admin routes use role middleware.
+- No secrets belong in `.env.example`, docs, tests, or source code.
 
-Evidence placeholders before SCF submission:
+## Documentation
 
-- Router contract ID: `MANUAL ACTION REQUIRED`
-- XLM SAC ID: `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC`
-- Admin public address: `MANUAL ACTION REQUIRED`
-- Treasury public address: `MANUAL ACTION REQUIRED`
-- Deployment transaction hash: `MANUAL ACTION REQUIRED`
-- Smoke-test transaction hash and ledger: `MANUAL ACTION REQUIRED`
+- [Architecture](docs/ARCHITECTURE.md)
+- [Stellar Integration](docs/STELLAR_INTEGRATION.md)
+- [Security Model](docs/SECURITY_MODEL.md)
+- [API](docs/API.md)
+- [Local Setup](docs/LOCAL_SETUP.md)
+- [Demo Guide](docs/DEMO_GUIDE.md)
+- [Known Limitations](docs/KNOWN_LIMITATIONS.md)
+- [SCF Submission Draft](docs/SCF_SUBMISSION_DRAFT.md)
 
-## Current Limitations
+## Future Roadmap
 
-- Testnet only; Mainnet launch is intentionally pending.
-- Soroban product flow supports XLM only.
-- Freighter/Rabet approval is manual in the browser.
-- Public Testnet contract and E2E transaction evidence must be supplied by a human operator.
-- USDC Soroban routing, production YLX rewards, analytics/indexing, moderation, production monitoring, off-ramps, mobile apps, and embeddable SDK/widget work remain future scope.
-- Contract-level `tip_split` is implemented and tested; product-level split tipping UI/backend integration remains future scope.
-- No root `LICENSE` file exists yet. See [docs/open-source-plan.md](docs/open-source-plan.md).
+Future SCF-funded work may include:
 
-## SCF-Funded Roadmap Boundary
+- production-grade Stellar payment expansion,
+- planned USDC support on Stellar,
+- trustline-aware payment UX,
+- transparent sustainability-fee architecture,
+- optional Soroban payment router integration,
+- utility-focused creator rewards after validation,
+- improved analytics/admin tooling,
+- public APIs and embeddable tipping widgets,
+- production Mainnet launch after Testnet validation.
 
-Completed before SCF: the Testnet MVP architecture, Soroban router, Laravel wallet-signed standard XLM tip integration, verification, idempotency, and automated tests.
+These items are not presented as current functionality.
 
-Planned for SCF funding:
+## Manual Evidence Needed
 
-- Product integration for `tip_split`.
-- USDC via an approved Stellar Asset Contract.
-- Multi-asset UX.
-- Embeddable tipping component, SDK, and API documentation.
-- Expanded public Testnet creator beta, analytics/event indexing, monitoring, and E2E evidence.
-- Mainnet hardening, production admin/governance plan, deployment, observability, and launch documentation.
-- Additional Stellar wallets, Stellar Wallets Kit/standardized wallet abstraction, mobile wallet UX, and WalletConnect-compatible wallets.
+Before final SCF submission, the project owner should add:
 
-Freighter and Rabet are current MVP scope, not future wallet scope.
-
-Yolixa should be evaluated as a technically credible Testnet MVP with a concrete Stellar/Soroban path to Mainnet, not as a completed production platform.
-
-## Repository Metadata Recommendation
-
-Suggested GitHub description:
-
-`Non-custodial creator tipping and payment routing on Stellar, powered by Soroban.`
-
-Suggested topics:
-
-`stellar`, `soroban`, `creator-economy`, `payments`, `micropayments`, `laravel`, `rust`, `web3`
+- public GitHub repository URL,
+- deployed demo URL,
+- demo video,
+- real Stellar Testnet transaction hash,
+- founder/team details,
+- final budget and milestone dates.

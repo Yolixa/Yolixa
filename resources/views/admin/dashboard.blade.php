@@ -7,11 +7,11 @@
         <div class="flex items-center justify-between mb-10">
             <div>
                 <h1 class="text-4xl font-black mb-2 border-l-4 border-red-500 pl-4">Admin <span class="text-red-500">Control Panel</span></h1>
-                <p class="text-gray-400 pl-5">Platform oversight, analytics, and management.</p>
+                <p class="text-gray-400 pl-5">Basic oversight for current Testnet XLM tipping activity.</p>
             </div>
             
             <span class="bg-red-500/10 text-red-500 font-bold px-4 py-2 rounded-full border border-red-500/30 text-sm flex items-center gap-2">
-                <div class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div> Live Operations
+                <div class="w-2 h-2 bg-red-500 rounded-full"></div> Admin
             </span>
         </div>
 
@@ -26,51 +26,17 @@
                 <p class="text-3xl font-black text-white">{{ number_format($totalFans) }}</p>
             </div>
             <div class="bg-gray-900 rounded-2xl p-6 border border-gray-800 shadow-lg">
-                <p class="text-gray-500 font-bold uppercase text-xs mb-1">Gross Tips Volume</p>
-                <p class="text-3xl font-black text-blue-400 flex items-baseline gap-1">{{ number_format($totalTipsVolume, 2) }} <span class="text-sm text-gray-500">MIXED</span></p>
+                <p class="text-gray-500 font-bold uppercase text-xs mb-1">Confirmed XLM Volume</p>
+                <p class="text-3xl font-black text-blue-400 flex items-baseline gap-1">{{ number_format($totalTipsVolume, 7) }} <span class="text-sm text-gray-500">XLM</span></p>
             </div>
-            <div class="bg-gray-900 rounded-2xl p-6 border border-red-500/20 shadow-lg relative overflow-hidden">
-                <div class="absolute -right-4 -top-4 w-16 h-16 bg-red-500/10 rounded-full blur-xl"></div>
-                <p class="text-red-400 font-bold uppercase text-xs mb-1">Platform Fees</p>
-                <p class="text-3xl font-black text-white">{{ number_format($totalPlatformRevenue, 2) }} <span class="text-sm text-red-400 font-bold">MIXED</span></p>
+            <div class="bg-gray-900 rounded-2xl p-6 border border-gray-800 shadow-lg">
+                <p class="text-gray-500 font-bold uppercase text-xs mb-1">Creator Payouts</p>
+                <p class="text-3xl font-black text-white">{{ number_format($totalCreatorPayout, 7) }} <span class="text-sm text-gray-500">XLM</span></p>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            <!-- Left Column: Operations -->
-            <div class="lg:col-span-1 space-y-8">
-                
-                <div class="bg-gray-900 rounded-2xl p-6 border border-gray-800 shadow-lg">
-                    <h3 class="text-xl font-bold mb-4 flex items-center justify-between">
-                        Pending Claims
-                        <span class="bg-yellow-500 text-black text-xs font-bold px-2 py-1 rounded-md">{{ $pendingClaims }}</span>
-                    </h3>
-                    @if($pendingClaims == 0)
-                        <p class="text-gray-500 text-sm">All creator reward claims have been processed.</p>
-                    @else
-                        <p class="text-gray-400 text-sm mb-4">You have pending manual YLX transfers to process for creators who hit their target.</p>
-                        <button class="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-2 rounded-lg transition-colors text-sm">
-                            Process Claims (Coming Soon)
-                        </button>
-                    @endif
-                </div>
-
-                <div class="bg-gray-900 rounded-2xl p-6 border border-gray-800 shadow-lg">
-                    <h3 class="text-xl font-bold mb-4 flex items-center justify-between text-red-400">
-                        Suspicious Tips
-                        <span class="bg-red-500/20 text-red-500 text-xs font-bold px-2 py-1 rounded-md">{{ $suspiciousTips }}</span>
-                    </h3>
-                    <p class="text-gray-500 text-sm mb-4">Tips that failed execution on Horizon or lack transaction hashes.</p>
-                    <button class="w-full border border-red-500/50 hover:bg-red-500/10 text-red-400 font-bold py-2 rounded-lg transition-colors text-sm">
-                        Audit Logs
-                    </button>
-                </div>
-
-            </div>
-
-            <!-- Right Column: Recent Activity -->
-            <div class="lg:col-span-2">
+        <div class="grid grid-cols-1 gap-8">
+            <div>
                 <div class="bg-gray-900 rounded-2xl p-6 border border-gray-800 shadow-lg h-full">
                     <h3 class="text-xl font-bold mb-6">Recent Platform Activity</h3>
                     
@@ -81,8 +47,8 @@
                                     <th class="pb-3">Sender</th>
                                     <th class="pb-3">Creator</th>
                                     <th class="pb-3 text-right">Amount</th>
-                                    <th class="pb-3 text-right">Fee / Net</th>
-                                    <th class="pb-3 text-center">Soroban</th>
+                                    <th class="pb-3 text-right">Creator Received</th>
+                                    <th class="pb-3 text-right">Network Fee</th>
                                     <th class="pb-3 text-center">Status</th>
                                 </tr>
                             </thead>
@@ -98,12 +64,11 @@
                                     <td class="py-4 text-sm text-right font-bold">
                                         {{ number_format($tip->amount, 7) }} <span class="text-gray-500 text-xs">{{ $tip->asset }}</span>
                                     </td>
-                                    <td class="py-4 text-sm text-right text-red-400 font-bold">
-                                        Fee {{ number_format($tip->platform_fee, 7) }}<br>
-                                        <span class="text-green-400">Net {{ number_format($tip->creator_payout_amount, 7) }}</span>
+                                    <td class="py-4 text-sm text-right text-green-400 font-bold">
+                                        {{ number_format($tip->creator_payout_amount, 7) }} {{ $tip->asset }}
                                     </td>
-                                    <td class="py-4 text-center text-xs text-gray-400">
-                                        {{ $tip->soroban_status ?? 'disabled' }}
+                                    <td class="py-4 text-sm text-right text-gray-400">
+                                        {{ number_format($tip->network_fee, 7) }} XLM
                                     </td>
                                     <td class="py-4 text-center">
                                         <span class="px-2 py-1 rounded text-[10px] font-black {{ $tip->status == 'confirmed' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400' }}">
@@ -113,7 +78,7 @@
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="6" class="py-8 text-center text-gray-500 text-sm">No recent network activity observed.</td>
+                                    <td colspan="6" class="py-8 text-center text-gray-500 text-sm">No recent confirmed tips.</td>
                                 </tr>
                                 @endforelse
                             </tbody>

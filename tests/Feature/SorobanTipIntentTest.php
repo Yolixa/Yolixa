@@ -174,11 +174,11 @@ class SorobanTipIntentTest extends TestCase
 
     public function test_classic_endpoint_is_only_available_in_classic_mode(): void
     {
-        $this->postJson('/api/tip/build-xdr', [])->assertStatus(409);
+        $this->postJson('/api/tip/build-xdr', [])->assertStatus(401);
 
         config(['yolixa.tip_execution_mode' => 'classic']);
 
-        $this->postJson('/api/tip/build-xdr', [])->assertStatus(422);
+        $this->postJson('/api/tip/build-xdr', [])->assertStatus(401);
     }
 
     private function fan(): User

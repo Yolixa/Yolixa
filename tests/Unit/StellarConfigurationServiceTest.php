@@ -17,8 +17,8 @@ class StellarConfigurationServiceTest extends TestCase
             'yolixa.stellar_horizon' => 'https://horizon-testnet.stellar.org',
             'yolixa.stellar_passphrase' => StellarConfigurationService::TESTNET_PASSPHRASE,
             'yolixa.fee_percentage' => 0.015,
-            'yolixa.min_payment_amount' => 0.0000001,
-            'yolixa.max_payment_amount' => 1000,
+            'yolixa.min_payment_amount' => '0.0000001',
+            'yolixa.max_payment_amount' => '1000',
         ]);
 
         app(StellarConfigurationService::class)->validate();
@@ -35,8 +35,8 @@ class StellarConfigurationServiceTest extends TestCase
             'yolixa.stellar_passphrase' => StellarConfigurationService::PUBLIC_PASSPHRASE,
             'yolixa.features.mainnet' => false,
             'yolixa.fee_percentage' => 0.015,
-            'yolixa.min_payment_amount' => 0.0000001,
-            'yolixa.max_payment_amount' => 1000,
+            'yolixa.min_payment_amount' => '0.0000001',
+            'yolixa.max_payment_amount' => '1000',
         ]);
 
         $this->expectException(InvalidArgumentException::class);
@@ -55,8 +55,8 @@ class StellarConfigurationServiceTest extends TestCase
             'yolixa.features.mainnet' => true,
             'yolixa.platform_public_key' => null,
             'yolixa.fee_percentage' => 0.015,
-            'yolixa.min_payment_amount' => 0.0000001,
-            'yolixa.max_payment_amount' => 1000,
+            'yolixa.min_payment_amount' => '0.0000001',
+            'yolixa.max_payment_amount' => '1000',
         ]);
 
         $this->expectException(InvalidArgumentException::class);

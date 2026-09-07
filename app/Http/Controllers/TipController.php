@@ -8,40 +8,41 @@ use Illuminate\Http\Request;
 use App\Services\StellarService;
 use App\Services\TipService;
 
-use App\Services\ConversionService;
+use App\Services\XlmAmount;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
 class TipController extends Controller
 {
     private StellarService $stellarService;
     private TipService $tipService;
-    private ConversionService $conversionService;
+    private XlmAmount $amounts;
 
-    public function __construct(StellarService $stellarService, TipService $tipService, ConversionService $conversionService)
+    public function __construct(StellarService $stellarService, TipService $tipService, XlmAmount $amounts)
     {
         $this->stellarService = $stellarService;
         $this->tipService = $tipService;
-        $this->conversionService = $conversionService;
+        $this->amounts = $amounts;
     }
 
     public function getPreview(Request $request)
     {
         $request->validate([
-            'amount' => 'required|numeric|min:' . config('yolixa.min_payment_amount', 0.0000001) . '|max:' . config('yolixa.max_payment_amount', 1000),
+            'amount' => ['required', 'string', 'regex:/^(0|[1-9]\d*)(?:\.\d{1,7})?$/'],
             'asset'  => ['required', Rule::in($this->stellarService->supportedTipAssets())],
         ]);
 
         try {
-            $conversion = $this->conversionService->convertToYlx($request->asset, floatval($request->amount));
-            $fees = $this->conversionService->calculateFees($conversion['converted_amount'], $request->asset);
-            $split = $this->stellarService->calculateSplitAmounts((string) $request->amount);
+            $atomic = $this->amounts->decimalToAtomic((string) $request->amount);
+            $this->amounts->validateWithinConfiguredLimits($atomic);
+            $split = $this->stellarService->calculateSplitAmounts($this->amounts->atomicToDecimal($atomic));
 
             return response()->json([
                 'success' => true,
-                'rate' => $conversion['rate'],
-                'gross_ylx' => $conversion['converted_amount'],
-                'fee_ylx' => $fees['fee_amount'],
-                'creator_payout_ylx' => $fees['net_payout'],
+                'rate' => null,
+                'gross_ylx' => null,
+                'fee_ylx' => null,
+                'creator_payout_ylx' => null,
                 'gross_amount' => $split['gross_amount'],
                 'platform_fee' => $split['platform_fee'],
                 'creator_receives' => $split['creator_payout_amount'],
@@ -60,29 +61,44 @@ class TipController extends Controller
         }
 
         $request->validate([
-            'amount'      => 'required|numeric|min:' . config('yolixa.min_payment_amount', 0.0000001) . '|max:' . config('yolixa.max_payment_amount', 1000),
+            'amount'      => ['required', 'string', 'regex:/^(0|[1-9]\d*)(?:\.\d{1,7})?$/'],
             'destination' => 'required|string',
             'asset'       => ['required', Rule::in($this->stellarService->supportedTipAssets())],
             'sender'      => 'required|string',
         ]);
 
-        if (!$this->stellarService->isValidPublicKey($request->sender)) {
+        $sender = strtoupper(trim((string) $request->sender));
+        $destination = strtoupper(trim((string) $request->destination));
+
+        $user = Auth::user();
+        if (!$user || $user->public_key !== $sender) {
+            return response()->json(['success' => false, 'message' => 'Connected wallet does not match the authenticated Yolixa session.'], 403);
+        }
+
+        if (!$this->stellarService->isValidPublicKey($sender)) {
             return response()->json(['success' => false, 'message' => 'Invalid sender wallet.'], 422);
         }
 
-        if (!$this->stellarService->isValidPublicKey($request->destination)) {
+        if (!$this->stellarService->isValidPublicKey($destination)) {
             return response()->json(['success' => false, 'message' => 'Invalid creator wallet.'], 422);
         }
 
-        if ($request->destination === $request->sender) {
+        if ($destination === $sender) {
             return response()->json(['success' => false, 'message' => 'Self tip blocked.'], 400);
         }
 
+        try {
+            $atomic = $this->amounts->decimalToAtomic((string) $request->amount);
+            $this->amounts->validateWithinConfiguredLimits($atomic);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
+
         $result = $this->stellarService->buildTipXdr(
-            $request->sender,
-            $request->destination,
+            $sender,
+            $destination,
             $request->asset,
-            floatval($request->amount)
+            $this->amounts->atomicToDecimal($atomic)
         );
 
         if (!$result['success']) {
@@ -103,7 +119,14 @@ class TipController extends Controller
             'sender_key' => 'required|string',
         ]);
 
-        if (!$this->stellarService->isValidPublicKey($request->sender_key)) {
+        $sender = strtoupper(trim((string) $request->sender_key));
+
+        $user = Auth::user();
+        if (!$user || $user->public_key !== $sender) {
+            return response()->json(['success' => false, 'message' => 'Connected wallet does not match the authenticated Yolixa session.'], 403);
+        }
+
+        if (!$this->stellarService->isValidPublicKey($sender)) {
             return response()->json(['success' => false, 'message' => 'Invalid sender wallet.'], 422);
         }
 
@@ -123,8 +146,8 @@ class TipController extends Controller
         }
 
         $request->validate([
-            'tx_hash'      => 'required|string|unique:tips,tx_hash',
-            'amount'       => 'required|numeric|min:' . config('yolixa.min_payment_amount', 0.0000001) . '|max:' . config('yolixa.max_payment_amount', 1000),
+            'tx_hash'      => ['required', 'string', 'regex:/^[A-Fa-f0-9]{64}$/', 'unique:tips,tx_hash'],
+            'amount'       => ['required', 'string', 'regex:/^(0|[1-9]\d*)(?:\.\d{1,7})?$/'],
             'asset'        => ['required', Rule::in($this->stellarService->supportedTipAssets())],
             'receiver_id'  => 'required|exists:users,id',
             'sender_key'   => 'required|string',
@@ -132,6 +155,14 @@ class TipController extends Controller
             'is_anonymous' => 'nullable|boolean',
             'sender_name'  => 'nullable|string|max:100',
         ]);
+
+        $sender = strtoupper(trim((string) $request->sender_key));
+        $txHash = strtolower(trim((string) $request->tx_hash));
+
+        $user = Auth::user();
+        if (!$user || $user->public_key !== $sender) {
+            return response()->json(['success' => false, 'message' => 'Connected wallet does not match the authenticated Yolixa session.'], 403);
+        }
 
         $receiver = User::findOrFail($request->receiver_id);
         if ($receiver->role !== 'creator') {
@@ -142,20 +173,27 @@ class TipController extends Controller
             return response()->json(['success' => false, 'message' => 'Creator wallet is invalid.'], 422);
         }
 
-        if (!$this->stellarService->isValidPublicKey($request->sender_key)) {
+        if (!$this->stellarService->isValidPublicKey($sender)) {
             return response()->json(['success' => false, 'message' => 'Invalid sender wallet.'], 422);
         }
 
-        if ($receiver->public_key === $request->sender_key) {
+        if ($receiver->public_key === $sender) {
             return response()->json(['success' => false, 'message' => 'Self tip blocked.'], 400);
         }
 
+        try {
+            $atomic = $this->amounts->decimalToAtomic((string) $request->amount);
+            $this->amounts->validateWithinConfiguredLimits($atomic);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
+
         $result = $this->tipService->recordTipSecurely([
-            'tx_hash'             => $request->tx_hash,
-            'amount'              => floatval($request->amount),
+            'tx_hash'             => $txHash,
+            'amount'              => $this->amounts->atomicToDecimal($atomic),
             'asset'               => $request->asset,
             'receiver_id'         => $request->receiver_id,
-            'sender_key'          => $request->sender_key,
+            'sender_key'          => $sender,
             'receiver_public_key' => $receiver->public_key,
             'message'             => $request->message,
             'is_anonymous'        => $request->is_anonymous,

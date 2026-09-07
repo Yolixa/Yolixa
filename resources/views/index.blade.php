@@ -8,8 +8,8 @@
                 Empower Your <span class="gradient-text">Influence</span>
             </h1>
             <p class="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
-                Yolixa is a Web3 tipping MVP on Stellar testnet.
-                Creators receive direct XLM micro-tips from fans through Freighter or Rabet.
+                Yolixa is a Web3 tipping MVP on Stellar Testnet.
+                Creators receive direct XLM micro-tips from fans through Freighter.
             </p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
                 <button onclick="openCreatorModal()" class="creatorButton gradient-bg px-8 py-4 rounded-lg font-semibold text-lg hover:scale-105 transition-transform pulse-glow">
@@ -33,7 +33,7 @@
                 Why Choose <span class="gradient-text">Yolixa</span>?
             </h2>
             <p class="text-xl text-gray-300 max-w-2xl mx-auto">
-                Direct creator tips with transparent Stellar testnet transaction proof.
+                Direct creator tips with transparent Stellar Testnet transaction proof.
             </p>
         </div>
 
@@ -71,9 +71,9 @@
                         <path d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
                 </div>
-                <h3 class="text-2xl font-bold mb-4">YLX Rewards</h3>
+                <h3 class="text-2xl font-bold mb-4">Verified Tip History</h3>
                 <p class="text-gray-300">
-                    Yolixa records the transaction hash, wallets, amount, network fee, platform fee metadata, and status.
+                    Yolixa records confirmed Stellar transaction hashes, wallets, XLM amounts, network fees, and status.
                 </p>
             </div>
 
@@ -99,7 +99,7 @@
                 </div>
                 <h3 class="text-2xl font-bold mb-4">No Withdraw Hassle</h3>
                 <p class="text-gray-300">
-                    Tips go straight to your Stellar wallet. No withdrawal requests, no waiting periods—your funds are yours instantly.
+                    Tips go straight to your Stellar wallet. No withdrawal requests, no waiting periods - your funds are yours instantly.
                 </p>
             </div>
 
@@ -125,7 +125,7 @@
                 </div>
                 <h3 class="text-2xl font-bold mb-4">Minimal Fees</h3>
                 <p class="text-gray-300">
-                    Creators keep more of what they earn. Yolixa charges only 1–2% for sustainability—far lower than traditional platforms.
+                    The current MVP sends XLM directly to creators. A transparent sustainability-fee model is planned for future funding scope.
                 </p>
             </div>
         </div>
@@ -140,7 +140,7 @@
                 How It <span class="gradient-text">Works</span>
             </h2>
             <p class="text-xl text-gray-300 max-w-2xl mx-auto">
-                Start earning crypto tips in just three simple steps
+                Start receiving direct Stellar Testnet tips in three simple steps
             </p>
         </div>
 
@@ -152,7 +152,7 @@
                 </div>
                 <h3 class="text-2xl font-bold mb-4">Create Your Account</h3>
                 <p class="text-gray-300">
-                    Sign up on Yolixa and link your Stellar testnet wallet. Your public key becomes your creator identity.
+                    Sign up on Yolixa and link your Stellar Testnet wallet. Your public key becomes your creator identity.
                 </p>
             </div>
 
@@ -199,7 +199,7 @@
             <div class="card-hover rounded-xl p-8">
                 <div class="flex items-center mb-4">
                     <div class="w-3 h-3 bg-yolixa-blue rounded-full mr-3"></div>
-                    <span class="text-yolixa-purple font-semibold">Q1 2025</span>
+                    <span class="text-yolixa-purple font-semibold">Current MVP</span>
                 </div>
                 <h3 class="text-xl font-bold mb-3">Core Tipping Platform</h3>
                 <p class="text-gray-300">
@@ -212,11 +212,11 @@
             <div class="card-hover rounded-xl p-8">
                 <div class="flex items-center mb-4">
                     <div class="w-3 h-3 bg-yolixa-blue rounded-full mr-3"></div>
-                    <span class="text-yolixa-blue font-semibold">Q3 2025</span>
+                    <span class="text-yolixa-blue font-semibold">Future Phase 1</span>
                 </div>
                 <h3 class="text-xl font-bold mb-3">Rewards & Liquidity</h3>
                 <p class="text-gray-300">
-                    Rewards and asset expansion. USDC and future token incentives are introduced after MVP validation.
+                    Planned payment expansion with USDC research, trustline-aware UX, and transparent future fee architecture after MVP validation.
                 </p>
             </div>
 
@@ -224,12 +224,11 @@
             <div class="card-hover rounded-xl p-8">
                 <div class="flex items-center mb-4">
                     <div class="w-3 h-3 bg-yolixa-purple rounded-full mr-3"></div>
-                    <span class="text-yolixa-purple font-semibold">Q1 2026</span>
+                    <span class="text-yolixa-purple font-semibold">Future Phase 2</span>
                 </div>
-                <h3 class="text-xl font-bold mb-3">Staking & Analytics</h3>
+                <h3 class="text-xl font-bold mb-3">Creator Rewards & Growth</h3>
                 <p class="text-gray-300">
-                    Launch of staking to earn passive rewards. Advanced creator analytics
-                    to track tips, growth, and audience engagement in real time.
+                    Proposed utility-focused creator rewards, creator campaigns, richer analytics, and admin tooling after the core payment product is validated.
                 </p>
             </div>
 
@@ -237,12 +236,11 @@
             <div class="card-hover rounded-xl p-8">
                 <div class="flex items-center mb-4">
                     <div class="w-3 h-3 bg-gray-500 rounded-full mr-3"></div>
-                    <span class="text-gray-500 font-semibold">Q3–Q4 2026</span>
+                    <span class="text-gray-500 font-semibold">Future Phase 3+</span>
                 </div>
                 <h3 class="text-xl font-bold mb-3">Global Expansion</h3>
                 <p class="text-gray-300">
-                    Cross-chain support, AI-driven personalization, DeFi-based features,
-                    and enterprise partnerships to scale Yolixa worldwide.
+                    Mainnet launch preparation, public APIs, additional Stellar ecosystem integrations, mobile-friendly expansion, and partner work where real demand exists.
                 </p>
             </div>
         </div>
@@ -257,7 +255,7 @@
         </h2>
         <p class="text-xl text-gray-300 mb-8">
             Be among the first creators to join Yolixa, connect your Stellar wallet,
-            and start receiving direct XLM testnet tips from your fans.
+            and start receiving direct XLM Testnet tips from your fans.
         </p>
         <button onclick="openCreatorModal()" class="creatorButton gradient-bg px-12 py-4 rounded-lg font-semibold text-xl hover:scale-105 transition-transform glow-effect">
             Create Your Account

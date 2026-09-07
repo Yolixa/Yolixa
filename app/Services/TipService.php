@@ -4,35 +4,37 @@ namespace App\Services;
 
 use App\Models\Tip;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class TipService
 {
     private StellarService $stellarService;
-    private ConversionService $conversionService;
     private SorobanTipRegistryService $sorobanTipRegistry;
 
     public function __construct(
         StellarService $stellarService,
-        ConversionService $conversionService,
         SorobanTipRegistryService $sorobanTipRegistry
     )
     {
         $this->stellarService = $stellarService;
-        $this->conversionService = $conversionService;
         $this->sorobanTipRegistry = $sorobanTipRegistry;
     }
 
-    public function calculatePlatformFee(string $asset, float $amount): float
+    public function calculatePlatformFee(string $asset, string $amount): string
     {
-        return (float) $this->stellarService->calculateSplitAmounts((string) $amount)['platform_fee'];
+        return $this->stellarService->calculateSplitAmounts($amount)['platform_fee'];
     }
 
     public function recordTipSecurely(array $data): array
     {
         if (empty($data['sender_key'])) {
             return ['success' => false, 'message' => 'Invalid sender wallet.'];
+        }
+
+        if (Tip::where('tx_hash', $data['tx_hash'])->exists()) {
+            return ['success' => false, 'message' => 'This transaction hash has already been recorded.'];
         }
 
         $txVerify = $this->stellarService->verifyTransaction(
@@ -50,6 +52,11 @@ class TipService
 
         DB::beginTransaction();
         try {
+            if (Tip::where('tx_hash', $data['tx_hash'])->lockForUpdate()->exists()) {
+                DB::rollBack();
+                return ['success' => false, 'message' => 'This transaction hash has already been recorded.'];
+            }
+
             $sender = null;
             if (!empty($data['sender_key'])) {
                 $sender = User::where('public_key', $data['sender_key'])->first();
@@ -62,12 +69,8 @@ class TipService
                 return ['success' => false, 'message' => 'Creators cannot tip their own link.'];
             }
 
-            $conversion = $this->conversionService->convertToYlx($data['asset'], $data['amount']);
-            $grossYlx = $conversion['converted_amount'];
-            $platformFee = $txVerify['platform_fee'];
+            $platformFee = '0.0000000';
             $creatorReceives = $txVerify['creator_payout_amount'];
-            $reward = $this->calculateYlxReward($grossYlx);
-            $rewardStatus = $reward > 0 ? 'pending_claim' : 'not_configured';
 
             $tip = Tip::create([
                 'sender_id'             => $sender ? $sender->id : null,
@@ -78,15 +81,15 @@ class TipService
                 'asset_issuer'          => $txVerify['asset_issuer'] ?? null,
                 'platform_fee'          => $platformFee,
                 'network_fee'           => $txVerify['network_fee'] ?? 0,
-                'bonus'                 => $reward,
-                'reward_ylx_amount'     => $reward,
-                'ylx_reward_status'     => $rewardStatus,
+                'bonus'                 => 0,
+                'reward_ylx_amount'     => 0,
+                'ylx_reward_status'     => 'not_available_current_mvp',
                 'status'                => 'confirmed',
                 'confirmed_at'          => now(),
                 'sender_wallet'         => $txVerify['sender_wallet'] ?? $data['sender_key'] ?? null,
                 'receiver_wallet'       => $txVerify['receiver_wallet'] ?? $receiver->public_key,
-                'conversion_rate'       => $conversion['rate'],
-                'converted_ylx_amount'  => $grossYlx,
+                'conversion_rate'       => null,
+                'converted_ylx_amount'  => null,
                 'creator_payout_amount' => $creatorReceives,
                 'payout_status'         => 'completed',
                 'payout_tx_hash'        => $data['tx_hash'],
@@ -94,39 +97,35 @@ class TipService
                     'ledger' => $txVerify['ledger'] ?? null,
                     'stellar_created_at' => $txVerify['created_at'] ?? null,
                     'network' => config('yolixa.network', 'testnet'),
-                    'platform_wallet' => $txVerify['platform_wallet'] ?? null,
+                    'verification_model' => 'classic_xlm_direct_payment',
                 ],
-                'soroban_status'        => config('yolixa.soroban.enabled') ? 'pending' : 'disabled',
+                'soroban_status'        => 'disabled',
                 'message'               => $data['message'] ?? null,
                 'is_anonymous'          => $data['is_anonymous'] ?? false,
                 'sender_name'           => $data['sender_name'] ?? null,
             ]);
 
-            if ($reward > 0) {
-                $receiver->increment('ylx_claimable_balance', $reward);
-            }
-
             DB::commit();
 
-            $this->recordSorobanStatus($tip);
+            if (config('yolixa.soroban.enabled') && filled(config('yolixa.soroban.tip_registry_contract_id'))) {
+                $this->recordSorobanStatus($tip);
+            }
 
             return ['success' => true, 'tip' => $tip, 'payout_status' => $tip->payout_status];
 
+        } catch (QueryException $e) {
+            DB::rollBack();
+            if (str_contains(strtolower($e->getMessage()), 'unique')) {
+                return ['success' => false, 'message' => 'This transaction hash has already been recorded.'];
+            }
+
+            Log::error('Record Tip Query Exception: ' . $e->getMessage());
+            return ['success' => false, 'message' => 'Internal Server Error while saving tip.'];
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error('Record Tip Exception: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return ['success' => false, 'message' => 'Internal Server Error while saving tip.'];
         }
-    }
-
-    private function calculateYlxReward(float $grossYlx): float
-    {
-        $rate = (float) config('yolixa.ylx_reward_rate_percent', 0);
-        if ($rate <= 0) {
-            return 0;
-        }
-
-        return round($grossYlx * ($rate / 100), 7);
     }
 
     private function recordSorobanStatus(Tip $tip): void
