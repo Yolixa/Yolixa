@@ -1,10 +1,12 @@
-name: Phase 2 CI
+name: Yolixa CI
 
 on:
   push:
     branches:
-      - scf-v2-phase-2-integration
+      - main
   pull_request:
+    branches:
+      - main
     paths:
       - "app/**"
       - "bootstrap/**"
@@ -27,7 +29,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: phase-2-ci-${{ github.ref }}
+  group: yolixa-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -50,10 +52,18 @@ jobs:
       STELLAR_TESTNET_HORIZON_URL: https://horizon-testnet.stellar.org
       STELLAR_TESTNET_NETWORK_PASSPHRASE: Test SDF Network ; September 2015
       YOLIXA_NETWORK: testnet
+      YOLIXA_TIP_EXECUTION_MODE: classic
+      YOLIXA_PLATFORM_FEE_PERCENT: 0
+      YOLIXA_ENABLED_WALLETS: freighter
+      YOLIXA_FEATURE_XLM_PAYMENTS: true
+      YOLIXA_FEATURE_ISSUED_ASSETS: false
+      YOLIXA_FEATURE_REVENUE_SPLITTING: false
+      YOLIXA_FEATURE_MAINNET: false
+      SOROBAN_ENABLED: false
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -63,10 +73,13 @@ jobs:
           coverage: none
 
       - name: Setup Node
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: npm
+
+      - name: Validate Composer metadata
+        run: composer validate --strict
 
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
@@ -81,13 +94,23 @@ jobs:
         run: |
           cp .env.example .env
           mkdir -p database
+          rm -f database/database.sqlite
           touch database/database.sqlite
+
+      - name: Clear Laravel caches
+        run: php artisan optimize:clear
+
+      - name: Run migrations
+        run: php artisan migrate --force
+
+      - name: Show migration status
+        run: php artisan migrate:status
 
       - name: Run Laravel tests
         run: php artisan test
 
   soroban:
-    name: Soroban
+    name: Future/Experimental Soroban Contract Integrity
     runs-on: ubuntu-latest
 
     defaults:
@@ -96,7 +119,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
       - name: Install Rust
         run: |

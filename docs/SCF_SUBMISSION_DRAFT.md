@@ -37,7 +37,7 @@ Implemented in the repository:
 
 Evidence placeholders:
 
-- Public GitHub URL: `[TO BE PROVIDED]`
+- Public GitHub URL: `https://github.com/Yolixa/Yolixa`
 - Demo URL: `[TO BE PROVIDED]`
 - Demo video: `[TO BE PROVIDED]`
 - Real Testnet transaction hash: `[TO BE PROVIDED]`

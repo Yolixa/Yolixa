@@ -18,6 +18,7 @@ Implemented current MVP:
 - Unsigned XLM XDR construction.
 - Browser-wallet transaction signing.
 - Horizon submission.
+- Conservative XLM balance/reserve preflight before XDR construction.
 - Backend Horizon verification before tip persistence.
 - Duplicate transaction prevention through validation and database uniqueness.
 - Creator dashboard with paginated tip history.
@@ -58,6 +59,7 @@ The generated XDR contains one native XLM payment operation from the supporter t
 - `app/Services/StellarConfigurationService.php`: network, Horizon, passphrase, explorer URLs.
 - `app/Services/StellarService.php`: XDR construction, Horizon submission, transaction verification.
 - `app/Services/TipService.php`: idempotent confirmed-tip storage.
+- `resources/js/wallet-adapter.js`: Vite-owned Freighter adapter using `@stellar/freighter-api`.
 - `resources/views`: Blade UI.
 - `docs`: architecture, security, API, demo, and SCF draft documentation.
 - `soroban`: future/experimental contract work, not the current default MVP payment path.
@@ -69,6 +71,8 @@ The generated XDR contains one native XLM payment operation from the supporter t
 - Node.js 22 or newer and npm.
 - SQLite for local setup, or MySQL/MariaDB.
 - Freighter browser wallet set to Stellar Testnet.
+
+Stellar CLI and Rust are not required to run the current Laravel/Horizon/Freighter MVP. They are optional for the retained future Soroban contract workspace only.
 
 ## Local Setup
 
@@ -182,9 +186,10 @@ These items are not presented as current functionality.
 
 Before final SCF submission, the project owner should add:
 
-- public GitHub repository URL,
 - deployed demo URL,
 - demo video,
 - real Stellar Testnet transaction hash,
 - founder/team details,
 - final budget and milestone dates.
+
+Repository: https://github.com/Yolixa/Yolixa

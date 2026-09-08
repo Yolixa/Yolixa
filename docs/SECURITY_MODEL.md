@@ -21,6 +21,8 @@ Creator registration uses the authenticated session wallet. Submitting another p
 
 The browser is not trusted for payment truth. It may submit a transaction hash, amount, sender, receiver, or status, but Laravel verifies the transaction independently through Horizon before storing a confirmed tip.
 
+Before XDR construction, Laravel also checks spendable native XLM conservatively against the requested tip, estimated network fee, Stellar minimum balance, subentries, sponsorship counts, and native selling liabilities. This is a preflight only; Horizon acceptance is still authoritative.
+
 ## Duplicate Prevention
 
 `tips.tx_hash` is unique. `TipService` also checks for existing hashes before and during insertion to make retries idempotent and avoid duplicate credit.
@@ -39,3 +41,5 @@ Wallet challenge and wallet authentication endpoints use the `wallet-auth` limit
 ## Secret Handling
 
 No Stellar seeds or wallet private keys should be committed to `.env.example`, source code, docs, logs, tests, or issue trackers. Future issuer/distribution secrets must be provisioned outside the current MVP path.
+
+Logs use structured, minimized context. Full request payloads, wallet signatures, signed XDR, cookies, CSRF tokens, private keys, and production stack traces should not be logged.

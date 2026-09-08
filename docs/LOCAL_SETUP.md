@@ -8,6 +8,8 @@
 - SQLite for quick local setup, or MySQL/MariaDB if preferred.
 - Freighter browser wallet configured for Stellar Testnet.
 
+The current classic XLM MVP does not require Stellar CLI or Rust. Those tools are only for optional future Soroban contract development.
+
 ## Install
 
 ```bash
@@ -64,3 +66,7 @@ npm run dev
 ## Wallet Setup
 
 Install Freighter, switch it to Stellar Testnet, and fund separate creator/supporter Testnet accounts. Do not use the same wallet for creator and supporter during a demo because self-tipping is blocked.
+
+## Optional - Future Soroban Development
+
+Install Rust and Stellar CLI only if you are working on the retained experimental contract code under `soroban/` or `packages/yolixa-tip-router`. The current Laravel XLM tipping flow runs through Freighter and Horizon without Stellar CLI.

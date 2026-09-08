@@ -225,13 +225,6 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 
-     {{-- Wallet SDKs --}}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-sdk/10.4.0/stellar-sdk.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-freighter-api/3.0.0/index.min.js"></script>
-    @if(in_array('rabet', config('yolixa.enabled_wallets', []), true))
-    <script src="https://unpkg.com/@rabet/extension/dist/rabet.umd.min.js"></script>
-    @endif
-
     <script>
         toastr.options = {
             "closeButton": true,
@@ -246,6 +239,8 @@
         window.config = {
             YOLIXA_NETWORK: "{{ config('yolixa.network') }}",
             YOLIXA_TIP_EXECUTION_MODE: "{{ config('yolixa.tip_execution_mode') }}",
+            YOLIXA_ENABLED_WALLETS: @json(config('yolixa.enabled_wallets')),
+            SOROBAN_ENABLED: @json(config('yolixa.soroban.enabled')),
             STELLAR_HORIZON: "{{ app(\App\Services\StellarConfigurationService::class)->horizonUrl() }}",
             STELLAR_PASSPHRASE: "{{ app(\App\Services\StellarConfigurationService::class)->passphrase() }}",
             STELLAR_NETWORK_LABEL: "{{ app(\App\Services\StellarConfigurationService::class)->networkLabel() }}",
@@ -348,7 +343,6 @@
         //         return;
         //     }
 
-        //     console.log("Creator Details:", { name, email, blockchain, wallet });
         //     toastr.success(`Welcome ${name}! You have successfully joined as a creator.`);
 
         //     closeCreatorModal();

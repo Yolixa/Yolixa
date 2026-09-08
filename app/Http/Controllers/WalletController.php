@@ -53,7 +53,6 @@ class WalletController extends Controller
     {
         try {
             Log::info('Wallet Connect flow initiated.', [
-                'address' => $request->address,
                 'blockchainId' => $request->blockchainId,
                 'walletId' => $request->walletId
             ]);
@@ -119,7 +118,7 @@ class WalletController extends Controller
                 }
                 
                 if ($rawSig === false || strlen($rawSig) !== 64) {
-                    Log::warning('Signature is incorrectly formatted.', ['address' => $request->address]);
+                    Log::warning('wallet_signature_malformed', ['address_suffix' => substr($request->address, -8)]);
                     return response()->json(['success' => false, 'message' => 'Malformed signature length.'], 401);
                 }
 
@@ -136,11 +135,11 @@ class WalletController extends Controller
                 }
                 
                 if (!$verified) {
-                    Log::warning('Signature verification failed.', ['address' => $request->address]);
+                    Log::warning('wallet_signature_verification_failed', ['address_suffix' => substr($request->address, -8)]);
                     return response()->json(['success' => false, 'message' => 'Invalid wallet signature.'], 401);
                 }
             } catch (\Exception $e) {
-                Log::error('Signature parsing error.', ['error' => $e->getMessage()]);
+                Log::error('wallet_signature_parsing_failed', ['exception' => $e::class]);
                 return response()->json(['success' => false, 'message' => 'Signature verification process failed.'], 401);
             }
 
@@ -161,7 +160,7 @@ class WalletController extends Controller
             }
 
             if ($existingUser) {
-                Log::info("Existing User located [{$existingUser->id}]. Updating status.");
+                Log::info('existing_wallet_user_reauthenticated', ['user_id' => $existingUser->id]);
                 $existingUser->status = 1;
                 $existingUser->update();
 
@@ -188,7 +187,7 @@ class WalletController extends Controller
                 ]);
             }
 
-            Log::info('No mapped User found. Instantiating brand new user profile via wallet.');
+            Log::info('creating_wallet_user_profile');
 
             $user = new User();
             $user->public_key = $request->address;
@@ -223,10 +222,7 @@ class WalletController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('CRITICAL: Server Error during Wallet Connect.', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
+            Log::error('wallet_connect_failed', ['exception' => $e::class]);
             return response()->json([
                 'success' => false,
                 'message' => 'An internal server error occurred while trying to save the wallet.'
@@ -237,7 +233,7 @@ class WalletController extends Controller
     public function disconnectWallet(Request $request)
     {
         try {
-            Log::info('Initiating Wallet session disconnect logic.', ['address' => $request->address]);
+            Log::info('wallet_disconnect_requested');
 
             $validator = Validator::make($request->all(), [
                 'address' => 'required|string|max:100',
@@ -254,7 +250,10 @@ class WalletController extends Controller
             $user = Auth::user();
 
             if (!$user || $user->public_key !== $request->address) {
-                Log::warning('Disconnect rejected for non-session wallet payload.', ['requested_address' => $request->address, 'user_id' => $user?->id]);
+                Log::warning('wallet_disconnect_rejected', [
+                    'requested_address_suffix' => substr((string) $request->address, -8),
+                    'user_id' => $user?->id,
+                ]);
                 return response()->json([
                     'success' => false,
                     'message' => 'You can only disconnect the wallet authenticated in this session.',
@@ -263,7 +262,7 @@ class WalletController extends Controller
 
             $user->status = 0;
             $user->save();
-            Log::info("User [{$user->id}] marked as disconnected in database.");
+            Log::info('wallet_user_marked_disconnected', ['user_id' => $user->id]);
             
             Auth::logout();
             $request->session()->invalidate();
@@ -276,7 +275,7 @@ class WalletController extends Controller
                 'message' => 'Wallet disconnected successfully.',
             ]);
         } catch (\Exception $e) {
-            Log::error('CRITICAL: Server Error during Wallet Disconnect.', ['error' => $e->getMessage()]);
+            Log::error('wallet_disconnect_failed', ['exception' => $e::class]);
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to disconnect wallet securely.'

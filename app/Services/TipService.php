@@ -46,7 +46,11 @@ class TipService
         );
 
         if (!$txVerify['success']) {
-            Log::channel('security')->warning('Failed TIP verification attempt. TX Hash: ' . $data['tx_hash'] . ' Reason: ' . $txVerify['message']);
+            Log::channel('security')->warning('tip_verification_failed', [
+                'tx_hash' => $data['tx_hash'],
+                'receiver_id' => $data['receiver_id'] ?? null,
+                'reason' => $txVerify['message'],
+            ]);
             return ['success' => false, 'message' => $txVerify['message']];
         }
 
@@ -119,11 +123,11 @@ class TipService
                 return ['success' => false, 'message' => 'This transaction hash has already been recorded.'];
             }
 
-            Log::error('Record Tip Query Exception: ' . $e->getMessage());
+            Log::error('record_tip_query_failed', ['exception' => $e::class]);
             return ['success' => false, 'message' => 'Internal Server Error while saving tip.'];
         } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error('Record Tip Exception: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            Log::error('record_tip_failed', ['exception' => $e::class]);
             return ['success' => false, 'message' => 'Internal Server Error while saving tip.'];
         }
     }

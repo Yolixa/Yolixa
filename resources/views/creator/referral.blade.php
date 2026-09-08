@@ -271,10 +271,10 @@
 
             if (connectedWallet === 'freighter') {
                 txHash = await processFreighterTip(amount, receiver, selectedAsset);
-            } else if (connectedWallet === 'rabet') {
+            } else if (connectedWallet === 'rabet' && window.config?.YOLIXA_ENABLED_WALLETS?.includes?.('rabet')) {
                 txHash = await processRabetTip(amount, receiver, selectedAsset);
             } else {
-                toastr.error('Wallet not supported for direct tips yet.');
+                toastr.error('Current Yolixa tipping supports Freighter on Stellar Testnet.');
                 btn.disabled = false;
                 btn.innerText = 'Send Tip Now';
                 return;
@@ -349,13 +349,17 @@
     }
 
     async function processFreighterTip(amount, destination, assetCode) {
-        const freighter = getFreighterApi();
+        const freighter = window.YolixaWallets?.freighter;
+        const expectedSender = localStorage.getItem('freighter_wallet');
+
         if (!freighter) {
-            throw new Error('Freighter API not loaded. Please hard refresh or check the Freighter extension/CDN.');
+            throw new Error('Freighter support is still loading. Please refresh and try again.');
         }
 
-        // Build transaction logic usually happens via backend or a bridge
-        // For simplicity in this demo, we'll call a backend endpoint to get XDR to sign
+        if (!await freighter.detect()) {
+            throw new Error('Freighter extension not detected. Install or enable Freighter and try again.');
+        }
+
         const response = await fetch('/api/tip/build-xdr', {
             method: 'POST',
             headers: {
@@ -368,7 +372,7 @@
                 amount,
                 destination,
                 asset: assetCode,
-                sender: localStorage.getItem('freighter_wallet')
+                sender: expectedSender
             })
         });
 
@@ -382,22 +386,20 @@
         const data = await response.json();
         if (!data.success) throw new Error(data.message);
 
-        await assertFreighterClassicTestnet(freighter);
+        await freighter.assertTestnet(data.network_passphrase || window.config?.STELLAR_PASSPHRASE);
 
-        // Ensure active address matches local storage to avoid tx_bad_auth
-        if (typeof freighter.getPublicKey === 'function') {
-            const activeKey = await freighter.getPublicKey();
-            if (activeKey !== localStorage.getItem('freighter_wallet')) {
-                localStorage.setItem('freighter_wallet', activeKey);
-                throw new Error("Connected Freighter account changed. Please try sending the tip again.");
-            }
+        const activeKey = await freighter.publicKey();
+        if (activeKey !== expectedSender) {
+            localStorage.removeItem('connected_wallet');
+            localStorage.removeItem('freighter_wallet');
+            throw new Error("Connected Freighter account changed. Please reconnect the expected wallet.");
         }
 
-        const signResult = await freighter.signTransaction(data.xdr, {
-            network: data.network || window.config?.STELLAR_NETWORK_LABEL || "TESTNET",
-            networkPassphrase: data.network_passphrase || window.config?.STELLAR_PASSPHRASE
-        });
-        const signedTx = normalizeSignedXdr(signResult);
+        const signedTx = await freighter.signTransactionXdr(
+            data.xdr,
+            expectedSender,
+            data.network_passphrase || window.config?.STELLAR_PASSPHRASE
+        );
 
         // Submit to Horizon
         const submitRes = await fetch('/api/tip/submit', {
@@ -408,7 +410,7 @@
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
             },
             credentials: 'same-origin',
-            body: JSON.stringify({ signedXdr: signedTx, sender_key: localStorage.getItem('freighter_wallet') })
+            body: JSON.stringify({ signedXdr: signedTx, sender_key: expectedSender })
         });
 
         if (!submitRes.ok) {
@@ -519,24 +521,6 @@
         return data.tip;
     }
 
-    async function assertFreighterClassicTestnet(freighter) {
-        if (typeof freighter.getNetwork !== 'function') {
-            return;
-        }
-
-        const network = await freighter.getNetwork();
-        const walletPassphrase = network?.networkPassphrase || network?.network_passphrase || network?.passphrase;
-        const walletNetwork = String(network?.network || network?.networkName || network?.networkId || '').toLowerCase();
-
-        if (walletPassphrase && walletPassphrase !== (window.config?.STELLAR_PASSPHRASE || 'Test SDF Network ; September 2015')) {
-            throw new Error('Freighter is on the wrong network. Switch Freighter to Stellar Testnet.');
-        }
-
-        if (!walletPassphrase && walletNetwork && walletNetwork !== 'testnet') {
-            throw new Error('Freighter is on the wrong network. Switch Freighter to Stellar Testnet.');
-        }
-    }
-
     function normalizeSignedXdr(response) {
         const signedXdr = response?.signedTxXdr
             || response?.signedTx
@@ -553,14 +537,6 @@
         }
 
         return signedXdr;
-    }
-
-    function getFreighterApi() {
-        return window.freighterApi
-            || window.stellarFreighter
-            || window.StellarFreighter
-            || window.freighter
-            || null;
     }
 
 </script>

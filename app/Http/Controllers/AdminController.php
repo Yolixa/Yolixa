@@ -37,14 +37,19 @@ class AdminController extends Controller
             abort(403);
         }
 
-        $creator = User::findOrFail($id);
+        $data = $request->validate([
+            'is_featured' => 'sometimes|boolean',
+            'status' => 'sometimes|boolean',
+        ]);
+
+        $creator = User::where('role', 'creator')->findOrFail($id);
         
-        if ($request->has('is_featured')) {
-            $creator->is_featured = $request->is_featured;
+        if (array_key_exists('is_featured', $data)) {
+            $creator->is_featured = $data['is_featured'];
         }
 
-        if ($request->has('status')) {
-            $creator->status = $request->status; // 0 suspended, 1 active
+        if (array_key_exists('status', $data)) {
+            $creator->status = $data['status'];
         }
 
         $creator->save();

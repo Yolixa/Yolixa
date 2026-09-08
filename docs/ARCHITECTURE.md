@@ -24,10 +24,11 @@ Supporter browser
 
 ## Main Components
 
-- Browser UI: Blade templates plus Vite JavaScript for wallet connection and tip submission.
+- Browser UI: Blade templates plus Vite JavaScript for wallet connection and tip submission. Freighter access is centralized in `resources/js/wallet-adapter.js`.
 - Laravel routes/controllers: wallet authentication, creator registration/profile, public referral pages, and current XLM tip APIs.
 - `StellarConfigurationService`: central Testnet/Horizon/passphrase configuration.
 - `StellarService`: XDR construction, Horizon submission, and transaction verification.
+- XLM preflight: conservative spendable-balance check using account reserves, liabilities, sponsorship counts, and current fee/reserve data where Horizon provides it.
 - `TipService`: idempotent persistence after backend verification.
 - Database: users, wallets, tips, wallet types, blockchains, and historical future-scope tables.
 
@@ -46,7 +47,7 @@ Future scope:
 
 - USDC and custom Stellar assets.
 - Trustline-aware UX.
-- Soroban payment router.
+- Soroban payment router. Current classic mode returns disabled responses for `/api/soroban/*`.
 - Atomic sustainability-fee operations.
 - YLX reward issuance/claims.
 - Mainnet launch.

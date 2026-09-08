@@ -286,14 +286,19 @@
         updateWalletUIStatus();
     }
 
-    function normalizeWalletSignature(response) {
+    function getFreighterAdapter() {
+        const adapter = window.YolixaWallets?.freighter;
+        if (!adapter) {
+            throw new Error("Freighter support is still loading. Please refresh and try again.");
+        }
+
+        return adapter;
+    }
+
+    function normalizeRabetSignature(response) {
         const signature = response?.signature
             || response?.signedMessage
             || response?.signed_message
-            || response?.signedPayload
-            || response?.data?.signature
-            || response?.data?.signedMessage
-            || response?.data?.signed_message
             || (typeof response === 'string' ? response : null);
 
         if (typeof signature === 'string') {
@@ -304,42 +309,11 @@
             return btoa(String.fromCharCode(...signature));
         }
 
-        if (signature && typeof signature === 'object') {
-            if (signature.type === 'Buffer' && Array.isArray(signature.data)) {
-                return btoa(String.fromCharCode(...signature.data));
-            }
-
-            if (Array.isArray(signature.data)) {
-                return btoa(String.fromCharCode(...signature.data));
-            }
-
-            const nested = signature.signature
-                || signature.signedMessage
-                || signature.signed_message
-                || signature.data?.signature;
-
-            if (typeof nested === 'string') {
-                return nested;
-            }
-
-            if (nested instanceof Uint8Array || Array.isArray(nested)) {
-                return btoa(String.fromCharCode(...nested));
-            }
-        }
-
-        throw new Error("Wallet returned an unsupported signature format.");
-    }
-
-    function getFreighterApi() {
-        return window.freighterApi
-            || window.stellarFreighter
-            || window.StellarFreighter
-            || window.freighter
-            || null;
+        throw new Error("Rabet returned an unsupported signature format.");
     }
 
     function getRabetApi() {
-        return window.rabet || null;
+        return window.YolixaWallets?.rabet?.api?.() || window.rabet || null;
     }
 
     async function assertRabetTestnetNetwork() {
@@ -366,48 +340,6 @@
         }
     }
 
-    async function signFreighterChallenge(challenge, publicKey) {
-        const freighter = getFreighterApi();
-
-        if (!freighter || typeof freighter.signMessage !== "function") {
-            throw new Error("This Freighter version does not support message signing.");
-        }
-
-        const attempts = [
-            () => freighter.signMessage(challenge, {
-                address: publicKey,
-                networkPassphrase: window.config?.STELLAR_PASSPHRASE || "Test SDF Network ; September 2015",
-            }),
-            () => freighter.signMessage(challenge, {
-                network: window.config?.STELLAR_NETWORK_LABEL || "TESTNET",
-                networkPassphrase: window.config?.STELLAR_PASSPHRASE || "Test SDF Network ; September 2015",
-            }),
-            () => freighter.signMessage(challenge),
-        ];
-
-        let lastError = null;
-
-        for (const attempt of attempts) {
-            try {
-                const response = await attempt();
-                if (response?.error) {
-                    throw new Error(response.error);
-                }
-
-                return normalizeWalletSignature(response);
-            } catch (error) {
-                lastError = error;
-
-                const message = String(error?.message || error || '').toLowerCase();
-                if (message.includes('reject') || message.includes('declin') || message.includes('denied')) {
-                    throw error;
-                }
-            }
-        }
-
-        throw lastError || new Error("Freighter did not return a valid signature.");
-    }
-
     async function signRabetChallenge(challenge) {
         const rabet = getRabetApi();
 
@@ -430,7 +362,7 @@
                     throw new Error(typeof response.error === 'string' ? response.error : response.error?.message || 'Rabet rejected the signature request.');
                 }
 
-                return normalizeWalletSignature(response);
+                return normalizeRabetSignature(response);
             } catch (error) {
                 lastError = error;
 
@@ -445,31 +377,30 @@
     }
 
     async function connectFreighter() {
-        const freighter = getFreighterApi();
-
-        if (!freighter) {
-            toastr.error("Freighter API not loaded. Please hard refresh or check the Freighter extension/CDN.");
-            return;
-        }
         try {
-            const result = typeof freighter.requestAccess === "function"
-                ? await freighter.requestAccess()
-                : { address: await freighter.getPublicKey() };
-            const publicKey = result?.address || result?.publicKey || result;
+            const freighter = getFreighterAdapter();
 
-            if (publicKey) {
+            if (!await freighter.detect()) {
+                throw new Error("Freighter extension not detected. Install or enable Freighter and try again.");
+            }
+
+            const publicKey = await freighter.requestAccess();
+            await freighter.assertTestnet(window.config?.STELLAR_PASSPHRASE || STELLAR_TESTNET_PASSPHRASE);
 
                 // 1. Fetch Challenge
                 const chalRes = await postJsonWithFreshCsrf("/auth/challenge", { address: publicKey });
                 const chalData = await readJsonResponse(chalRes, "Could not acquire challenge. Please refresh and try again.");
                 if (!chalRes.ok || !chalData.success) throw new Error(chalData.message || "Could not acquire challenge");
 
-                // 2. Sign Challenge (Use signMessage or fallback)
-                let signature = "";
+                // 2. Sign Challenge
+                let signature;
                 try {
-                    signature = await signFreighterChallenge(chalData.challenge, publicKey);
+                    signature = await freighter.signAuthenticationMessage(
+                        chalData.challenge,
+                        publicKey,
+                        window.config?.STELLAR_PASSPHRASE || STELLAR_TESTNET_PASSPHRASE
+                    );
                 } catch (signErr) {
-                    console.error("Freighter signMessage failed:", signErr);
                     throw new Error(signErr?.message || "Signature rejected or failed in Freighter.");
                 }
 
@@ -498,7 +429,6 @@
                 }
 
                 handleWalletLoginSuccess(publicKey, 'freighter', data);
-            }
         } catch (error) {
             console.error("Freighter flow interrupted:", error);
             toastr.error(error?.message || "User denied permission or connection failed.");

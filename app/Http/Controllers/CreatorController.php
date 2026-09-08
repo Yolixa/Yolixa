@@ -14,7 +14,9 @@ class CreatorController extends Controller
 {
     public function store(Request $request)
     {
-        \Illuminate\Support\Facades\Log::info('Initiating creator registration process.', ['payload' => $request->except('trust_tx_hash')]);
+        \Illuminate\Support\Facades\Log::info('creator_registration_started', [
+            'user_id' => \Illuminate\Support\Facades\Auth::id(),
+        ]);
 
         $data = $request->validate([
             'name'          => ['required','string','max:100'],
@@ -41,7 +43,9 @@ class CreatorController extends Controller
 
         // Email uniqueness check manually to avoid complex rules
         if (User::where('email', $data['email'])->where('public_key', '!=', $data['public_key'])->exists()) {
-             \Illuminate\Support\Facades\Log::warning('Creator registration failed due to existing email address.', ['email' => $data['email']]);
+             \Illuminate\Support\Facades\Log::warning('creator_registration_email_conflict', [
+                 'user_id' => $authenticatedUser->id,
+             ]);
              return response()->json(['status' => false, 'message' => 'Email already taken.'], 422);
         }
 
@@ -53,7 +57,7 @@ class CreatorController extends Controller
         }
 
         if ($user) {
-            \Illuminate\Support\Facades\Log::info("Existing fan user located. Upgrading to creator role.", ['user_id' => $user->id]);
+            \Illuminate\Support\Facades\Log::info('fan_upgraded_to_creator', ['user_id' => $user->id]);
             $user->update([
                 'name'         => $data['name'],
                 'email'        => $data['email'],
@@ -62,7 +66,9 @@ class CreatorController extends Controller
                 'referral_key' => $user->referral_key ?? $ref,
             ]);
         } else {
-            \Illuminate\Support\Facades\Log::info("No existing user found. Creating a brand new creator record.", ['public_key' => $data['public_key']]);
+            \Illuminate\Support\Facades\Log::info('creator_record_created_from_wallet', [
+                'public_key_suffix' => substr($data['public_key'], -8),
+            ]);
             $user = User::create([
                 'name'          => $data['name'],
                 'email'         => $data['email'],
@@ -96,7 +102,7 @@ class CreatorController extends Controller
         }
 
         $refUrl = route('creator.referral', ['code' => $user->referral_key]);
-        \Illuminate\Support\Facades\Log::info("Creator registration completed successfully. Handing off to frontend redirect phase.", ['user_id' => $user->id]);
+        \Illuminate\Support\Facades\Log::info('creator_registration_completed', ['user_id' => $user->id]);
 
         return response()->json([
             'status'       => true,
@@ -126,27 +132,31 @@ class CreatorController extends Controller
 
     public function dashboard(string $publicKey = null)
     {
-        \Illuminate\Support\Facades\Log::info("Dashboard access initiated.", ['requested_public_key' => $publicKey]);
+        \Illuminate\Support\Facades\Log::info('creator_dashboard_requested', [
+            'requested_public_key_suffix' => $publicKey ? substr($publicKey, -8) : null,
+        ]);
 
         // Require authentication. 
         // This stops anyone from just passing a publicKey in the URL unauthenticated.
         $creator = \Illuminate\Support\Facades\Auth::user();
 
         if (!$creator) {
-            \Illuminate\Support\Facades\Log::warning("Unauthorized dashboard access attempt. User not logged in.", ['requested_public_key' => $publicKey]);
+            \Illuminate\Support\Facades\Log::warning('creator_dashboard_unauthenticated', [
+                'requested_public_key_suffix' => $publicKey ? substr($publicKey, -8) : null,
+            ]);
             abort(403, 'Unauthorized access. Please specify and connect your wallet.');
         }
 
         if ($creator->role !== 'creator') {
-            \Illuminate\Support\Facades\Log::warning("Non-creator role attempted to access dashboard.", ['user_id' => $creator->id, 'role' => $creator->role]);
+            \Illuminate\Support\Facades\Log::warning('creator_dashboard_non_creator', ['user_id' => $creator->id, 'role' => $creator->role]);
             abort(403, 'Unauthorized access. You must be a registered creator to view this panel.');
         }
 
         if ($publicKey && $creator->public_key !== $publicKey) {
-            \Illuminate\Support\Facades\Log::warning("Dashboard public key mismatch. User tried to view another dashboard.", [
+            \Illuminate\Support\Facades\Log::warning('creator_dashboard_key_mismatch', [
                 'user_id' => $creator->id, 
-                'auth_public_key' => $creator->public_key, 
-                'requested_public_key' => $publicKey
+                'auth_public_key_suffix' => substr($creator->public_key, -8),
+                'requested_public_key_suffix' => substr($publicKey, -8),
             ]);
             abort(404, 'Dashboard not found for the requested public key.');
         }

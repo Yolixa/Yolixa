@@ -142,7 +142,7 @@ class XlmAmount
         return [ltrim($result, '0') ?: '0', $remainder];
     }
 
-    private function addAtomic(string $left, string $right): string
+    public function addAtomic(string|int $left, string|int $right): string
     {
         $left = $this->normalizeAtomic($left);
         $right = $this->normalizeAtomic($right);
@@ -167,7 +167,7 @@ class XlmAmount
         return ltrim($result, '0') ?: '0';
     }
 
-    private function subtractAtomic(string $left, string $right): string
+    public function subtractAtomic(string|int $left, string|int $right): string
     {
         $left = $this->normalizeAtomic($left);
         $right = $this->normalizeAtomic($right);

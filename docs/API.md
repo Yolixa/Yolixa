@@ -81,7 +81,7 @@ Body:
 }
 ```
 
-Returns unsigned XDR for one native XLM payment from the authenticated supporter wallet to the creator wallet.
+Returns unsigned XDR for one native XLM payment from the authenticated supporter wallet to the creator wallet after a conservative spendable-XLM preflight.
 
 `POST /api/tip/submit`
 
@@ -118,4 +118,4 @@ Verifies the transaction through Horizon before storing a confirmed tip.
 
 ## Future/Experimental Endpoints
 
-`/api/soroban/*` routes exist for future Soroban/router experiments, but they are disabled unless the app is explicitly configured for that future mode and valid contract IDs are supplied.
+`/api/soroban/*` routes exist for future Soroban/router experiments. In the current classic MVP configuration they return a disabled response. They are usable only when the app is deliberately configured for future Soroban mode and valid contract IDs are supplied.

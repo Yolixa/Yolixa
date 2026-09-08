@@ -11,6 +11,7 @@ Yolixa is now positioned as a current Stellar Testnet XLM creator-tipping MVP:
 - unique referral/profile tipping links,
 - direct XLM payment XDR generation,
 - browser-wallet signing,
+- conservative XLM reserve/balance preflight,
 - Horizon submission,
 - backend Horizon verification,
 - idempotent confirmed-tip recording,
@@ -36,13 +37,14 @@ The repository should not claim current live support for:
 
 Before submitting to SCF, the project owner should provide:
 
-- public GitHub URL,
 - deployed demo URL,
 - demo video,
 - real Stellar Testnet transaction hash,
 - browser-wallet E2E screenshots or recording,
 - founder/team details,
 - final requested budget and milestone dates.
+
+Repository: https://github.com/Yolixa/Yolixa
 
 ## SCF Positioning
 

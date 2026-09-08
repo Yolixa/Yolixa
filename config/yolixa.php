@@ -76,9 +76,6 @@ return [
     // Legacy name retained for existing views/services. Prefer platform_public_key in new code.
     'platform_collection_wallet' => env('PLATFORM_COLLECTION_PUBLIC', env('YOLIXA_PLATFORM_WALLET_PUBLIC', env('YOLIXA_PLATFORM_PUBLIC_KEY'))),
 
-    // Legacy/manual reward distribution setting. Leave blank unless explicitly enabling that flow.
-    'platform_distribution_seed' => env('PLATFORM_DISTRIBUTION_SECRET', env('ISSUER_SECRET_KEY')),
-
     'ylx_asset' => [
         'code' => env('YLX_ASSET_CODE', 'YLX'),
         'issuer' => env('YLX_ISSUER_PUBLIC'),
@@ -93,7 +90,7 @@ return [
         'fee_bps' => env('SOROBAN_TIP_ROUTER_FEE_BPS', 150),
         'verifier_source_account' => env('SOROBAN_VERIFIER_SOURCE_ACCOUNT'),
 
-        // Legacy receipt-only registry. The Phase 2 router path does not use these.
+        // Future/experimental receipt-only registry. The current classic MVP never uses these values.
         'tip_registry_contract_id' => env('SOROBAN_TIP_REGISTRY_CONTRACT_ID'),
         'platform_signer_public' => env('SOROBAN_PLATFORM_SIGNER_PUBLIC'),
         'platform_signer_secret' => env('SOROBAN_PLATFORM_SIGNER_SECRET'),

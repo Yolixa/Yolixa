@@ -17,6 +17,10 @@ class SorobanTipController extends Controller
 
     public function config()
     {
+        if (!$this->sorobanCurrentExecutionEnabled()) {
+            return $this->sorobanDisabledResponse();
+        }
+
         return response()->json([
             'success' => true,
             'config' => $this->tips->publicConfig(),
@@ -25,6 +29,10 @@ class SorobanTipController extends Controller
 
     public function intent(Request $request)
     {
+        if (!$this->sorobanCurrentExecutionEnabled()) {
+            return $this->sorobanDisabledResponse();
+        }
+
         $request->validate([
             'receiver_id' => 'required|integer|exists:users,id',
             'amount' => 'required|string|max:40',
@@ -52,6 +60,10 @@ class SorobanTipController extends Controller
 
     public function confirm(Request $request)
     {
+        if (!$this->sorobanCurrentExecutionEnabled()) {
+            return $this->sorobanDisabledResponse();
+        }
+
         $request->validate([
             'intent_id' => 'required|integer|exists:tip_intents,id',
             'tx_hash' => 'required|string|max:120',
@@ -99,6 +111,10 @@ class SorobanTipController extends Controller
 
     public function submitted(Request $request)
     {
+        if (!$this->sorobanCurrentExecutionEnabled()) {
+            return $this->sorobanDisabledResponse();
+        }
+
         $request->validate([
             'intent_id' => 'required|integer|exists:tip_intents,id',
             'tx_hash' => 'required|string|max:120',
@@ -131,5 +147,19 @@ class SorobanTipController extends Controller
 
             return response()->json(['success' => false, 'message' => 'Could not record submitted Soroban tip.'], 500);
         }
+    }
+
+    private function sorobanCurrentExecutionEnabled(): bool
+    {
+        return strtolower((string) config('yolixa.tip_execution_mode', 'classic')) === 'soroban'
+            && (bool) config('yolixa.soroban.enabled', false);
+    }
+
+    private function sorobanDisabledResponse()
+    {
+        return response()->json([
+            'success' => false,
+            'message' => 'Soroban tipping is retained as future/experimental architecture and is not available in the current classic XLM MVP.',
+        ], 404);
     }
 }

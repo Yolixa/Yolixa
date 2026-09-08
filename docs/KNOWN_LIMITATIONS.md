@@ -5,7 +5,7 @@ Current limitations are intentional pre-SCF MVP boundaries:
 - Stellar Testnet only.
 - Native XLM only.
 - Freighter is the default supported wallet.
-- Rabet code exists but is not advertised by default unless locally validated and enabled.
+- Rabet code exists for future compatibility, but Freighter is the only wallet confidently advertised for the current MVP unless Rabet is separately browser-validated and explicitly enabled.
 - No USDC payments.
 - No custom Stellar asset payments.
 - No trustline creation or management UX.
@@ -21,9 +21,10 @@ Current limitations are intentional pre-SCF MVP boundaries:
 
 Manual evidence still needed before SCF submission:
 
-- public GitHub repository URL,
 - deployed demo URL,
 - demo video,
 - real Testnet transaction hash,
 - founder/team details,
 - final budget and milestone commitments.
+
+Repository: https://github.com/Yolixa/Yolixa

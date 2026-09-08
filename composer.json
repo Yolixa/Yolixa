@@ -2,7 +2,7 @@
     "$schema": "https://getcomposer.org/schema.json",
     "name": "yolixa/yolixa",
     "type": "project",
-    "description": "Non-custodial creator tipping and payment routing on Stellar, powered by Soroban.",
+    "description": "Non-custodial Stellar Testnet XLM creator tipping with retained future Soroban experiments.",
     "keywords": ["stellar", "soroban", "creator-economy", "payments", "micropayments", "laravel", "rust", "web3"],
     "license": "proprietary",
     "require": {

@@ -2,12 +2,34 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     public function up(): void
     {
+        $duplicateWallets = DB::table('wallets')
+            ->select('public_key')
+            ->whereNotNull('public_key')
+            ->groupBy('public_key')
+            ->havingRaw('COUNT(*) > 1')
+            ->pluck('public_key');
+
+        foreach ($duplicateWallets as $publicKey) {
+            $walletIds = DB::table('wallets')
+                ->where('public_key', $publicKey)
+                ->orderByDesc('updated_at')
+                ->orderByDesc('id')
+                ->pluck('id');
+
+            $keepId = $walletIds->first();
+            DB::table('wallets')
+                ->where('public_key', $publicKey)
+                ->where('id', '!=', $keepId)
+                ->delete();
+        }
+
         Schema::table('wallets', function (Blueprint $table) {
             $table->unique('public_key');
             $table->index(['user_id', 'wallet_type_id']);
